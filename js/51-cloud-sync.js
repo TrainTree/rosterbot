@@ -6,7 +6,7 @@
   const IS_HOSTED_ROSTERBOT=/^(?:www\.)?rosterbot\.work$/i.test(location.hostname);
   const DEVICE_ONLY=new Set(['rosterbot-last-backup-v1','rosterbot-first-use-v1','rosterbot-theme-v1.9','rosterbot-view-mode-v1','rosterbot-experience-v1','rosterbot-shared-settings-v1','paybot-editor-view-v1','paybot-auto-next-v1','paybot-v05-state','paybot-v04-state','paybot-v03-state','paybot-v02-state']);
   const SESSION_VOLATILE=new Set(['displayWeeks','lastViewedFrom','lastViewedTo','experienceMode']);
-  const AUTO_TRIGGER_KEYS=new Set(['rosterbot-timeline-v1','rosterbot-diary-annual-leave-v1','rosterbot-week-leave-v1','rosterbot-week-overrides-v1','rosterbot-day-overrides-v1','rosterbot-week-locks-v1','rosterbot-pay-checks-v1','rosterbot-fortnight-allowances-v1','rosterbot-fortnight-notes-v1','paybot-v06-state']);
+  const AUTO_TRIGGER_KEYS=new Set(['rosterbot-timeline-v1','rosterbot-diary-annual-leave-v1','rosterbot-week-leave-v1','rosterbot-week-overrides-v1','rosterbot-day-overrides-v1','rosterbot-week-locks-v1','rosterbot-pay-checks-v1','rosterbot-fortnight-allowances-v1','rosterbot-fortnight-notes-v1','paybot-v06-state','rosterbot-calendar-subscription-settings-v1']);
   const AUTO_DEBOUNCE_MS=1800,AUTO_POLL_MS=60000,AUTO_LOCAL_PROBE_MS=1200;
   let config=null,session=null,volatileSession=null,cloudRow=null,busy=false,lastAnalysis=null,lastCloudError=null,autoTimer=0,autoPollTimer=0,autoLocalProbeTimer=0,autoRunning=false,autoProbeRunning=false,autoReadinessProbeRunning=false,autoSuppress=0,localReady=false,autoRetryNotBefore=0,pendingAutoReason=null,lastAutoAttemptAt=null,lastAutoAttemptReason=null,localReadySource=null,recoveryMode=false,lastTrustedEditAt=0,cryptoProfile=null,masterKeyBytes=null,masterKeyId=null,pendingCryptoSetup=null,pendingRecoveryRotation=null,unlockMethod='passphrase',cryptoSessionUid=null;
   function jparse(raw,fallback=null){try{return JSON.parse(raw??'')??fallback}catch(_){return fallback}}
@@ -67,7 +67,7 @@
   function shortHash(hash){return hash?`${hash.slice(0,12)}…`:'—'}
   function metaMap(){return jparse(localStorage.getItem(META_KEY),{})||{}}
   function getMeta(){if(!session?.user?.id)return null;return metaMap()[session.user.id]||null}
-  function setMeta(patch){if(!session?.user?.id)return;const all=metaMap(),uid=session.user.id;all[uid]={...(all[uid]||{}),...patch};localStorage.setItem(META_KEY,JSON.stringify(all))}
+  function setMeta(patch){if(!session?.user?.id)return;const all=metaMap(),uid=session.user.id;all[uid]={...(all[uid]||{}),...patch};localStorage.setItem(META_KEY,JSON.stringify(all));try{window.dispatchEvent(new CustomEvent('rosterbot:cloud-sync-meta',{detail:{direction:String(patch?.lastDirection||''),baseRevision:all[uid]?.baseRevision??null}}))}catch(_){}}
   function autoEnabled(){return localStorage.getItem(AUTO_KEY)!=='0'}
   function autoHoldMap(){return jparse(localStorage.getItem(AUTO_HOLD_KEY),{})||{}}
   function getAutoHold(){const all=autoHoldMap(),uid=session?.user?.id;return (uid&&all[uid])||all.__device||null}
