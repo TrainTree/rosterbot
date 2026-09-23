@@ -2109,3 +2109,9 @@ button.v29-hub-card{cursor:pointer}.v29-hub-card:hover{border-color:color-mix(in
 /* v0.27.12 Data & Sync close-control hotfix */
 #dataModal .feedback-dialog-header{isolation:isolate}
 #dataModal #dataCloseBtn{position:relative;z-index:50;pointer-events:auto;touch-action:manipulation}
+
+/* ==========================================================================\n   v0.27.13 Recovery UX hotfix\n   ========================================================================== */
+.v30-existing-user{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:16px;padding:13px 14px;border:1px solid color-mix(in srgb,var(--accent) 26%,var(--border));border-radius:14px;background:color-mix(in srgb,var(--surface-2) 76%,var(--surface))}
+.v30-existing-user>div:first-child{min-width:0}.v30-existing-user strong,.v30-existing-user small{display:block}.v30-existing-user small{margin-top:3px;color:var(--muted);line-height:1.4}.v30-existing-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto}
+.cloud-copy-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 0}.cloud-copy-summary>div{min-width:0;padding:10px 11px;border:1px solid var(--border);border-radius:11px;background:var(--surface-2)}.cloud-copy-summary strong{display:block;margin-top:4px;font-size:.82rem;line-height:1.35;overflow-wrap:anywhere}.cloud-copy-summary .cloud-label{font-size:.61rem}
+@media(max-width:620px){.v30-existing-user{align-items:stretch;flex-direction:column}.v30-existing-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.v30-existing-actions button{width:100%;font-size:.8rem}.cloud-copy-summary{grid-template-columns:1fr}}
