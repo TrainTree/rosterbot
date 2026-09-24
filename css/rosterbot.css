@@ -2170,3 +2170,10 @@ html[data-theme="7"] .rbcal-path-card,html[data-theme="7"] .rbcal-oneoff-card{bo
 html[data-theme="7"] .rbcal-path-arrow{color:#c4c8cf!important}
 @media(max-width:760px){.rbcal-path-grid{gap:9px}.rbcal-path-card{grid-template-columns:40px minmax(0,1fr) 20px!important;padding:13px!important}.rbcal-path-title{flex-direction:column;gap:6px}.rbcal-path-status{align-self:flex-start}.rbcal-path-icon{width:38px;height:38px}.rbcal-path-copy strong{font-size:.94rem}.rbcal-path-copy small{font-size:.75rem}}
 @media(max-width:430px){.rbcal-path-card{grid-template-columns:36px minmax(0,1fr) 18px!important;column-gap:10px!important}.rbcal-path-icon{width:34px;height:34px;border-radius:10px}.rbcal-path-icon .v27-svg{width:22px;height:22px}.rbcal-path-arrow .v27-svg{width:18px;height:18px}}
+
+/* ========================================================================== 
+   v0.27.18 small UX luxuries — directional year transition + viewer period copy
+   ========================================================================== */
+.v27-history-strip{overflow:hidden;touch-action:pan-y}
+.v27-history-strip #historyYear,.v27-history-strip .history-months{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+#viewerDataset option,#viewerRoster option{font-variant-numeric:tabular-nums}

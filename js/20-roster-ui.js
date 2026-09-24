@@ -1038,7 +1038,30 @@
   displayRangeBtn?.addEventListener('click',()=>{if(isDiaryMode()&&!hasSavedTimeline()){window.RosterBotDiary?.showAdvanced?.();return}generateDisplay(true)});
   thisWeekView?.addEventListener('click',()=>{setCurrentWeek(true);syncQuickCalendar(viewFromDate.value)});thisPayCycleView?.addEventListener('click',()=>setCurrentPayCycle(true));prevFortnightView?.addEventListener('click',()=>shiftViewPayCycle(-1));nextFortnightView?.addEventListener('click',()=>shiftViewPayCycle(1));
   $('homePrevFortnight')?.addEventListener('click',()=>shiftViewPayCycle(-1));$('homeNextFortnight')?.addEventListener('click',()=>shiftViewPayCycle(1));$('homeToday')?.addEventListener('click',()=>setCurrentPayCycle(true));$('homeCalendarView')?.addEventListener('click',()=>calendarViewBtn?.click());$('homeCompactView')?.addEventListener('click',()=>compactViewBtn?.click());$('homeHistory')?.addEventListener('click',()=>window.RosterBotDiary?.showAdvanced?.());
-  $('historyPrevYear')?.addEventListener('click',()=>{historyViewYear--;renderHistoryStrip()});$('historyNextYear')?.addEventListener('click',()=>{historyViewYear++;renderHistoryStrip()});$('historyMonths')?.addEventListener('click',e=>{const b=e.target.closest?.('[data-history-month]');if(b)jumpToMonth(+b.dataset.historyMonth)});
+  let historyYearAnimating=false;
+  async function changeHistoryYear(delta){
+    delta=Number(delta)||0;if(!delta||historyYearAnimating)return;
+    const yearEl=$('historyYear'),months=$('historyMonths'),reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const renderNext=()=>{historyViewYear+=delta;renderHistoryStrip()};
+    if(reduce||!yearEl||!months||typeof months.animate!=='function'){renderNext();return}
+    historyYearAnimating=true;
+    const outX=delta>0?'-18%':'18%',inX=delta>0?'18%':'-18%';
+    try{
+      const out=[
+        yearEl.animate([{transform:'translateX(0)',opacity:1},{transform:`translateX(${delta>0?'-14px':'14px'})`,opacity:0}],{duration:105,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'}),
+        months.animate([{transform:'translateX(0)',opacity:1},{transform:`translateX(${outX})`,opacity:0}],{duration:105,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'})
+      ];
+      await Promise.all(out.map(a=>a.finished.catch(()=>{})));
+      out.forEach(a=>a.cancel());
+      renderNext();
+      const incoming=[
+        yearEl.animate([{transform:`translateX(${delta>0?'14px':'-14px'})`,opacity:0},{transform:'translateX(0)',opacity:1}],{duration:210,easing:'cubic-bezier(.18,.78,.22,1)'}),
+        months.animate([{transform:`translateX(${inX})`,opacity:0},{transform:'translateX(0)',opacity:1}],{duration:210,easing:'cubic-bezier(.18,.78,.22,1)'})
+      ];
+      await Promise.all(incoming.map(a=>a.finished.catch(()=>{})));
+    }finally{historyYearAnimating=false}
+  }
+  $('historyPrevYear')?.addEventListener('click',()=>changeHistoryYear(-1));$('historyNextYear')?.addEventListener('click',()=>changeHistoryYear(1));$('historyMonths')?.addEventListener('click',e=>{const b=e.target.closest?.('[data-history-month]');if(b)jumpToMonth(+b.dataset.historyMonth)});
   $('universalSearch')?.addEventListener('input',e=>renderUniversalSearch(e.target.value));$('universalSearch')?.addEventListener('focus',e=>{if(e.target.value)renderUniversalSearch(e.target.value)});$('universalSearchClear')?.addEventListener('click',()=>{$('universalSearch').value='';renderUniversalSearch('');$('universalSearch').focus()});$('universalSearchResults')?.addEventListener('click',e=>{const b=e.target.closest?.('[data-search-date]');if(!b)return;const d=b.dataset.searchDate,start=snapPayPeriodIso(d);setViewRange(start,E.addDays(start,13),true);$('universalSearchResults').hidden=true});
   $('homeNextShiftCard')?.addEventListener('click',()=>{const d=$('homeNextShiftCard').dataset.jumpDate;if(d){const start=snapPayPeriodIso(d);setViewRange(start,E.addDays(start,13),true);setTimeout(()=>document.querySelector(`[data-roster-day="${d}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}),80)}});$('homePayCard')?.addEventListener('click',()=>{const start=$('homePayCard').dataset.payStart,b=document.querySelector(`[data-pay-details="${start}"]`);b?.click();b?.scrollIntoView({behavior:'smooth',block:'center'})});$('homeIssuesCard')?.addEventListener('click',openIssuesPanel);
   document.addEventListener('click',e=>{if(e.target.closest?.('[data-close-pay-issues]')){$('payIssuesPanel').hidden=true;return}const issue=e.target.closest?.('[data-issue-start]');if(issue){const start=issue.dataset.issueStart;setViewRange(start,E.addDays(start,13),true);$('payIssuesPanel').hidden=true;return}if(!e.target.closest?.('.universal-search-wrap')){const box=$('universalSearchResults');if(box)box.hidden=true}});
