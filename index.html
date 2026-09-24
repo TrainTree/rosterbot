@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#111214">
-  <title>RosterBot 🤖 beta v0.27.20-onboarding-view-hotfix</title>
+  <title>RosterBot 🤖 beta v0.28.0-sources</title>
   <link rel="stylesheet" href="css/rosterbot.css">
 </head>
 <body>
@@ -465,6 +465,7 @@
     <section id="v29MoreHub" class="v29-hub" aria-labelledby="v29MoreTitle">
       <div class="v29-hub-head"><div><div class="eyebrow">MORE</div><h2 id="v29MoreTitle">More</h2><p>Data, settings and secondary RosterBot tools.</p></div></div>
       <div class="v29-hub-grid v29-more-grid">
+        <button id="v28SourcesBtn" class="v29-hub-card featured wide" type="button"><div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a3 3 0 0 1 3-3h6z"/></svg></span><span class="v29-card-arrow">›</span></div><h3>Sources</h3><p>Pay rates, allowances, enterprise agreements and the public references used by RosterBot and PayBot.</p><span class="v29-lookup-safety">Public sources · calculation references · rate history</span></button>
         <button id="v29MoreDataBtn" class="v29-hub-card" type="button"><div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 18.5H6a4 4 0 0 1-.5-7.97A6.5 6.5 0 0 1 18 8.8a4.5 4.5 0 0 1 .5 8.97H16"/><path d="m9 15 2 2 4-4"/></svg></span><span class="v29-card-arrow">›</span></div><h3>Data &amp; Sync</h3><p>Backups, import/export, account and encrypted Cloud Sync.</p><span id="v29MoreSyncStatus" class="v29-more-status">Local saved</span></button>
         <button id="v29MoreSettingsBtn" class="v29-hub-card" type="button"><div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06-.06A1.7 1.7 0 0 0 19.4 9c.12.37.34.7.6 1 .28.27.66.4 1.1.4H21v4h-.09c-.44 0-.82.13-1.1.4-.27.28-.49.62-.61 1.01Z"/></svg></span><span class="v29-card-arrow">›</span></div><h3>Settings</h3><p>Appearance, theme and roster display preferences.</p></button>
         <button id="v29MoreChangelogBtn" class="v29-hub-card" type="button"><div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 12h6M9 16h6"/></svg></span><span class="v29-card-arrow">›</span></div><h3>What’s new</h3><p>See recent RosterBot changes and fixes.</p></button>
@@ -474,7 +475,7 @@
 
 
     <footer>
-      RosterBot 🤖 beta v0.27.20-onboarding-view-hotfix · Standalone HTML/JavaScript · Australia/Melbourne
+      RosterBot 🤖 beta v0.28.0-sources · Standalone HTML/JavaScript · Australia/Melbourne
     </footer>
   </main>
 
@@ -518,8 +519,53 @@
     <section id="editorView"></section>
     <section id="payslipView" class="panel results hidden"><table class="pay-table"><thead><tr><th>Pay element</th><th>Hours / units</th><th>Rate</th><th>Value</th></tr></thead><tbody id="payBody"></tbody><tfoot><tr><td colspan="3">Expected gross</td><td id="grossTotal">$0.00</td></tr></tfoot></table><div class="warning">PayBot is still in beta. Rest-job special rules, SDL 8:29 and tax/net calculations are not included yet.</div></section>
     <section id="dailyView" class="panel results hidden"><div class="day-breakdown" id="dailyBody"></div><div class="warning">Day totals include ordinary base or paid leave plus any penalties, overtime and allowances for that day. Time-based pay classes use a 0.1h minimum for any positive time, then round to the nearest 0.1h per shift/day before the fortnight totals are added.</div></section>
-    <footer class="footer">RosterBot 🤖 v2.0 + PayBot 🤖💰 beta v0.27.20-onboarding-view-hotfix · Modular source / standalone release · Australia/Melbourne</footer>
+    <footer class="footer">RosterBot 🤖 v2.0 + PayBot 🤖💰 beta v0.28.0-sources · Modular source / standalone release · Australia/Melbourne</footer>
   </main>
+
+
+  <div id="sourcesModal" class="feedback-modal" hidden>
+    <section class="feedback-dialog sources-dialog" role="dialog" aria-modal="true" aria-labelledby="sourcesTitle">
+      <div class="feedback-dialog-header"><div><div class="eyebrow">PUBLIC REFERENCES</div><h2 id="sourcesTitle">Sources</h2></div><button id="sourcesCloseBtn" class="feedback-close-btn" type="button" aria-label="Close sources">×</button></div>
+      <div class="sources-body">
+        <section class="sources-intro">
+          <strong>See where RosterBot and PayBot get their numbers.</strong>
+          <p>These pages expose public rates and references used by the app. They deliberately do not contain internal procedures, restricted documents or confidential operational material.</p>
+          <div class="sources-status-row"><span class="sources-badge verified">EA published</span><span class="sources-badge calc">PayBot calculation data</span><span class="sources-badge public">Public source</span></div>
+        </section>
+
+        <section class="sources-section" aria-labelledby="sourcesPayTitle">
+          <div class="sources-section-head"><div><div class="eyebrow">PAY RATES</div><h3 id="sourcesPayTitle">Driver grade rates</h3><p>Published Schedule A Table 6 rates. The table is rendered from the same frozen reference data PayBot loads.</p></div><span id="sourcesRateSourceBadge" class="sources-source-pill">Schedule A · Table 6</span></div>
+          <div id="sourcesCurrentRate" class="sources-current-card"></div>
+          <div class="sources-table-wrap"><table class="sources-table"><thead id="sourcesGradeHead"></thead><tbody id="sourcesGradeBody"></tbody></table></div>
+          <details class="sources-details"><summary>How PayBot chooses the PB205 rate</summary><div class="sources-details-body"><p>Enterprise Agreement tables publish rounded rates to cents. Where verified payroll/backpay evidence establishes the exact entitlement APR used for calculation, PayBot retains that higher-precision chronology separately.</p><div class="sources-table-wrap"><table class="sources-table sources-history-table"><thead><tr><th>Effective pay period</th><th>PayBot entitlement APR</th><th>Published reference</th><th>Evidence</th></tr></thead><tbody id="sourcesEntitlementBody"></tbody></table></div></div></details>
+        </section>
+
+        <section class="sources-section" aria-labelledby="sourcesAllowanceTitle">
+          <div class="sources-section-head"><div><div class="eyebrow">ALLOWANCES &amp; SUNDRIES</div><h3 id="sourcesAllowanceTitle">Driver allowances</h3><p>The current EA explicitly lists these Driver allowances and their scheduled changes by date in Schedule A Table 6.</p></div><span class="sources-source-pill">EA Table 6</span></div>
+          <div class="sources-table-wrap"><table class="sources-table"><thead id="sourcesAllowanceHead"></thead><tbody id="sourcesAllowanceBody"></tbody></table></div>
+          <div class="sources-rule-grid">
+            <article><strong>A640 · Wasted meal</strong><p>Clause 92.4 provides the allowance when a rostered meal break cannot be taken because of late running/unplanned disruption, and when more than two hours are worked beyond rostered finish subject to at least 10 hours on duty.</p><span>Source: 2023 EA · clause 92.4 + Schedule A Table 6</span></article>
+            <article><strong>A703 / A700-A701 · T&amp;I</strong><p>Clause 113.3 covers travelling and incidental expenses for Drivers required to reside away from their Home Depot on temporary transfer, subject to the agreement's departure/return thresholds.</p><span>Source: 2023 EA · clause 113.3 + Schedule A Table 6</span></article>
+            <article><strong>A704 / A705 · PDT</strong><p>Current Practical Driver Trainer allowances are published as hourly weekday and weekend rates in Table 6 and are used by PayBot where the supported PDT rules apply.</p><span>Source: 2023 EA · clauses 94.5–94.7 + Schedule A Table 6</span></article>
+          </div>
+          <p class="sources-caution"><strong>Note:</strong> “Travel / other claim” remains a manual custom claim in PayBot. Sources only presents fixed rates that are explicitly supported by the current frozen reference data.</p>
+        </section>
+
+        <section class="sources-section" aria-labelledby="sourcesAgreementsTitle">
+          <div class="sources-section-head"><div><div class="eyebrow">ENTERPRISE AGREEMENTS</div><h3 id="sourcesAgreementsTitle">Agreement documents</h3><p>Public copies and identifying details for the agreements used as source material.</p></div></div>
+          <div class="sources-document-grid">
+            <article class="sources-document current"><div><span class="sources-badge verified">Current</span><h4>V/Line Rail Operations and Administrative Employees Agreement 2023</h4><p>FWC agreement ID <strong>AE525648</strong> · matter <strong>AG2024/2528</strong> · approved 8 Aug 2024 · nominal expiry 30 Jun 2027.</p></div><div class="sources-doc-actions"><a class="primary" href="https://www.rtbuvic.com.au/wp-content/uploads/2023-VLine-Rail-Operations-and-Admin-Employees-Enterprise-Agreement-2023-Varied-Copy.pdf" target="_blank" rel="noopener noreferrer">Open public copy</a><a class="secondary" href="https://www.fwc.gov.au/work-conditions/enterprise-agreements/find-enterprise-agreement" target="_blank" rel="noopener noreferrer">Find at FWC</a></div></article>
+            <article class="sources-document"><div><span class="sources-badge">Previous</span><h4>V/Line Rail Operations and Administrative Employees Agreement 2019</h4><p>FWC agreement ID <strong>AE508927</strong> · matter <strong>AG2020/2479</strong> · operated from 10 Sep 2020 · nominal expiry 30 Jun 2023.</p></div><div class="sources-doc-actions"><a class="secondary" href="https://www.rtbuvic.com.au/wp-content/uploads/VLine-Rail-Ops-Agreement-2019.pdf" target="_blank" rel="noopener noreferrer">Open public copy</a><a class="secondary" href="https://www.fwc.gov.au/work-conditions/enterprise-agreements/find-enterprise-agreement" target="_blank" rel="noopener noreferrer">Find at FWC</a></div></article>
+          </div>
+          <p class="sources-caution">RosterBot is an independent reference tool, not an official V/Line or RTBU publication. Where there is any discrepancy, the applicable agreement and authoritative payroll records prevail.</p>
+        </section>
+
+        <section class="sources-section sources-future">
+          <div class="sources-section-head"><div><div class="eyebrow">NEXT</div><h3>More public references can live here</h3><p>The current EA also publicly documents Driver time allocations such as walking, sign-on/sign-off, preparation, fuelling and other task times. Those can be added later without mixing in restricted business material.</p></div><span class="sources-source-pill">2023 EA · clause 118</span></div>
+        </section>
+      </div>
+    </section>
+  </div>
 
 
   <div id="settingsModal" class="feedback-modal" hidden>
@@ -915,7 +961,8 @@
         <button id="changelogCloseBtn" class="feedback-close-btn" type="button" aria-label="Close changelog">×</button>
       </div>
       <div class="changelog-body">
-        <article class="changelog-entry current"><div class="changelog-entry-head"><strong>v0.27.20 Onboarding &amp; View Hotfix</strong><span>Dismiss setup confirmation · Calendar default · fortnight spacing</span><em>Current beta</em></div><ul><li>Fixed the first-run roster confirmation state so “Does this look like your roster?” is dismissed permanently after “Use this as my roster” and does not reappear when opening a month, This pay fortnight or another personal roster view.</li><li>Made Calendar the true default roster view on phones as well as desktop. Existing users who deliberately selected Compact keep that saved preference.</li><li>Added visual breathing room between Week 1 and Week 2 inside each pay fortnight.</li><li>Retains the v0.27.19 outstation MAIN onboarding fix; no official roster data, payroll rules, personal schema, Cloud Sync or calendar-subscription logic changed.</li></ul></article>
+        <article class="changelog-entry current"><div class="changelog-entry-head"><strong>v0.28.0 Sources</strong><span>Pay rates · allowances · agreements · public provenance</span><em>Current beta</em></div><ul><li>Added <strong>More → Sources</strong> as a public reference area for the information behind RosterBot and PayBot.</li><li>Driver grade and allowance tables are rendered directly from the same frozen PayBot reference pack used by calculations, including all scheduled 2023-EA rate dates.</li><li>Added PB205 entitlement-rate provenance so users can distinguish rounded published EA rates from higher-precision verified entitlement APR anchors used by PayBot.</li><li>Documented the current EA basis for wasted meals, T&amp;I and PDT allowances, plus public links and identifiers for the 2023 and 2019 enterprise agreements.</li><li>No roster data, payroll calculation rules, personal-data schema, Cloud Sync or calendar-subscription logic changed.</li></ul></article>
+        <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.27.20 Onboarding &amp; View Hotfix</strong><span>Dismiss setup confirmation · Calendar default · fortnight spacing</span></div><ul><li>Fixed the first-run roster confirmation state so “Does this look like your roster?” is dismissed permanently after “Use this as my roster” and does not reappear when opening a month, This pay fortnight or another personal roster view.</li><li>Made Calendar the true default roster view on phones as well as desktop. Existing users who deliberately selected Compact keep that saved preference.</li><li>Added visual breathing room between Week 1 and Week 2 inside each pay fortnight.</li><li>Retains the v0.27.19 outstation MAIN onboarding fix; no official roster data, payroll rules, personal schema, Cloud Sync or calendar-subscription logic changed.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.27.19 Outstation Onboarding Hotfix</strong><span>Save and restore depot MAIN rosters correctly</span></div><ul><li>Fixed first-run “Use this as my roster” validation for date-aware outstation MAIN rotations such as Ballarat, Bendigo, Geelong, Seymour, Traralgon and other supplied depots.</li><li>Fixed saved-session restoration using the same depot/date-aware roster validation, so an outstation MAIN setup is not rejected simply because MAIN is not a top-level SCS roster name.</li><li>Validation now checks the selected depot, roster and actual date-aware line count, including the optional alternating second roster/line.</li><li>No official roster data, payroll rules, diary schema, Cloud Sync or calendar logic changed.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.27.18 UI Luxuries</strong><span>Animated year browsing + human-readable roster periods</span></div><ul><li>Added a directional slide/fade transition when moving between years in the Home progress calendar, including swipe and arrow navigation; reduced-motion preferences still switch years instantly.</li><li>Official roster-period choices now show the human-readable effective date range beside FP64–FP68 instead of an unexplained FP number alone.</li><li>FLEX is now shown using its own effective-date periods rather than being implied to follow every FP boundary. FP66 correctly offers both FLEX versions either side of the 19 Oct 2025 FLEX change.</li><li>The official roster viewer now reads FLEX master rotations from the effective-dated FLEX source, including periods where FLEX was not embedded directly in the selected FP dataset.</li><li>Official roster/pay data, payroll rules, diary schema, Cloud Sync and live-calendar publishing logic are unchanged.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.27.17 Phase 5 Dashboard Polish</strong><span>Cleaner Home + Calendar choice-card styling</span></div><ul><li>Simplified Home to the four useful at-a-glance cards now that Roster, Calendar, Pay and More have permanent primary navigation; removed the redundant second dashboard page and pager dots.</li><li>Renamed Pay variances to Pay checks and made the card explain the difference between no payslips checked, all checked payslips matching, and differences that need review.</li><li>Clarified dashboard search and year-progress legend wording and removed the decorative dashboard slogan so Home is more task-focused.</li><li>Rebuilt the two Calendar method buttons as proper RosterBot cards with reliable mobile text/status layout, fixing the cramped concatenated appearance seen on phone screens.</li><li>Official roster/pay data, payroll rules, diary schema, Cloud Sync and live-calendar publishing logic are unchanged.</li></ul></article>
@@ -995,6 +1042,7 @@
 <script src="js/60-diary.js"></script>
 <script src="js/61-page-bridge.js"></script>
 
+<script src="js/75-sources.js"></script>
 <script src="js/70-navigation.js"></script>
 
 
