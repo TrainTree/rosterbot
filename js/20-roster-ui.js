@@ -116,9 +116,22 @@
     experienceMode=mode==='diary'?'diary':'quick';try{localStorage.setItem('rosterbot-experience-v1',experienceMode)}catch(_){}updateExperienceUI();saveRosterSession();
     if(display){if(isDiaryMode()){if(hasSavedTimeline())setCurrentPayCycle(true);else{setupPanel.hidden=true;window.RosterBotDiary?.showAdvanced?.();}}else{if(!viewFromDate.value){const w=E.weekCommencing(startDate.value||localTodayIso());viewFromDate.value=w;viewToDate.value=E.addDays(w,13)}generateDisplay(false);}}
   }
+  function validRosterSelection(date,depot,roster,line){
+    const d=String(date||'').trim(),dep=depot||'SCS',r=String(roster||'').trim(),n=Number(line);
+    if(!d||!r||!Number.isInteger(n)||n<1)return false;
+    const official=window.RosterOfficial?.rosterObj?.(d,dep,r);
+    const fallback=(dep==='SCS'?data.rosters?.[r]:data.depots?.[dep]?.[r])||data.rosters?.[r];
+    const count=Number((official||fallback)?.lineCount)||0;
+    return count>0&&n<=count;
+  }
+  function validRosterSettings(st){
+    if(!st||!validRosterSelection(st.startDate,st.startDepot||'SCS',st.startRoster,st.startLine))return false;
+    if(st.hasSwap&&!validRosterSelection(st.startDate,st.swapDepot||st.startDepot||'SCS',st.swapRoster,st.swapLine))return false;
+    return true;
+  }
   function ensureBasicTimeline(){
     const existing=readJson('rosterbot-timeline-v1',[]);if(Array.isArray(existing)&&existing.length)return existing;
-    const st=currentSettings();if(!st.startDate||!data.rosters?.[st.startRoster])return [];
+    const st=currentSettings();if(!validRosterSettings(st))return [];
     const base={id:'base-'+Date.now(),startWC:E.weekCommencing(st.startDate),mode:st.hasSwap?'swap':'single',trackA:{depot:st.startDepot||'SCS',roster:st.startRoster,line:+st.startLine||1},trackB:st.hasSwap?{depot:st.swapDepot||st.startDepot||'SCS',roster:st.swapRoster,line:+st.swapLine||1}:null,createdAt:new Date().toISOString(),source:'basic setup migration'};
     writeJson('rosterbot-timeline-v1',[base]);try{localStorage.setItem('rosterbot-db-schema-v1','4')}catch(_){};return [base];
   }
@@ -238,7 +251,7 @@
   function restoreRosterSession() {
     let saved=null;
     try { saved=JSON.parse(localStorage.getItem('rosterbot-session-settings-v1') || localStorage.getItem('rosterbot-shared-settings-v1') || 'null'); } catch (_) {}
-    if(!saved || !saved.startDate || !data.rosters[saved.startRoster]) return false;
+    if(!saved || !validRosterSettings({...saved,startDepot:saved.startDepot||'SCS',swapDepot:saved.swapDepot||saved.startDepot||'SCS'})) return false;
     startDate.value=saved.startDate; populateDepotSelect(startDepot,saved.startDepot||'SCS',saved.startDate); populateRosterSelect(startRoster,saved.startRoster,startDepot.value,saved.startDate); populateLineSelect(startLine,startRoster.value,saved.startLine||1,startDepot.value,saved.startDate);
     hasSwap.checked=!!saved.hasSwap; swapFields.hidden=!hasSwap.checked; populateDepotSelect(swapDepot,saved.swapDepot||saved.startDepot||'SCS',saved.startDate); populateRosterSelect(swapRoster,saved.swapRoster||'C',swapDepot.value,saved.startDate); populateLineSelect(swapLine,swapRoster.value,saved.swapLine||1,swapDepot.value,saved.startDate);
     displayWeeks.value=String(Math.min(5200,Math.max(1,Number.parseInt(saved.displayWeeks,10)||1))); annualLeaveWeeks.clear(); for(const wc of (saved.annualLeaveWeeks||[])) annualLeaveWeeks.add(wc);
