@@ -45,7 +45,7 @@
   function showRosterSurface(){if($('paybotPage')&&!$('paybotPage').hidden)$('rosterbotNavBtn')?.click()}
   function restorePersonalSetupAfterLookup(){if(document.documentElement.classList.contains('v28-lookup-active'))window.RosterBotUI?.restoreSession?.()}
   function preparePersonalSurface(){
-    showRosterSurface();restorePersonalSetupAfterLookup();clearHubViews();document.documentElement.classList.remove('v28-onboarding-active','v28-onboarding-preview','v28-lookup-active');document.documentElement.classList.add('v29-app-ready');window.RosterBotUI?.setExperience?.('diary',{display:false});
+    showRosterSurface();restorePersonalSetupAfterLookup();clearHubViews();document.documentElement.classList.remove('v28-onboarding-active','v28-onboarding-preview','v28-lookup-active');const confirm=$('v28PreviewConfirm');if(confirm)confirm.hidden=true;document.documentElement.classList.add('v29-app-ready');window.RosterBotUI?.setExperience?.('diary',{display:false});
   }
   function showOnboarding(){
     showRosterSurface();restorePersonalSetupAfterLookup();clearDrilldown();clearHubViews();document.documentElement.classList.remove('v29-app-ready','v27-dashboard-active','v28-lookup-active','v28-onboarding-preview');document.documentElement.classList.add('v28-onboarding-active');

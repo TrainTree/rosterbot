@@ -136,11 +136,12 @@
     writeJson('rosterbot-timeline-v1',[base]);try{localStorage.setItem('rosterbot-db-schema-v1','4')}catch(_){};return [base];
   }
   function saveCurrentAsMyRoster(){
-    if(hasSavedTimeline()){setExperience('diary',{display:false});return true}
+    const clearPreviewConfirmation=()=>{document.documentElement.classList.remove('v28-onboarding-preview');const confirm=$('v28PreviewConfirm');if(confirm)confirm.hidden=true};
+    if(hasSavedTimeline()){clearPreviewConfirmation();setExperience('diary',{display:false});return true}
     const base=ensureBasicTimeline();if(!base.length)return false;
     const onboarding=document.documentElement.classList.contains('v28-onboarding-active');
     writeJson('rosterbot-diary-annual-leave-v1',onboarding?[]:(currentSettings().annualLeaveWeeks||[]));
-    setExperience('diary',{display:false});window.RosterBotDiary?.mirrorNow?.();return true;
+    clearPreviewConfirmation();setExperience('diary',{display:false});window.RosterBotDiary?.mirrorNow?.();return true;
   }
   function setViewRange(from,to,display=true,{preserveMonthFocus=false}={}){
     if(!from)return;if(!preserveMonthFocus){monthFocusFrom='';monthFocusTo=''}let a=from,b=to||from;if(E.compareIsoDates(b,a)<0)[a,b]=[b,a];viewFromDate.value=a;viewToDate.value=b;if(display)generateDisplay(false);
@@ -209,7 +210,9 @@
       const saved = localStorage.getItem('rosterbot-view-mode-v1');
       if (saved === 'calendar' || saved === 'compact') return saved;
     } catch (_) {}
-    return window.matchMedia?.('(max-width: 700px)').matches ? 'compact' : 'calendar';
+    // Calendar is the product default on every screen size. A user-selected
+    // compact preference is still preserved above when it exists.
+    return 'calendar';
   }
 
   let rosterViewMode = initialRosterViewMode();
