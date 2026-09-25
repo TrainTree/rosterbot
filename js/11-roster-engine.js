@@ -92,12 +92,13 @@
   }
 
   function basicArrangement(settings) {
+    if(settings.scheduleMode && settings.scheduleMode!=='official')return {id:'basic',startWC:weekCommencing(settings.rotationStartDate||settings.startDate),mode:'manual',manualType:settings.scheduleMode==='pattern'?'pattern':'adhoc',manualPattern:settings.scheduleMode==='pattern'?(settings.manualPattern||safeJsonStorage('rosterbot-manual-schedule-v1',null)):null,trackA:{depot:'PERSONAL',roster:'MANUAL',line:1},trackB:null};
     return {
       id: 'basic',
       startWC: weekCommencing(settings.rotationStartDate || settings.startDate),
       mode: settings.hasSwap ? 'swap' : 'single',
-      trackA: { roster: settings.startRoster, line: Number(settings.startLine) },
-      trackB: settings.hasSwap ? { roster: settings.swapRoster, line: Number(settings.swapLine) } : null
+      trackA: { depot:settings.startDepot||'SCS', roster: settings.startRoster, line: Number(settings.startLine) },
+      trackB: settings.hasSwap ? { depot:settings.swapDepot||settings.startDepot||'SCS', roster: settings.swapRoster, line: Number(settings.swapLine) } : null
     };
   }
 
@@ -112,16 +113,13 @@
   function positionForArrangement(data, arrangement, wcDate) {
     if (!arrangement || wcDate < arrangement.startWC) return null;
     const weeks = Math.floor((makeUtcDate(wcDate) - makeUtcDate(arrangement.startWC)) / (7 * 86400000));
+    if(arrangement.mode==='manual')return {roster:'MANUAL',line:1,depot:'PERSONAL',track:'MANUAL',manual:true,manualType:arrangement.manualType||'pattern',manualPattern:arrangement.manualPattern||null,arrangementId:arrangement.id||''};
+    function resolved(track,advance,trackName){const depot=track?.depot||'SCS',roster=track?.roster,count=Number(root.RosterOfficial?.lineCount?.(wcDate,depot,roster)||data.rosters?.[roster]?.lineCount||0);if(!count)return null;return {roster,line:wrapAdvance(Number(track.line),advance,count),depot,track:trackName,arrangementId:arrangement.id||''}}
     if (arrangement.mode === 'swap' && arrangement.trackB) {
-      const isA = weeks % 2 === 0;
-      const track = isA ? arrangement.trackA : arrangement.trackB;
-      if (!data.rosters[track.roster]) return null;
-      const advance = isA ? weeks : weeks - 1;
-      return { roster: track.roster, line: wrapAdvance(Number(track.line), advance, data.rosters[track.roster].lineCount), track: isA ? 'A' : 'B', arrangementId: arrangement.id || '' };
+      const isA = weeks % 2 === 0,track = isA ? arrangement.trackA : arrangement.trackB,advance = isA ? weeks : weeks - 1;
+      return resolved(track,advance,isA?'A':'B');
     }
-    const track = arrangement.trackA;
-    if (!data.rosters[track.roster]) return null;
-    return { roster: track.roster, line: wrapAdvance(Number(track.line), weeks, data.rosters[track.roster].lineCount), track: 'A', arrangementId: arrangement.id || '' };
+    return resolved(arrangement.trackA,weeks,'A');
   }
 
   function timelinePosition(data, timeline, wcDate) {
@@ -133,6 +131,9 @@
   function paybotCellForDate(roster, line, dayIndex, dateIso, depot='SCS') { return root.RosterOfficial?.resolveCell?.(dateIso,depot,roster,line,dayIndex)||null; }
 
   function rosterCellForDate(data, roster, line, dayKey, dayIndex, dateIso, depot='SCS') { return root.RosterOfficial?.resolveCell?.(dateIso,depot,roster,line,dayIndex)||{type:'unknown',raw:['NO DATA','Historical roster data unavailable']}; }
+
+  function manualPattern(settings){return settings.manualPattern||safeJsonStorage('rosterbot-manual-schedule-v1',null)||{days:{}}}
+  function manualCellForDate(settings,dayKey,patternSnapshot=null,manualType='pattern'){if(manualType==='adhoc')return {type:'unknown',raw:['ENTER MANUALLY','No default work pattern'],sourceDataset:'PERSONAL',userEntered:true,manualAdhoc:true};const d=(patternSnapshot||manualPattern(settings))?.days?.[dayKey]||{};if(!d.on)return {type:'off',raw:['OR','Personal work pattern'],sourceDataset:'PERSONAL',userEntered:true};const start=String(d.start||''),finish=String(d.end||'');return {type:'shift',shift:'WORK',start,finish,exact:!!(start&&finish),finishSource:'personal-work-pattern',bookHours:'',sourceDataset:'PERSONAL',details:['Personal work pattern · user entered'],raw:['WORK',start,finish],userEntered:true}}
 
   function buildWeeks(data, settings, weeksRequested) {
     const parsed = Number.parseInt(weeksRequested, 10);
@@ -147,20 +148,21 @@
     return Array.from({length:count}, (_, weekIndex) => {
       const wcDate = addDays(wc0, weekIndex * 7);
       const base = timelinePosition(data, timeline, wcDate);
-      const manual = weekOverrides?.[wcDate];
-      const item = manual && data.rosters?.[manual.roster] ? {roster:manual.roster,line:Number(manual.line),track:'OVERRIDE',arrangementId:base?.arrangementId||''} : base;
+      const manualOverride = weekOverrides?.[wcDate];
+      const overrideDepot=manualOverride?.depot||'SCS',overrideCount=manualOverride?Number(root.RosterOfficial?.lineCount?.(wcDate,overrideDepot,manualOverride.roster)||data.rosters?.[manualOverride.roster]?.lineCount||0):0;
+      const item = manualOverride && overrideCount ? {roster:manualOverride.roster,line:Number(manualOverride.line),depot:overrideDepot,track:'OVERRIDE',arrangementId:base?.arrangementId||''} : base;
       if (!item) {
         const days = DAY_KEYS.map((dayKey,dayIndex)=>{const date=addDays(wcDate,dayIndex);return {dayKey,dayLabel:DAY_LABELS[dayIndex],date,cell:{type:'unknown',raw:['NO DATA','Before first roster-history arrangement']},holidayName:root.ROSTERBOT_HOLIDAYS?.[date]||'',actualOverride:dayOverrides?.[date]||null};});
         return {weekIndex,wcDate,roster:'NO DATA',line:'—',days,hasAlr:false,isAnnualLeave:leaveWeeks.has(wcDate),futureWarning:false,timelineMissing:true,locked:!!weekLocks?.[wcDate]};
       }
       const days = DAY_KEYS.map((dayKey, dayIndex) => {
-        const date = addDays(wcDate, dayIndex);
-        return { dayKey, dayLabel: DAY_LABELS[dayIndex], date, cell: rosterCellForDate(data,item.roster,item.line,dayKey,dayIndex,date), holidayName:root.ROSTERBOT_HOLIDAYS?.[date]||'', actualOverride:dayOverrides?.[date]||null };
+        const date = addDays(wcDate, dayIndex),cell=item.manual?manualCellForDate(settings,dayKey,item.manualPattern,item.manualType):rosterCellForDate(data,item.roster,item.line,dayKey,dayIndex,date,item.depot||'SCS');
+        return { dayKey, dayLabel: DAY_LABELS[dayIndex], date, cell, holidayName:root.ROSTERBOT_HOLIDAYS?.[date]||'', actualOverride:dayOverrides?.[date]||null };
       });
       return {
-        weekIndex, wcDate, roster:item.roster, line:item.line, track:item.track, arrangementId:item.arrangementId,
-        isWeekOverride: !!manual, days, hasAlr:days.some(d=>d.cell.type==='alr'), isAnnualLeave:leaveWeeks.has(wcDate),
-        locked: !!weekLocks?.[wcDate], futureWarning: wcDate >= '2026-11-01'
+        weekIndex, wcDate, roster:item.roster, line:item.manual?'':item.line, depot:item.depot||'SCS', track:item.track, manualType:item.manualType||'', arrangementId:item.arrangementId,
+        isWeekOverride: !!manualOverride, days, hasAlr:days.some(d=>d.cell.type==='alr'), isAnnualLeave:leaveWeeks.has(wcDate),
+        locked: !!weekLocks?.[wcDate], futureWarning: item.manual?false:wcDate >= '2026-11-01'
       };
     });
   }

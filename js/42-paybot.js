@@ -56,6 +56,15 @@ function gradeRate(code,start){
   return r;
 }
 function allowanceRate(code,start){return ALLOWANCES[code].rates[rateIndex(start)]}
+function employmentForDate(date,fallbackGrade='PB205',fallbackPdt='none'){
+  const key=typeof date==='string'?date:dateKey(date),profile=window.RosterBotEmployment?.at?.(key);
+  if(profile){const classification=profile.pdtScheme==='legacy'?'VL014':profile.classification;return {source:'profile',classification,pdtScheme:profile.pdtScheme||'none',event:profile,rate:gradeRate(classification,parseDate(key))};}
+  let classification=fallbackGrade||'PB205',pdtScheme=fallbackPdt||'none';if(pdtScheme==='legacy')classification='VL014';return {source:'fallback',classification,pdtScheme,event:null,rate:gradeRate(classification,parseDate(key))};
+}
+function pdtAvailableForDay(d,fallbackPdt='none'){return employmentForDate(d.date,$('#grade')?.value||'PB205',fallbackPdt).pdtScheme==='current'}
+function employmentProfileSummary(startDate,endDate){
+  const a=typeof startDate==='string'?parseDate(startDate):startDate,b=typeof endDate==='string'?parseDate(endDate):endDate,seen=[];for(let d=new Date(a);d<=b;d=addDays(d,1)){const e=window.RosterBotEmployment?.at?.(dateKey(d));if(e&&!seen.some(x=>x.id===e.id))seen.push(e)}return seen;
+}
 function snapPeriod(any){const a=parseDate(PAY_ANCHOR),diff=Math.floor((any-a)/86400000),blocks=Math.floor(diff/14);return addDays(a,blocks*14)}
 function toMin(t){if(!t)return null;const [h,m]=t.split(':').map(Number);if(!Number.isFinite(h)||!Number.isFinite(m))return null;return h*60+m}
 function durationMin(s,e){let a=toMin(s),b=toMin(e);if(a==null||b==null)return 0;if(b<=a)b+=1440;return b-a}
@@ -145,7 +154,7 @@ function buildFortnight(){
   const mode=$('#entryMode').value,manual=mode==='manual',forecast=mode==='forecast',r1=$('#r1').value,l1=+$('#l1').value,r2=$('#r2').value,l2=+$('#l2').value;loadedEntryMode=mode;dayState=[];
   const modeHint=$('#entryModeHint');if(modeHint){modeHint.classList.remove('pending');modeHint.textContent='This input method is loaded for the current fortnight.';}
   for(let i=0;i<14;i++){const week=i<7?1:2,date=addDays(start,i),roster=week===1?r1:r2,line=week===1?l1:l2;let built;if(forecast){built=sharedDayForDate(date,week);if(!built){const k=dateKey(date),holiday=holidayFor(k);built={date:k,week,roster:'SHARED',line:'',dataset:null,code:'NO DATA',rosteredStart:'',rosteredEnd:'',exact:false,status:'off',actualCode:'',actualStart:'',actualEnd:'',ph:!!holiday,holidayName:holiday,phMode:'choose',allowances:{},lookupMsg:'This date is outside the roster currently shared by RosterBot. Enter it manually or choose roster lines.'};}}else built=buildDay(date,week,roster,line,i%7,manual);dayState.push(built);}
-  if(forecast&&dayState.some(d=>d.pdtCurrent)&&$('#pdtMode').value==='none'){$('#pdtMode').value='current';updatePdtUI();}
+  if(forecast&&dayState.some(d=>d.pdtCurrent)&&$('#pdtMode').value==='none'&&!window.RosterBotEmployment?.at?.(dayState[0]?.date)){$('#pdtMode').value='current';updatePdtUI();}else updatePdtUI();
   renderEditor();calculate();saveState();updateDatasetNote();
 }
 function statusOptions(d){
@@ -210,11 +219,11 @@ function renderCompactPaybotEditor(){
         <div class="details pb-compact-expand"><div class="pb-compact-edit-grid">
           <div class="actual-duty"><div class="actual-code-row"><input type="text" data-f="actualCode" value="${d.actualCode||''}" placeholder="SPxxx or 0613" autocomplete="off"><button class="btn tiny" data-action="lookup" type="button">Load shift</button></div><div class="shift-suggestions" data-shift-suggestions></div><div class="lookup-msg" data-lookup-msg>${d.lookupMsg||''}</div></div>
           <div class="status-wrap"><select data-f="status">${statusOpts}</select></div>
-          <div class="day-actions">${$('#pdtMode').value==='current'?`<button class="btn tiny pdt-day-btn ${d.pdtCurrent?'active':''}" data-action="pdt" type="button" title="Apply the current PDT allowance to this shift" ${ena?'':'disabled'}>${d.pdtCurrent?'PDT ✓':'PDT'}</button>`:''}</div>
+          <div class="day-actions">${pdtAvailableForDay(d,$('#pdtMode').value)?`<button class="btn tiny pdt-day-btn ${d.pdtCurrent?'active':''}" data-action="pdt" type="button" title="Apply the current PDT allowance to this shift" ${ena?'':'disabled'}>${d.pdtCurrent?'PDT ✓':'PDT'}</button>`:''}</div>
         </div>
         <div class="details-grid">
           ${d.ph?`<div><div class="phbox auto-ph"><strong>Public holiday: ${d.holidayName||'Gazetted Victorian public holiday'}</strong><div data-phpanel><label>Holiday conversion / status</label><select data-f="phMode">${phOpts}</select><div class="subnote">Detected automatically from the date. Confirm JOB / AV / PH / OFF treatment where relevant.</div></div></div></div>`:''}
-          <div>${$('#pdtMode').value==='current'?`<div class="subnote" style="margin:0 0 8px"><strong>Current PDT:</strong> use the PDT button on each applicable day. PayBot adds A704 for weekday hours and A705 for weekend hours.</div>`:''}<strong style="font-size:13px">Allowances</strong><div class="allowances">${Object.entries(ALLOWANCES).filter(([code])=>!['A704','A705'].includes(code)).map(([code,a])=>{const st=d.allowances[code]||{on:false,qty:a.basis==='hourly'?Math.max(0,durationMin(d.actualStart,d.actualEnd)/60):1};return `<div class="allowance"><div class="a-head"><input type="checkbox" data-allow="${code}" ${st.on?'checked':''}><div><strong>${code}: ${a.name}</strong><small>${a.basis==='hourly'?'Hourly':'Per occasion'}</small></div></div><div class="qty"><small>${a.basis==='hourly'?'Hours':'Quantity'}</small><input type="number" min="0" step="${a.basis==='hourly'?'0.01':'1'}" data-qty="${code}" value="${Number(st.qty||0).toFixed(a.basis==='hourly'?2:0)}"></div></div>`}).join('')}</div></div>
+          <div>${pdtAvailableForDay(d,$('#pdtMode').value)?`<div class="subnote" style="margin:0 0 8px"><strong>Current PDT:</strong> use the PDT button on each applicable day. PayBot adds A704 for weekday hours and A705 for weekend hours.</div>`:''}<strong style="font-size:13px">Allowances</strong><div class="allowances">${Object.entries(ALLOWANCES).filter(([code])=>!['A704','A705'].includes(code)).map(([code,a])=>{const st=d.allowances[code]||{on:false,qty:a.basis==='hourly'?Math.max(0,durationMin(d.actualStart,d.actualEnd)/60):1};return `<div class="allowance"><div class="a-head"><input type="checkbox" data-allow="${code}" ${st.on?'checked':''}><div><strong>${code}: ${a.name}</strong><small>${a.basis==='hourly'?'Hourly':'Per occasion'}</small></div></div><div class="qty"><small>${a.basis==='hourly'?'Hours':'Quantity'}</small><input type="number" min="0" step="${a.basis==='hourly'?'0.01':'1'}" data-qty="${code}" value="${Number(st.qty||0).toFixed(a.basis==='hourly'?2:0)}"></div></div>`}).join('')}</div></div>
         </div></div>
       </article>`;
     });
@@ -244,10 +253,10 @@ function renderEditor(){
         <div class="actual-duty"><div class="actual-code-row"><input type="text" data-f="actualCode" value="${d.actualCode||''}" placeholder="SPxxx or 0613" autocomplete="off"><button class="btn tiny" data-action="lookup" type="button">Load shift</button></div><div class="shift-suggestions" data-shift-suggestions></div><div class="lookup-msg" data-lookup-msg>${d.lookupMsg||''}</div></div>
         <div class="actual-wrap"><div class="times"><input type="text" class="time24" inputmode="numeric" maxlength="5" data-f="actualStart" value="${d.actualStart}" placeholder="HH:MM" title="Enter HHMM. Quick codes: PH, AL, SL, UL or OR." ${(ena||d.status==='off')?'':'disabled'}><span>→</span><input type="text" class="time24" inputmode="numeric" maxlength="5" data-f="actualEnd" value="${d.actualEnd}" placeholder="HH:MM" ${ena?'':'disabled'}><button class="btn tiny quick8" data-action="plus8" type="button" title="Set sign-off to 8 hours after sign-on" ${ena?'':'disabled'}>+8h</button></div></div>
         <div class="status-wrap"><select data-f="status">${statusOpts}</select></div>
-        <div class="day-actions">${$('#pdtMode').value==='current'?`<button class="btn tiny pdt-day-btn ${d.pdtCurrent?'active':''}" data-action="pdt" type="button" title="Apply the current PDT allowance to this shift" ${ena?'':'disabled'}>${d.pdtCurrent?'PDT ✓':'PDT'}</button>`:''}<button class="btn iconbtn" data-action="details" title="Public holiday and allowances">＋</button></div>
+        <div class="day-actions">${pdtAvailableForDay(d,$('#pdtMode').value)?`<button class="btn tiny pdt-day-btn ${d.pdtCurrent?'active':''}" data-action="pdt" type="button" title="Apply the current PDT allowance to this shift" ${ena?'':'disabled'}>${d.pdtCurrent?'PDT ✓':'PDT'}</button>`:''}<button class="btn iconbtn" data-action="details" title="Public holiday and allowances">＋</button></div>
         <div class="details"><div class="details-grid">
           ${d.ph?`<div><div class="phbox auto-ph"><strong>Public holiday: ${d.holidayName||'Gazetted Victorian public holiday'}</strong><div data-phpanel><label>Holiday conversion / status</label><select data-f="phMode">${phOpts}</select><div class="subnote">Detected automatically from the date. Confirm JOB / AV / PH / OFF treatment where relevant.</div></div></div></div>`:''}
-          <div>${$('#pdtMode').value==='current'?`<div class="subnote" style="margin:0 0 8px"><strong>Current PDT:</strong> use the PDT button on each applicable day. PayBot adds A704 for weekday hours and A705 for weekend hours.</div>`:''}<strong style="font-size:13px">Allowances</strong><div class="allowances">${Object.entries(ALLOWANCES).filter(([code])=>!['A704','A705'].includes(code)).map(([code,a])=>{const st=d.allowances[code]||{on:false,qty:a.basis==='hourly'?Math.max(0,durationMin(d.actualStart,d.actualEnd)/60):1};return `<div class="allowance"><div class="a-head"><input type="checkbox" data-allow="${code}" ${st.on?'checked':''}><div><strong>${code}: ${a.name}</strong><small>${a.basis==='hourly'?'Hourly':'Per occasion'}</small></div></div><div class="qty"><small>${a.basis==='hourly'?'Hours':'Quantity'}</small><input type="number" min="0" step="${a.basis==='hourly'?'0.01':'1'}" data-qty="${code}" value="${Number(st.qty||0).toFixed(a.basis==='hourly'?2:0)}"></div></div>`}).join('')}</div></div>
+          <div>${pdtAvailableForDay(d,$('#pdtMode').value)?`<div class="subnote" style="margin:0 0 8px"><strong>Current PDT:</strong> use the PDT button on each applicable day. PayBot adds A704 for weekday hours and A705 for weekend hours.</div>`:''}<strong style="font-size:13px">Allowances</strong><div class="allowances">${Object.entries(ALLOWANCES).filter(([code])=>!['A704','A705'].includes(code)).map(([code,a])=>{const st=d.allowances[code]||{on:false,qty:a.basis==='hourly'?Math.max(0,durationMin(d.actualStart,d.actualEnd)/60):1};return `<div class="allowance"><div class="a-head"><input type="checkbox" data-allow="${code}" ${st.on?'checked':''}><div><strong>${code}: ${a.name}</strong><small>${a.basis==='hourly'?'Hourly':'Per occasion'}</small></div></div><div class="qty"><small>${a.basis==='hourly'?'Hours':'Quantity'}</small><input type="number" min="0" step="${a.basis==='hourly'?'0.01':'1'}" data-qty="${code}" value="${Number(st.qty||0).toFixed(a.basis==='hourly'?2:0)}"></div></div>`}).join('')}</div></div>
         </div></div>
       </article>`;
     });
@@ -405,7 +414,7 @@ const FORTNIGHT_ALLOWANCE_KEY='rosterbot-fortnight-allowances-v1';
 function periodAllowanceClaims(start){try{const map=JSON.parse(localStorage.getItem(FORTNIGHT_ALLOWANCE_KEY)||'{}')||{},x=map[dateKey(start)]||{};return {A641:Math.max(0,+x.A641||0),A703:Math.max(0,+x.A703||0),A700:Math.max(0,+x.A700||0),customLabel:String(x.customLabel||''),customQty:Math.max(0,+x.customQty||0),customRate:Math.max(0,+x.customRate||0)}}catch(_){return {A641:0,A703:0,A700:0,customLabel:'',customQty:0,customRate:0}}}
 function computePayCalculation(days,gradeCode='PB205',pdtMode='none'){
   if(!Array.isArray(days)||!days.length)return null;
-  const start=parseDate(days[0].date),apr=gradeRate(gradeCode,start),els={},daily=days.map(d=>({date:d.date,items:[],worked:0})),phDates=new Set(days.filter(d=>d.ph).map(d=>d.date)),workedPH=new Set();
+  const start=parseDate(days[0].date),dayRoles=days.map(d=>employmentForDate(d.date,gradeCode,pdtMode)),apr=dayRoles[0]?.rate||gradeRate(gradeCode,start),primaryGrade=dayRoles[0]?.classification||gradeCode,els={},daily=days.map((d,i)=>({date:d.date,items:[],worked:0,classification:dayRoles[i]?.classification||gradeCode,pdtScheme:dayRoles[i]?.pdtScheme||pdtMode})),phDates=new Set(days.filter(d=>d.ph).map(d=>d.date)),workedPH=new Set();
   const hasUnpaid=days.some(d=>d.status==='unpaid');
   const phLeaveHours=days.filter(d=>d.status==='ph_credit').length*8;
   // Week-level annual leave is paid as 40 ordinary hours per leave week, irrespective of the master-roster shift lengths.
@@ -439,13 +448,9 @@ function computePayCalculation(days,gradeCode='PB205',pdtMode='none'){
     return sum+qty;
   },0);
   let ordinaryReplacementRemaining=hasUnpaid?0:Math.max(0,normalBase-fixedOrdinaryHours);
-  const normalCashHours=Math.max(0,normalBase-annualLeaveHours-annualPhGazetteHours-rosteredOffPhGazetteHours);
-  addElement(els,'normal','Normal',normalCashHours,apr,'hours',false);
-  addElement(els,'annual','Annual Leave',annualLeaveHours,apr,'hours',false);
-  addElement(els,'phgazleave','PH Gazette',annualPhGazetteHours,apr,'hours',false);
-  addElement(els,'phdays','PH Days Leave',phLeaveHours,apr,'hours',false);
   let normalDisplayRemaining=normalBase;
-  // Daily breakdown is only a presentation allocation. Pay entitlement above is weekly and does not depend on master-roster hours.
+  // Daily ordinary allocations now also build the aggregate pay elements. This is what lets a classification
+  // change inside a fortnight pay the days on each side at their own applicable rate without changing Part 7 rules.
   const annualWeekDailyAllocation=new Map();
   annualWeekIds.forEach(weekId=>{
     const idxs=days.map((d,i)=>d.annualLeaveWeek===weekId?i:-1).filter(i=>i>=0);
@@ -456,47 +461,39 @@ function computePayCalculation(days,gradeCode='PB205',pdtMode='none'){
     const fallback=idxs.filter(i=>!days[i].ph&&!preferred.includes(i));
     for(const i of [...preferred,...fallback]){if(slots<=0)break;annualWeekDailyAllocation.set(i,'annual');slots--;}
   });
-  const dailyAdd=(i,label,qty,rate,extra={})=>{if(qty>0){const rawValue=qty*rate;daily[i].items.push({label,qty,rate,rawValue,value:round2(rawValue),...extra})}};
-  const dailyNormal=(i,qty,label='Normal / guarantee')=>{
-    qty=Math.max(0,Math.min(+qty||0,normalDisplayRemaining));
-    if(qty<=0)return;dailyAdd(i,label,qty,apr,{ordinary:true,baseDisplay:true});normalDisplayRemaining=Math.max(0,normalDisplayRemaining-qty);
+  const dailyAdd=(i,label,qty,rate,extra={})=>{if(qty>0){const rawValue=qty*rate;daily[i].items.push({label,qty,rate,rawValue,value:round2(rawValue),classification:dayRoles[i]?.classification||gradeCode,...extra})}};
+  const dailyNormal=(i,qty,label='Normal / guarantee',key='normal')=>{
+    qty=Math.max(0,Math.min(+qty||0,normalDisplayRemaining));if(qty<=0)return;
+    const role=dayRoles[i],rate=role.rate;addElement(els,key,label,qty,rate,'hours',false);dailyAdd(i,label,qty,rate,{ordinary:true,baseDisplay:true});normalDisplayRemaining=Math.max(0,normalDisplayRemaining-qty);
   };
   const dailyRounded=(i,key,payLabel,dailyLabel,mins,rate)=>{
     if(!mins||mins<=0)return;
-    const rawQty=hours(mins),qty=roundTenth(rawQty);
-    if(qty<=0)return;
+    const rawQty=hours(mins),qty=roundTenth(rawQty);if(qty<=0)return;
     addElement(els,key,payLabel,qty,rate,'hours',false);
-    {const rawValue=qty*rate;daily[i].items.push({label:dailyLabel||payLabel,qty,rawQty,rate,rawValue,value:round2(rawValue),rounded:true});}
+    {const rawValue=qty*rate;daily[i].items.push({label:dailyLabel||payLabel,qty,rawQty,rate,rawValue,value:round2(rawValue),classification:dayRoles[i]?.classification||gradeCode,rounded:true});}
   };
   days.forEach((d,i)=>{
-    const status=d.status,date=parseDate(d.date),manual=d.roster==='MANUAL',masterOn=manual?status!=='worked_or':d.code!=='OR'&&d.code!=='NO DATA';
-    const phMode=d.ph?d.phMode:'';
-    if(status==='unpaid'){daily[i].items.push({label:'Unpaid leave (no pay)',qty:0,rate:0,value:0,entitlement:true});}
+    const role=dayRoles[i],dayApr=role.rate,status=d.status,date=parseDate(d.date),manual=d.roster==='MANUAL',phMode=d.ph?d.phMode:'';
+    if(status==='unpaid'){daily[i].items.push({label:'Unpaid leave (no pay)',qty:0,rate:0,value:0,entitlement:true,classification:role.classification});}
     if(status==='ph_credit'){
-      dailyAdd(i,'PH Days Leave',8,apr,{ordinary:true});
-      daily[i].items.push({label:'PH credit used',qty:-8,rate:0,value:0,entitlement:true});
+      addElement(els,'phdays','PH Days Leave',8,dayApr,'hours',false);dailyAdd(i,'PH Days Leave',8,dayApr,{ordinary:true});
+      daily[i].items.push({label:'PH credit used',qty:-8,rate:0,value:0,entitlement:true,classification:role.classification});
     }
     if(d.annualLeaveWeek){
       const allocation=annualWeekDailyAllocation.get(i);
-      if(allocation==='ph')dailyNormal(i,8,'PH Gazette (annual leave week)');
-      else if(allocation==='annual')dailyNormal(i,8,'Annual Leave');
-      else daily[i].items.push({label:'Annual leave week — weekly 40h entitlement allocated on five days',qty:0,rate:0,value:0,entitlement:true});
+      if(allocation==='ph')dailyNormal(i,8,'PH Gazette (annual leave week)','phgazleave');
+      else if(allocation==='annual')dailyNormal(i,8,'Annual Leave','annual');
+      else daily[i].items.push({label:'Annual leave week — weekly 40h entitlement allocated on five days',qty:0,rate:0,value:0,entitlement:true,classification:role.classification});
       return;
     }
-    if(d.ph&&status!=='unpaid'){
-      if(phMode==='av'){addElement(els,'pha','PHA - PH Available premium',8,apr*.5,'hours',false);dailyAdd(i,'PH Available premium',8,apr*.5)}
-      if(phMode==='off')addElement(els,'phgaz','PH Gazette - rostered OFF',8,apr,'hours',false);
-    }
+    if(d.ph&&status!=='unpaid'&&phMode==='av'){addElement(els,'pha','PHA - PH Available premium',8,dayApr*.5,'hours',false);dailyAdd(i,'PH Available premium',8,dayApr*.5)}
     let worked=['worked','worked_or'].includes(status);if(status==='unpaid'||status==='ph_credit')worked=false;
     if(d.ph)worked=['job','av_called','worked_off'].includes(phMode);
     const dutyInfo=worked?payableDutyInfo(d):{minutes:0,start:d.actualStart||'',clockMinutes:0,job:null};
     const dur=dutyInfo.minutes;
     const isOR=d.ph?(phMode==='worked_off'):status==='worked_or'||(!manual&&d.code==='OR');
     let orOrdinaryQty=0;
-    if(worked&&isOR&&!d.ph&&!hasUnpaid&&ordinaryReplacementRemaining>0.0001){
-      orOrdinaryQty=Math.min(8,ordinaryReplacementRemaining);
-      ordinaryReplacementRemaining=Math.max(0,ordinaryReplacementRemaining-orOrdinaryQty);
-    }
+    if(worked&&isOR&&!d.ph&&!hasUnpaid&&ordinaryReplacementRemaining>0.0001){orOrdinaryQty=Math.min(8,ordinaryReplacementRemaining);ordinaryReplacementRemaining=Math.max(0,ordinaryReplacementRemaining-orOrdinaryQty);}
     let ordinaryDailyQty=0;
     if(status!=='unpaid'&&status!=='ph_credit'){
       if(d.ph){
@@ -508,53 +505,53 @@ function computePayCalculation(days,gradeCode='PB205',pdtMode='none'){
     }
     if(ordinaryDailyQty){
       const ordinaryLabel=(d.ph&&phMode==='annual')?'PH Gazette (annual leave)':(d.ph&&phMode==='off')?'PH Gazette - rostered OFF':orOrdinaryQty>0?'Normal / fortnight ordinary fill':status==='annual'?'Annual Leave':status==='personal'?'Normal / personal leave':status==='alr'?'Normal / ALR':'Normal';
-      dailyNormal(i,ordinaryDailyQty,ordinaryLabel);
+      const ordinaryKey=(d.ph&&phMode==='annual')?'phgazleave':(d.ph&&phMode==='off')?'phgaz':status==='annual'?'annual':'normal';
+      dailyNormal(i,ordinaryDailyQty,ordinaryLabel,ordinaryKey);
     }
     if(worked){
       daily[i].worked=dur;if(!dur)return;
       if(d.ph&&phMode==='worked_off'){
-        dailyRounded(i,'otunr','OTUnrShft','Worked OFF / PH - base',dur,apr);
+        dailyRounded(i,'otunr','OTUnrShft','Worked OFF / PH - base',dur,dayApr);
       } else if(isOR&&!d.ph&&orOrdinaryQty<=0){
-        dailyRounded(i,'otunr','OTUnrShft','OT Unrostered shift - base',dur,apr);
-        if(dur<480)dailyRounded(i,'ormin','OR minimum guarantee','OR minimum shortfall',480-dur,apr);
+        dailyRounded(i,'otunr','OTUnrShft','OT Unrostered shift - base',dur,dayApr);
+        if(dur<480)dailyRounded(i,'ormin','OR minimum guarantee','OR minimum shortfall',480-dur,dayApr);
       } else if((!isOR||orOrdinaryQty>0)&&dur>480){
-        dailyRounded(i,'over8','>8hrs RST','>8hrs base component',dur-480,apr);
+        dailyRounded(i,'over8','>8hrs RST','>8hrs base component',dur-480,dayApr);
       }
       let cats={weros:0,weunr:0,pha:0},smin=toMin(dutyInfo.start||d.actualStart)||0;
       for(let m=0;m<dur;m++){
         const abs=smin+m,md=addDays(date,Math.floor(abs/1440)),key=dateKey(md),dow=md.getUTCDay(),ph=phDates.has(key),weekend=dow===0||dow===6,ordinaryLike=!isOR||orOrdinaryQty>0,excess=ordinaryLike&&m>=480;
-        if(ph)workedPH.add(key);
-        if(excess)cats.weunr++;
-        else if(ph)cats.pha++;
-        else if(isOR&&orOrdinaryQty<=0)cats.weunr++;
-        else if(weekend)cats.weros++;
+        if(ph)workedPH.add(key);if(excess)cats.weunr++;else if(ph)cats.pha++;else if(isOR&&orOrdinaryQty<=0)cats.weunr++;else if(weekend)cats.weros++;
       }
-      dailyRounded(i,'weros','WEROSPEN - Weekend rostered penalty','Weekend rostered premium',cats.weros,apr*.5);
-      dailyRounded(i,'weunr','WEUNRPEN - Unrostered / overtime 0.5 premium','WEUNRPEN premium',cats.weunr,apr*.5);
-      dailyRounded(i,'pha','PHA - Public holiday premium','Public holiday premium',cats.pha,apr*.5);
+      dailyRounded(i,'weros','WEROSPEN - Weekend rostered penalty','Weekend rostered premium',cats.weros,dayApr*.5);
+      dailyRounded(i,'weunr','WEUNRPEN - Unrostered / overtime 0.5 premium','WEUNRPEN premium',cats.weunr,dayApr*.5);
+      dailyRounded(i,'pha','PHA - Public holiday premium','Public holiday premium',cats.pha,dayApr*.5);
     }
-    if(pdtMode==='current'&&d.pdtCurrent&&worked){
-      const dur=durationMin(d.actualStart,d.actualEnd),smin=toMin(d.actualStart)||0;let weekdayPdt=0,weekendPdt=0;
-      for(let m=0;m<dur;m++){const md=addDays(date,Math.floor((smin+m)/1440)),dow=md.getUTCDay();if(dow===0||dow===6)weekendPdt++;else weekdayPdt++}
-      if(weekdayPdt){const qty=hours(weekdayPdt),rate=allowanceRate('A704',start);addElement(els,'A704','A704: PDT Allowance',qty,rate,'hours',false);dailyAdd(i,'A704: PDT Allowance',qty,rate)}
-      if(weekendPdt){const qty=hours(weekendPdt),rate=allowanceRate('A705',start);addElement(els,'A705','A705: PDT Allowance (Weekend)',qty,rate,'hours',false);dailyAdd(i,'A705: PDT Allowance (Weekend)',qty,rate)}
+    if(role.pdtScheme==='current'&&d.pdtCurrent&&worked){
+      const pdtdur=durationMin(d.actualStart,d.actualEnd),smin=toMin(d.actualStart)||0;let weekdayPdt=0,weekendPdt=0;
+      for(let m=0;m<pdtdur;m++){const md=addDays(date,Math.floor((smin+m)/1440)),dow=md.getUTCDay();if(dow===0||dow===6)weekendPdt++;else weekdayPdt++}
+      if(weekdayPdt){const qty=hours(weekdayPdt),rate=allowanceRate('A704',date);addElement(els,'A704','A704: PDT Allowance',qty,rate,'hours',false);dailyAdd(i,'A704: PDT Allowance',qty,rate)}
+      if(weekendPdt){const qty=hours(weekendPdt),rate=allowanceRate('A705',date);addElement(els,'A705','A705: PDT Allowance (Weekend)',qty,rate,'hours',false);dailyAdd(i,'A705: PDT Allowance (Weekend)',qty,rate)}
     }
-    Object.entries(d.allowances||{}).forEach(([code,st])=>{if(['A704','A705'].includes(code)||!st.on)return;const qty=Math.max(0,+st.qty||0),rate=allowanceRate(code,start);addElement(els,code,`${code}: ${ALLOWANCES[code].name}`,qty,rate,ALLOWANCES[code].basis,false);dailyAdd(i,`${code}: ${ALLOWANCES[code].name}`,qty,rate)});
+    Object.entries(d.allowances||{}).forEach(([code,st])=>{if(['A704','A705'].includes(code)||!st.on||!ALLOWANCES[code])return;const qty=Math.max(0,+st.qty||0),rate=allowanceRate(code,date);addElement(els,code,`${code}: ${ALLOWANCES[code].name}`,qty,rate,ALLOWANCES[code].basis,false);dailyAdd(i,`${code}: ${ALLOWANCES[code].name}`,qty,rate)});
   });
+  // Preserve the existing guarantee behaviour for an incomplete/unknown fortnight. Once days are entered,
+  // normalDisplayRemaining falls to zero and every ordinary hour has already been assigned to its date-specific role.
+  if(normalDisplayRemaining>0.0001)addElement(els,'normal','Normal / guarantee balance',normalDisplayRemaining,apr,'hours',false);
   const periodClaims=periodAllowanceClaims(start);
   ['A641','A703','A700'].forEach(code=>{const qty=periodClaims[code];if(qty>0){const rate=allowanceRate(code,start);addElement(els,`period-${code}`,`${code}: ${ALLOWANCES[code].name}`,qty,rate,ALLOWANCES[code].basis,false)}});
   if(periodClaims.customQty>0&&periodClaims.customRate>0)addElement(els,'period-custom',periodClaims.customLabel||'Travel / other allowance',periodClaims.customQty,periodClaims.customRate,'units',false);
   const phMove=workedPH.size*8-days.filter(d=>d.status==='ph_credit').length*8;
   const arr=Object.values(els).map(e=>{let qty=e.rawQty;if(e.kind==='hours'&&e.rounding)qty=roundTenth(qty);const rawValue=qty*e.rate;return {...e,qty,rawValue,value:round2(rawValue)}});
   const gross=round2(arr.reduce((sum,e)=>sum+e.value,0)),extraEq=arr.filter(e=>!['normal','annual','phgazleave','phgaz','phdays'].includes(e.key)).reduce((sum,e)=>sum+(e.value/apr),0);
-  return {arr,gross,extraEq,phMove,daily,apr,start,normalDisplayRemaining,hasUnpaid};
+  return {arr,gross,extraEq,phMove,daily,apr,start,grade:primaryGrade,dayRoles,normalDisplayRemaining,hasUnpaid};
 }
 function calculate(){
   if(!dayState.length)return;
   const result=computePayCalculation(dayState,$('#grade').value,$('#pdtMode').value);if(!result)return;
-  const {arr,gross,extraEq,phMove,daily,apr,start,normalDisplayRemaining,hasUnpaid}=result;
+  const {arr,gross,extraEq,phMove,daily,apr,start,grade,dayRoles,normalDisplayRemaining,hasUnpaid}=result;
   const uw=$('#unpaidWarning');if(uw){uw.hidden=!hasUnpaid;if(hasUnpaid)uw.innerHTML='<strong>Unpaid leave:</strong> the EA may remove the 80-hour guarantee when an employee is not available for all work offered. For now, PayBot uses the actual rostered base hours plus paid leave for this fortnight. We still need a real unpaid-leave payslip to confirm exactly how payroll applies this rule.';}
-  renderResults(arr,gross,extraEq,phMove,daily,apr,start,normalDisplayRemaining);updateRate(apr,start);localStorage.setItem('paybot-lastcalc',JSON.stringify({gross,phMove}));
+  renderResults(arr,gross,extraEq,phMove,daily,apr,start,normalDisplayRemaining);updateRate(apr,start,grade,dayRoles);localStorage.setItem('paybot-lastcalc',JSON.stringify({gross,phMove}));
 }
 function renderResults(arr,gross,extraEq,phMove,daily,apr,start,normalDisplayRemaining=0){
   $('#grossMetric').textContent=money(gross);$('#extraMetric').textContent=`${extraEq.toFixed(2)} h`;$('#phMetric').textContent=`${phMove>=0?'+':''}${phMove.toFixed(2)} h`;$('#grossTotal').textContent=money(gross);
@@ -581,7 +578,14 @@ function renderResults(arr,gross,extraEq,phMove,daily,apr,start,normalDisplayRem
   $('#dailyBody').innerHTML=rows.join('');
   const unconfirmed=dayState.filter(d=>d.ph&&d.phMode==='choose').length;if(unconfirmed)$('#phMetric').textContent+=' ⚠';
 }
-function updateRate(apr,start){const code=$('#grade').value,idx=rateIndex(start),pct=tempAllowancePct(start);$('#rateDisplay').textContent=code==='PB205'?`$${rateFmt(apr)}/hr`:`${money(apr)}/hr`;if(code==='PB205'){const e=window.PayRateOfficial?.eventFor?.('PB205',start),pe=window.PayRateOfficial?.payrollEventFor?.('PB205',start),diff=pe&&e&&Math.abs((+pe.rate||0)-(+e.rate||0))>0.00001;$('#rateEffective').textContent=`${code} · entitlement APR${e?` from ${e.effectivePayPeriodStart}`:''}`;$('#rateNote').textContent=e?(e.beforeEarliest?`Using the earliest verified PB205 entitlement anchor (${rateFmt(e.rate)}); this pay period predates the currently verified history.`:`PB205 entitlement APR ${rateFmt(e.rate)} · ${e.source||'verified entitlement evidence'}${e.publishedReference?` · ${e.publishedReference}`:''}.${diff?` ADP applied ${rateFmt(pe.rate)} in this period; later backpay evidence is retained separately for reconciliation.`:''}`):'PB205 entitlement rate unavailable.';return}$('#rateEffective').textContent=`${code} · ${RATE_LABELS[idx]} schedule`;let tempNote='';if(pct===1)tempNote='Includes the provisional 1.0% temporary allowance. ';if(pct===2)tempNote='Includes the provisional cumulative 2.0% temporary allowance. ';$('#rateNote').textContent=`${tempNote}Other grades currently use the published table rate with the applicable provisional uplift; exact payroll precision has not yet been independently anchored.`}
+function updateRate(apr,start,gradeOverride=null,dayRoles=null){
+  const code=gradeOverride||$('#grade').value,idx=rateIndex(start),pct=tempAllowancePct(start),roles=Array.isArray(dayRoles)?dayRoles:[];
+  const unique=[];for(const r of roles)if(r&&!unique.some(x=>x.classification===r.classification&&x.pdtScheme===r.pdtScheme))unique.push(r);
+  $('#rateDisplay').textContent=code==='PB205'?`$${rateFmt(apr)}/hr`:`${money(apr)}/hr`;
+  if(unique.length>1){$('#rateEffective').textContent='Employment profile · mixed classifications this fortnight';$('#rateNote').textContent=unique.map(r=>`${r.classification}${r.pdtScheme==='current'?' + current PDT':''}`).join(' → ')+' · PayBot applies each role and rate to its own dates.';return}
+  if(code==='PB205'){const e=window.PayRateOfficial?.eventFor?.('PB205',start),pe=window.PayRateOfficial?.payrollEventFor?.('PB205',start),diff=pe&&e&&Math.abs((+pe.rate||0)-(+e.rate||0))>0.00001;$('#rateEffective').textContent=`${code} · entitlement APR${e?` from ${e.effectivePayPeriodStart}`:''}`;$('#rateNote').textContent=e?(e.beforeEarliest?`Using the earliest verified PB205 entitlement anchor (${rateFmt(e.rate)}); this pay period predates the currently verified history.`:`PB205 entitlement APR ${rateFmt(e.rate)} · ${e.source||'verified entitlement evidence'}${e.publishedReference?` · ${e.publishedReference}`:''}.${diff?` ADP applied ${rateFmt(pe.rate)} in this period; later backpay evidence is retained separately for reconciliation.`:''}`):'PB205 entitlement rate unavailable.';return}
+  $('#rateEffective').textContent=`${code} · ${RATE_LABELS[idx]} schedule`;let tempNote='';if(pct===1)tempNote='Includes the provisional 1.0% temporary allowance. ';if(pct===2)tempNote='Includes the provisional cumulative 2.0% temporary allowance. ';$('#rateNote').textContent=`${tempNote}This classification uses the published Table 6 rate with the applicable provisional uplift.`;
+}
 function updateDatasetNote(){
   const mode=loadedEntryMode||$('#entryMode').value,manual=mode==='manual',forecast=mode==='forecast',keys=new Set(dayState.map(d=>d.dataset).filter(Boolean));let txt;
   if(forecast)txt=sharedForecastAvailable()?'Using the roster you loaded in RosterBot. Change the pay fortnight and PayBot will load the matching days automatically.':'No roster has been loaded in RosterBot yet. Return to RosterBot and display your roster, or choose another input method.';
@@ -593,17 +597,16 @@ function toggleEntryMode(){const showRoster=$('#entryMode').value==='roster';$$(
 let baseGradeBeforePdt='PB205';
 let pdtForcedLegacy=false;
 function updatePdtUI(){
-  const mode=$('#pdtMode').value,grade=$('#grade'),hint=$('#pdtHint');
+  const mode=$('#pdtMode').value,grade=$('#grade'),hint=$('#pdtHint'),profileHint=$('#employmentProfileHint'),period=$('#periodDate')?.value||PAY_ANCHOR,start=snapPeriod(parseDate(period)),end=addDays(start,13),events=employmentProfileSummary(start,end),profileAtStart=window.RosterBotEmployment?.at?.(dateKey(start));
   if(mode==='legacy'){
     if(!pdtForcedLegacy){if(grade.value&&grade.value!=='VL014')baseGradeBeforePdt=grade.value;pdtForcedLegacy=true}
-    grade.value='VL014';grade.disabled=true;
-    hint.textContent='Legacy PDT uses the VL014 Practical Driver Trainer grade rate.';
+    grade.value='VL014';grade.disabled=true;hint.textContent='Legacy PDT uses the VL014 Practical Driver Trainer grade rate.';
   }else{
-    if(pdtForcedLegacy&&grade.value==='VL014')grade.value=baseGradeBeforePdt||'PB205';
-    pdtForcedLegacy=false;grade.disabled=false;
-    if(mode==='current')hint.textContent='Current PDT keeps your normal grade. Mark the applicable days below and PayBot will add A704/A705 automatically.';
-    else hint.textContent='Uses the selected grade rate.';
+    if(pdtForcedLegacy&&grade.value==='VL014')grade.value=baseGradeBeforePdt||'PB205';pdtForcedLegacy=false;grade.disabled=false;
+    if(mode==='current')hint.textContent='Current PDT keeps your normal grade. Mark the applicable days below and PayBot will add A704/A705 automatically.';else hint.textContent='Used only when no dated Employment & Pay Profile entry applies.';
   }
+  if(profileHint){if(events.length){profileHint.innerHTML=`<strong>Employment profile active.</strong> ${events.map(e=>`${e.classification}${e.pdtScheme==='current'?' + current PDT':''}`).join(' → ')}. PayBot resolves the applicable role separately by date.`}else profileHint.textContent='No dated profile applies to this fortnight; the Grade/PDT selectors below are used as the fallback.'}
+  if(profileAtStart&&profileAtStart.pdtScheme==='legacy'){grade.disabled=false;}
 }
 function saveState(){if(!dayState.length)return;const obj={logicVersion:'0.20.6',period:$('#periodDate').value,grade:$('#grade').value,baseGrade:baseGradeBeforePdt,entryMode:loadedEntryMode||$('#entryMode').value,r1:$('#r1').value,l1:$('#l1').value,r2:$('#r2').value,l2:$('#l2').value,pdt:$('#pdtMode').value,days:dayState};localStorage.setItem('paybot-v06-state',JSON.stringify(obj))}
 function restore(){
@@ -658,6 +661,7 @@ document.getElementById('pbCompactEditorBtn')?.addEventListener('click',()=>setP
 document.getElementById('pbAutoAdvance')?.addEventListener('change',e=>setPaybotAutoAdvance(e.target.checked));
 applyPaybotEditorModeUI();
 window.addEventListener('rosterbot:forecast',()=>{sharedWeeksCache=null;sharedSettingsCache=null;if(loadedEntryMode==='forecast'&&$('#entryMode').value==='forecast')buildFortnight();});
+window.addEventListener('rosterbot:employment-change',()=>{updatePdtUI();if(dayState.length){renderEditor();calculate();}});
 function previewFortnight(anyDate){
   const start=snapPeriod(parseDate(anyDate||PAY_ANCHOR)),days=[];
   for(let i=0;i<14;i++){
@@ -668,9 +672,10 @@ function previewFortnight(anyDate){
   let saved={};try{saved=JSON.parse(localStorage.getItem('paybot-v06-state')||'{}')||{}}catch(_){}
   const gradeCode=saved.grade||$('#grade')?.value||'PB205';let pdtMode=saved.pdt||$('#pdtMode')?.value||'none';if(pdtMode==='none'&&days.some(d=>d.pdtCurrent))pdtMode='current';
   const result=computePayCalculation(days,gradeCode,pdtMode);
+  const resolvedGrade=result?.grade||gradeCode;
   const unresolved=days.filter(d=>d.code==='NO DATA'&&!String(d.lookupMsg||'').startsWith('Actual day loaded')).length;
   const unconfirmedPH=days.filter(d=>d.ph&&d.phMode==='choose').length;
-  return result?{...result,available:true,start:dateKey(start),end:dateKey(addDays(start,13)),grade:gradeCode,pdtMode,unresolved,unconfirmedPH}:{available:false,start:dateKey(start),reason:'Pay calculation unavailable.'};
+  return result?{...result,available:true,start:dateKey(start),end:dateKey(addDays(start,13)),grade:resolvedGrade,pdtMode,unresolved,unconfirmedPH}:{available:false,start:dateKey(start),reason:'Pay calculation unavailable.'};
 }
 function openFortnight(anyDate){
   sharedWeeksCache=null;sharedSettingsCache=null;$('#entryMode').value='forecast';toggleEntryMode();$('#periodDate').value=dateKey(snapPeriod(parseDate(anyDate||PAY_ANCHOR)));buildFortnight();setTab('payslip');

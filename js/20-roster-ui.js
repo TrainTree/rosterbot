@@ -13,6 +13,12 @@
   const startDepot = $('startDepot');
   const startRoster = $('startRoster');
   const startLine = $('startLine');
+  const startRole = $('startRole');
+  const startRoleDate = $('startRoleDate');
+  const startScheduleMode = $('startScheduleMode');
+  const startManualPatternBox = $('startManualPatternBox');
+  const startAdhocNote = $('startAdhocNote');
+  const officialSwapBox = $('officialSwapBox');
   const displayWeeks = $('displayWeeks');
   const viewFromDate = $('viewFromDate');
   const viewToDate = $('viewToDate');
@@ -116,6 +122,16 @@
     experienceMode=mode==='diary'?'diary':'quick';try{localStorage.setItem('rosterbot-experience-v1',experienceMode)}catch(_){}updateExperienceUI();saveRosterSession();
     if(display){if(isDiaryMode()){if(hasSavedTimeline())setCurrentPayCycle(true);else{setupPanel.hidden=true;window.RosterBotDiary?.showAdvanced?.();}}else{if(!viewFromDate.value){const w=E.weekCommencing(startDate.value||localTodayIso());viewFromDate.value=w;viewToDate.value=E.addDays(w,13)}generateDisplay(false);}}
   }
+  const MANUAL_DAY_KEYS=['sun','mon','tue','wed','thu','fri','sat'];
+  function normalizeClock(v){return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||''))?String(v):''}
+  function collectStartManualPattern(){
+    const days={};for(const key of MANUAL_DAY_KEYS){const cap=key[0].toUpperCase()+key.slice(1),on=!!$(`startPattern${cap}On`)?.checked,start=normalizeClock($(`startPattern${cap}Start`)?.value),end=normalizeClock($(`startPattern${cap}End`)?.value);days[key]={on,start:on?start:'',end:on?end:''};}
+    return {version:1,label:'Regular work pattern',days,updatedAt:new Date().toISOString()};
+  }
+  function applyStartManualPattern(pattern){const p=pattern||window.RosterBotEmployment?.defaultManualPattern?.();if(!p)return;for(const key of MANUAL_DAY_KEYS){const cap=key[0].toUpperCase()+key.slice(1),d=p.days?.[key]||{},on=$(`startPattern${cap}On`),st=$(`startPattern${cap}Start`),en=$(`startPattern${cap}End`);if(on)on.checked=!!d.on;if(st){st.value=d.start||'08:00';st.disabled=!d.on}if(en){en.value=d.end||'16:00';en.disabled=!d.on}}}
+  function updateScheduleModeUi(){const mode=startScheduleMode?.value||'official',manual=mode!=='official',pattern=mode==='pattern';['startDepotField','startRosterField','startLineField'].forEach(id=>{const el=$(id);if(el)el.hidden=manual});if(officialSwapBox)officialSwapBox.hidden=manual;if(startManualPatternBox)startManualPatternBox.hidden=!pattern;if(startAdhocNote)startAdhocNote.hidden=mode!=='adhoc';if(manual){hasSwap.checked=false;swapFields.hidden=true}const btn=generateBtn;if(btn&&document.documentElement.classList.contains('v28-onboarding-active'))btn.textContent=manual?'Preview my work pattern':'Show my roster';const accept=$('v28UseRosterBtn');if(accept)accept.textContent=manual?'Use this as my schedule':'Use this as my roster'}
+  function manualPatternValid(pattern){const rows=Object.values(pattern?.days||{}).filter(d=>d?.on);return rows.every(d=>normalizeClock(d.start)&&normalizeClock(d.end))}
+
   function validRosterSelection(date,depot,roster,line){
     const d=String(date||'').trim(),dep=depot||'SCS',r=String(roster||'').trim(),n=Number(line);
     if(!d||!r||!Number.isInteger(n)||n<1)return false;
@@ -125,20 +141,27 @@
     return count>0&&n<=count;
   }
   function validRosterSettings(st){
-    if(!st||!validRosterSelection(st.startDate,st.startDepot||'SCS',st.startRoster,st.startLine))return false;
+    if(!st||!st.startDate||!st.roleStartDate)return false;
+    const mode=st.scheduleMode||'official';
+    if(mode==='pattern')return manualPatternValid(st.manualPattern||collectStartManualPattern());
+    if(mode==='adhoc')return true;
+    if(!validRosterSelection(st.startDate,st.startDepot||'SCS',st.startRoster,st.startLine))return false;
     if(st.hasSwap&&!validRosterSelection(st.startDate,st.swapDepot||st.startDepot||'SCS',st.swapRoster,st.swapLine))return false;
     return true;
   }
   function ensureBasicTimeline(){
     const existing=readJson('rosterbot-timeline-v1',[]);if(Array.isArray(existing)&&existing.length)return existing;
     const st=currentSettings();if(!validRosterSettings(st))return [];
-    const base={id:'base-'+Date.now(),startWC:E.weekCommencing(st.startDate),mode:st.hasSwap?'swap':'single',trackA:{depot:st.startDepot||'SCS',roster:st.startRoster,line:+st.startLine||1},trackB:st.hasSwap?{depot:st.swapDepot||st.startDepot||'SCS',roster:st.swapRoster,line:+st.swapLine||1}:null,createdAt:new Date().toISOString(),source:'basic setup migration'};
+    const manual=st.scheduleMode&&st.scheduleMode!=='official';
+    if(manual){window.RosterBotEmployment?.saveManualPattern?.(st.scheduleMode==='pattern'?st.manualPattern:{version:1,label:'No default pattern',days:Object.fromEntries(MANUAL_DAY_KEYS.map(k=>[k,{on:false,start:'',end:''}]))});}
+    const base=manual?{id:'base-'+Date.now(),startWC:E.weekCommencing(st.startDate),mode:'manual',manualType:st.scheduleMode==='pattern'?'pattern':'adhoc',manualPattern:st.scheduleMode==='pattern'?st.manualPattern:null,trackA:{depot:'PERSONAL',roster:'MANUAL',line:1},trackB:null,createdAt:new Date().toISOString(),source:st.scheduleMode==='pattern'?'initial manual work pattern':'initial manual fortnight entry'}:{id:'base-'+Date.now(),startWC:E.weekCommencing(st.startDate),mode:st.hasSwap?'swap':'single',trackA:{depot:st.startDepot||'SCS',roster:st.startRoster,line:+st.startLine||1},trackB:st.hasSwap?{depot:st.swapDepot||st.startDepot||'SCS',roster:st.swapRoster,line:+st.swapLine||1}:null,createdAt:new Date().toISOString(),source:'basic setup migration'};
     writeJson('rosterbot-timeline-v1',[base]);try{localStorage.setItem('rosterbot-db-schema-v1','4')}catch(_){};return [base];
   }
   function saveCurrentAsMyRoster(){
     const clearPreviewConfirmation=()=>{document.documentElement.classList.remove('v28-onboarding-preview');const confirm=$('v28PreviewConfirm');if(confirm)confirm.hidden=true};
     if(hasSavedTimeline()){clearPreviewConfirmation();setExperience('diary',{display:false});return true}
     const base=ensureBasicTimeline();if(!base.length)return false;
+    const st=currentSettings(),role=window.RosterBotEmployment?.parseRoleValue?.(st.startRole||'PB205:none')||{classification:'PB205',pdtScheme:'none'};window.RosterBotEmployment?.ensureInitial?.(st.roleStartDate||st.startDate,role.classification,role.pdtScheme);
     const onboarding=document.documentElement.classList.contains('v28-onboarding-active');
     writeJson('rosterbot-diary-annual-leave-v1',onboarding?[]:(currentSettings().annualLeaveWeeks||[]));
     clearPreviewConfirmation();setExperience('diary',{display:false});window.RosterBotDiary?.mirrorNow?.();return true;
@@ -238,7 +261,11 @@
       startDepot: startDepot?.value || 'SCS',
       startRoster: startRoster.value,
       startLine: Number.parseInt(startLine.value, 10),
-      hasSwap: hasSwap.checked,
+      startRole: startRole?.value || 'PB205:none',
+      roleStartDate: startRoleDate?.value || startDate.value,
+      scheduleMode: startScheduleMode?.value || 'official',
+      manualPattern: (startScheduleMode?.value||'official')==='pattern' ? collectStartManualPattern() : null,
+      hasSwap: (startScheduleMode?.value||'official')==='official' && hasSwap.checked,
       swapDepot: swapDepot?.value || startDepot?.value || 'SCS',
       swapRoster: swapRoster.value,
       swapLine: Number.parseInt(swapLine.value, 10),
@@ -254,8 +281,9 @@
   function restoreRosterSession() {
     let saved=null;
     try { saved=JSON.parse(localStorage.getItem('rosterbot-session-settings-v1') || localStorage.getItem('rosterbot-shared-settings-v1') || 'null'); } catch (_) {}
+    saved=saved?{...saved,roleStartDate:saved.roleStartDate||saved.startDate,scheduleMode:saved.scheduleMode||'official',manualPattern:saved.manualPattern||window.RosterBotEmployment?.manualPattern?.()||null}:saved;
     if(!saved || !validRosterSettings({...saved,startDepot:saved.startDepot||'SCS',swapDepot:saved.swapDepot||saved.startDepot||'SCS'})) return false;
-    startDate.value=saved.startDate; populateDepotSelect(startDepot,saved.startDepot||'SCS',saved.startDate); populateRosterSelect(startRoster,saved.startRoster,startDepot.value,saved.startDate); populateLineSelect(startLine,startRoster.value,saved.startLine||1,startDepot.value,saved.startDate);
+    startDate.value=saved.startDate;if(startRole)startRole.value=saved.startRole||'PB205:none';if(startRoleDate)startRoleDate.value=saved.roleStartDate||saved.startDate;if(startScheduleMode)startScheduleMode.value=saved.scheduleMode||'official';if(saved.manualPattern)applyStartManualPattern(saved.manualPattern);updateScheduleModeUi(); populateDepotSelect(startDepot,saved.startDepot||'SCS',saved.startDate); populateRosterSelect(startRoster,saved.startRoster,startDepot.value,saved.startDate); populateLineSelect(startLine,startRoster.value,saved.startLine||1,startDepot.value,saved.startDate);
     hasSwap.checked=!!saved.hasSwap; swapFields.hidden=!hasSwap.checked; populateDepotSelect(swapDepot,saved.swapDepot||saved.startDepot||'SCS',saved.startDate); populateRosterSelect(swapRoster,saved.swapRoster||'C',swapDepot.value,saved.startDate); populateLineSelect(swapLine,swapRoster.value,saved.swapLine||1,swapDepot.value,saved.startDate);
     displayWeeks.value=String(Math.min(5200,Math.max(1,Number.parseInt(saved.displayWeeks,10)||1))); annualLeaveWeeks.clear(); for(const wc of (saved.annualLeaveWeeks||[])) annualLeaveWeeks.add(wc);
     hasAnnualLeave.checked=annualLeaveWeeks.size>0; annualLeaveFields.hidden=!hasAnnualLeave.checked; annualLeaveDate.value=annualLeaveWeeks.size?Array.from(annualLeaveWeeks).sort()[0]:E.weekCommencing(startDate.value);
@@ -456,8 +484,11 @@
   function clearPayCheck(){if(!checkingPayStart)return;const map=payCheckMap();delete map[checkingPayStart];writeJson('rosterbot-pay-checks-v1',map);hidePayCheck();refreshPayPreviews();updateHomeDashboard(window.ROSTERBOT_SHARED?.weeks||[]);window.RosterBotDiary?.mirrorNow?.()}
 
   function updateDiaryPosition(){
-    if(!currentRosterPosition)return;if(isDiaryMode()&&!hasSavedTimeline()){currentRosterPosition.textContent='Roster history not configured';return}try{const today=localTodayIso(),one=E.buildWeeks(data,engineSettingsForView(today),1)?.[0];if(one&&!one.timelineMissing){currentRosterPosition.textContent=`${one.depot&&one.depot!=='SCS'?one.depot+' · ':''}${one.roster}${one.line} · WC ${E.formatDateLong(one.wcDate)}`;return}}catch(_){}currentRosterPosition.textContent=isDiaryMode()?'Roster history not configured':'Quick sequence unavailable';
+    if(!currentRosterPosition)return;if(isDiaryMode()&&!hasSavedTimeline()){currentRosterPosition.textContent='Roster history not configured';return}try{const today=localTodayIso(),one=E.buildWeeks(data,engineSettingsForView(today),1)?.[0];if(one&&!one.timelineMissing){currentRosterPosition.textContent=one.roster==='MANUAL'?`Manual work pattern · WC ${E.formatDateLong(one.wcDate)}`:`${one.depot&&one.depot!=='SCS'?one.depot+' · ':''}${one.roster}${one.line} · WC ${E.formatDateLong(one.wcDate)}`;return}}catch(_){}currentRosterPosition.textContent=isDiaryMode()?'Roster history not configured':'Quick sequence unavailable';
   }
+
+  function weekPositionHtml(week){if(week.roster==='MANUAL')return '<span class="roster-name">PERSONAL WORK PATTERN</span>';return `${weekPositionHtml(week)}`}
+  function weekPositionText(week){return week.roster==='MANUAL'?'Personal work pattern':`${week.roster} ${week.line}`}
 
   function renderCompactDay(day, week, selectedStartDate) {
     const pre = week.weekIndex === 0 && E.compareIsoDates(day.date, selectedStartDate) < 0;
@@ -509,7 +540,7 @@
 
     const duration = actual && ['worked','worked_or'].includes(actual.status) ? payableRosterDurationLabel(day,c) : (c.type === 'shift' ? (c.bookHours||durationLabel(c.start, finish)) : '—');
     const detailHtml = c.type === 'shift' ? `${actualDetail}
-      <div class="compact-detail"><span>Roster line</span><strong>${escapeHtml(week.roster)} ${week.line}</strong></div>
+      <div class="compact-detail"><span>${week.roster==='MANUAL'?'Schedule':'Roster line'}</span><strong>${escapeHtml(weekPositionText(week))}</strong></div>
       <div class="compact-detail"><span>Duty</span><strong>${escapeHtml(duty)}</strong></div>
       <div class="compact-detail"><span>Sign on</span><strong>${escapeHtml(c.start || '—')}</strong></div>
       <div class="compact-detail"><span>Sign off</span><strong>${escapeHtml(finish || '—')}${assumed ? '<span class="compact-approx">approx.</span>' : ''}</strong></div>
@@ -517,7 +548,7 @@
       <div class="compact-detail"><span>Source</span><strong>${assumed ? '8h estimate' : (c.finishSource === 'roster-book' ? 'Roster book' : 'Roster data')}</strong></div>
       ${details ? `<div class="compact-detail compact-detail-wide"><span>Roster notes</span><strong>${escapeHtml(details)}</strong></div>` : ''}
       ${fullJob ? `<div class="compact-detail compact-detail-wide"><span>Full job detail</span><div class="compact-job-text">${escapeHtml(fullJob)}</div>${corridor ? `<div class="compact-job-meta">Roster book: ${escapeHtml(corridor)}</div>` : ''}</div>` : ''}` : `
-      <div class="compact-detail"><span>Roster line</span><strong>${escapeHtml(week.roster)} ${week.line}</strong></div>
+      <div class="compact-detail"><span>${week.roster==='MANUAL'?'Schedule':'Roster line'}</span><strong>${escapeHtml(weekPositionText(week))}</strong></div>
       <div class="compact-detail"><span>Status</span><strong>${escapeHtml(duty)}</strong></div>`;
 
     return `
@@ -539,14 +570,14 @@
   function weekActionsHtml(week){
     if(!isDiaryMode())return '';
     const locked=!!week.locked,leave=weekLeaveType(week.wcDate),leaveLabel={annual:'Annual leave',personal:'Personal leave',unpaid:'Unpaid leave'}[leave]||'';
-    return `<div class="week-actions-wrap"><button type="button" class="secondary week-change-btn week-actions-toggle" data-week-menu="${escapeHtml(week.wcDate)}">Week actions ▾</button><div class="week-actions-menu" data-week-menu-panel="${escapeHtml(week.wcDate)}" hidden>${locked?'':`<button type="button" data-week-override="${escapeHtml(week.wcDate)}">Change roster line</button><button type="button" data-week-leave-open="${escapeHtml(week.wcDate)}">Mark as leave${leaveLabel?` · ${escapeHtml(leaveLabel)}`:''} ›</button><div class="week-leave-submenu" data-week-leave-menu="${escapeHtml(week.wcDate)}" hidden><button type="button" data-week-leave-type="annual" data-week="${escapeHtml(week.wcDate)}">Annual leave</button><button type="button" data-week-leave-type="personal" data-week="${escapeHtml(week.wcDate)}">Personal leave</button><button type="button" data-week-leave-type="unpaid" data-week="${escapeHtml(week.wcDate)}">Unpaid leave</button>${leave?`<button type="button" data-week-leave-type="remove" data-week="${escapeHtml(week.wcDate)}">Remove week leave</button>`:''}</div>`}<hr><button type="button" data-week-lock="${escapeHtml(week.wcDate)}">${locked?'Unlock week':'Lock week'}</button>${week.isWeekOverride&&!locked?`<button type="button" data-week-restore="${escapeHtml(week.wcDate)}">Remove line override</button>`:''}</div></div>`;
+    return `<div class="week-actions-wrap"><button type="button" class="secondary week-change-btn week-actions-toggle" data-week-menu="${escapeHtml(week.wcDate)}">Week actions ▾</button><div class="week-actions-menu" data-week-menu-panel="${escapeHtml(week.wcDate)}" hidden>${locked?'':`${week.roster==='MANUAL'?'':`<button type="button" data-week-override="${escapeHtml(week.wcDate)}">Change roster line</button>`}<button type="button" data-week-leave-open="${escapeHtml(week.wcDate)}">Mark as leave${leaveLabel?` · ${escapeHtml(leaveLabel)}`:''} ›</button><div class="week-leave-submenu" data-week-leave-menu="${escapeHtml(week.wcDate)}" hidden><button type="button" data-week-leave-type="annual" data-week="${escapeHtml(week.wcDate)}">Annual leave</button><button type="button" data-week-leave-type="personal" data-week="${escapeHtml(week.wcDate)}">Personal leave</button><button type="button" data-week-leave-type="unpaid" data-week="${escapeHtml(week.wcDate)}">Unpaid leave</button>${leave?`<button type="button" data-week-leave-type="remove" data-week="${escapeHtml(week.wcDate)}">Remove week leave</button>`:''}</div>`}<hr><button type="button" data-week-lock="${escapeHtml(week.wcDate)}">${locked?'Unlock week':'Lock week'}</button>${week.isWeekOverride&&!locked?`<button type="button" data-week-restore="${escapeHtml(week.wcDate)}">Remove line override</button>`:''}</div></div>`;
   }
 
   function renderCompactWeek(week, selectedStartDate) {
     const locked=!!week.locked;
     const header = `
         <header class="week-card-header">
-          <div><div class="line-label">${week.depot&&week.depot!=='SCS'?`<span class="depot-tag">${escapeHtml(week.depot)} · </span>`:''}<span class="roster-name">${escapeHtml(week.roster==='MAIN'?'MAIN':week.roster)}</span> · LINE ${week.line}${week.isWeekOverride?' · OVERRIDE':''}${locked?' · <span class="week-lock-state">LOCKED ✓</span>':''}</div><div class="wc-label">WC ${escapeHtml(E.formatDateLong(week.wcDate))}</div>${week.futureWarning?'<span class="week-warning">⚠ Forecast beyond expected Nov 2026 roster change — verify against the current roster.</span>':''}</div>
+          <div><div class="line-label">${weekPositionHtml(week)}${locked?' · <span class="week-lock-state">LOCKED ✓</span>':''}</div><div class="wc-label">WC ${escapeHtml(E.formatDateLong(week.wcDate))}</div>${week.futureWarning?'<span class="week-warning">⚠ Forecast beyond expected Nov 2026 roster change — verify against the current roster.</span>':''}</div>
           <div class="week-header-actions">${weekLeaveType(week.wcDate)?`<span class="week-leave-badge">${escapeHtml(({annual:'Annual leave',personal:'Personal leave',unpaid:'Unpaid leave'})[weekLeaveType(week.wcDate)]||'Leave')}</span>`:''}${weekActionsHtml(week)}</div>
         </header>`;
     if (week.isAnnualLeave) {
@@ -560,7 +591,7 @@
     const locked=!!week.locked;
     const header = `
         <header class="week-card-header">
-          <div><div class="line-label">${week.depot&&week.depot!=='SCS'?`<span class="depot-tag">${escapeHtml(week.depot)} · </span>`:''}<span class="roster-name">${escapeHtml(week.roster==='MAIN'?'MAIN':week.roster)}</span> · LINE ${week.line}${week.isWeekOverride?' · OVERRIDE':''}${locked?' · <span class="week-lock-state">LOCKED ✓</span>':''}</div><div class="wc-label">WC ${escapeHtml(E.formatDateLong(week.wcDate))}</div>${week.futureWarning?'<span class="week-warning">⚠ Forecast beyond expected Nov 2026 roster change — verify against the current roster.</span>':''}</div>
+          <div><div class="line-label">${weekPositionHtml(week)}${locked?' · <span class="week-lock-state">LOCKED ✓</span>':''}</div><div class="wc-label">WC ${escapeHtml(E.formatDateLong(week.wcDate))}</div>${week.futureWarning?'<span class="week-warning">⚠ Forecast beyond expected Nov 2026 roster change — verify against the current roster.</span>':''}</div>
           <div class="week-header-actions">${weekLeaveType(week.wcDate)?`<span class="week-leave-badge">${escapeHtml(({annual:'Annual leave',personal:'Personal leave',unpaid:'Unpaid leave'})[weekLeaveType(week.wcDate)]||'Leave')}</span>`:''}${weekActionsHtml(week)}</div>
         </header>`;
 
@@ -972,13 +1003,17 @@
   compactViewBtn?.addEventListener('click', () => setRosterViewMode('compact'));
 
   startDate.value = localTodayIso();
+  if(startRoleDate)startRoleDate.value=startDate.value;
   populateDepotSelect(startDepot,'SCS'); populateDepotSelect(swapDepot,'SCS'); populateRosterSelect(startRoster,'A',startDepot.value); populateRosterSelect(swapRoster,'C',swapDepot.value); populateLineSelect(startLine,startRoster.value,1,startDepot.value); populateLineSelect(swapLine,swapRoster.value,1,swapDepot.value);
-  annualLeaveDate.value = E.weekCommencing(startDate.value); renderAnnualLeaveList(); updateExportOptionStates();
-  const restoredRosterSession = restoreRosterSession(); if (!restoredRosterSession) updateStartHints();
+  annualLeaveDate.value = E.weekCommencing(startDate.value); renderAnnualLeaveList(); updateExportOptionStates();applyStartManualPattern(window.RosterBotEmployment?.manualPattern?.()||null);updateScheduleModeUi();
+  let startRoleDateManuallyEdited=false;
+  const restoredRosterSession = restoreRosterSession(); if(restoredRosterSession&&startRoleDate)startRoleDateManuallyEdited=true; if (!restoredRosterSession) updateStartHints();
   updateExperienceUI();
   if(restoredRosterSession){if(isDiaryMode()&&hasSavedTimeline()){setCurrentPayCycle(false);setupPanel.hidden=true;generateDisplay(false)}else{const w=E.weekCommencing(startDate.value);viewFromDate.value=restoredRosterSession&&readJson('rosterbot-session-settings-v1',{})?.lastViewedFrom||w;viewToDate.value=restoredRosterSession&&readJson('rosterbot-session-settings-v1',{})?.lastViewedTo||E.addDays(w,13);setupPanel.hidden=false;generateDisplay(false)}}else{viewFromDate.value=E.weekCommencing(startDate.value);viewToDate.value=E.addDays(viewFromDate.value,13);setupPanel.hidden=!isDiaryMode();updateDiaryPosition()}
 
+  startRoleDate?.addEventListener('change',()=>{startRoleDateManuallyEdited=true;saveRosterSession()});
   startDate.addEventListener('change', () => {
+    if(startRoleDate&&!startRoleDateManuallyEdited)startRoleDate.value=startDate.value;
     const sd=startDepot?.value||'SCS',sr=startRoster.value,xd=swapDepot?.value||sd,xr=swapRoster.value;populateDepotSelect(startDepot,sd,startDate.value);populateRosterSelect(startRoster,sr,startDepot.value,startDate.value);populateLineSelect(startLine,startRoster.value,startLine.value,startDepot.value,startDate.value);populateDepotSelect(swapDepot,xd,startDate.value);populateRosterSelect(swapRoster,xr,swapDepot.value,startDate.value);populateLineSelect(swapLine,swapRoster.value,swapLine.value,swapDepot.value,startDate.value);updateStartHints();
     if (!annualLeaveWeeks.size) annualLeaveDate.value = E.weekCommencing(startDate.value);
     clearPreparedCalendarFiles();
@@ -1003,6 +1038,9 @@
     clearPreparedCalendarFiles();
   });
   swapLine.addEventListener('change', () => { updateSequencePreview(); clearPreparedCalendarFiles(); });
+  startScheduleMode?.addEventListener('change',()=>{updateScheduleModeUi();clearPreparedCalendarFiles();saveRosterSession()});startRole?.addEventListener('change',saveRosterSession);
+  $('startManualWeekdays')?.addEventListener('click',()=>{applyStartManualPattern(window.RosterBotEmployment?.defaultManualPattern?.());saveRosterSession()});
+  for(const key of MANUAL_DAY_KEYS){const cap=key[0].toUpperCase()+key.slice(1),on=$(`startPattern${cap}On`),st=$(`startPattern${cap}Start`),en=$(`startPattern${cap}End`);on?.addEventListener('change',()=>{if(st)st.disabled=!on.checked;if(en)en.disabled=!on.checked;saveRosterSession()});st?.addEventListener('change',saveRosterSession);en?.addEventListener('change',saveRosterSession);}
 
   hasAnnualLeave.addEventListener('change', () => {
     annualLeaveFields.hidden = !hasAnnualLeave.checked;
@@ -1036,21 +1074,21 @@
   document.querySelectorAll('input[name="durationMode"]').forEach(el => el.addEventListener('change', clearPreparedCalendarFiles));
   [exportWeeks, splitAlternating, splitOr, splitAnnualLeave].forEach(el => el.addEventListener('change', clearPreparedCalendarFiles));
 
-  [startDate,startRoster,startLine,displayWeeks,hasSwap,swapRoster,swapLine,hasAnnualLeave].forEach(el=>el.addEventListener('change',saveRosterSession));
+  [startDate,startRole,startRoleDate,startScheduleMode,startRoster,startLine,displayWeeks,hasSwap,swapRoster,swapLine,hasAnnualLeave].filter(Boolean).forEach(el=>el.addEventListener('change',saveRosterSession));
   generateBtn.addEventListener('click', () => {
     const onboarding=document.documentElement.classList.contains('v28-onboarding-active');
     if(onboarding){
-      if(!startDate.value||!startDepot?.value||!startRoster.value||!startLine.value){alert('Choose a starting date, depot, roster and line first.');return}
+      if(!validRosterSettings(currentSettings())){alert((startScheduleMode?.value||'official')==='official'?'Choose a valid schedule date, role effective date, depot, roster and line first.':'Choose a valid schedule date, role effective date and work pattern first.');return}
       const lookup=document.documentElement.classList.contains('v28-lookup-active');
       const w=E.weekCommencing(startDate.value);viewFromDate.value=w;viewToDate.value=E.addDays(w,13);generateDisplay(false,{persist:!lookup});
       document.documentElement.classList.add('v28-onboarding-preview');const c=$('v28PreviewConfirm');if(c)c.hidden=lookup;
-      if(outputTitle)outputTitle.textContent=lookup?'Roster lookup':'Preview your roster';
+      if(outputTitle)outputTitle.textContent=lookup?'Roster lookup':((startScheduleMode?.value||'official')==='official'?'Preview your roster':'Preview your work pattern');
       setTimeout(()=>outputSection.scrollIntoView({behavior:'smooth',block:'start'}),40);return;
     }
     if(!viewFromDate.value){const w=E.weekCommencing(startDate.value);viewFromDate.value=w;viewToDate.value=E.addDays(w,13)}if(isDiaryMode()&&!hasSavedTimeline()){window.RosterBotDiary?.showAdvanced?.();return}generateDisplay(true);
   });
   quickModeBtn?.addEventListener('click',()=>setExperience('quick'));diaryModeBtn?.addEventListener('click',()=>setExperience('diary'));
-  convertQuickToDiaryBtn?.addEventListener('click',()=>{if(!saveCurrentAsMyRoster()){alert('Choose a valid roster start date, roster and line first.');return}});
+  convertQuickToDiaryBtn?.addEventListener('click',()=>{if(!saveCurrentAsMyRoster()){alert('Choose a valid start date and roster/work pattern first.');return}});
   displayRangeBtn?.addEventListener('click',()=>{if(isDiaryMode()&&!hasSavedTimeline()){window.RosterBotDiary?.showAdvanced?.();return}generateDisplay(true)});
   thisWeekView?.addEventListener('click',()=>{setCurrentWeek(true);syncQuickCalendar(viewFromDate.value)});thisPayCycleView?.addEventListener('click',()=>setCurrentPayCycle(true));prevFortnightView?.addEventListener('click',()=>shiftViewPayCycle(-1));nextFortnightView?.addEventListener('click',()=>shiftViewPayCycle(1));
   $('homePrevFortnight')?.addEventListener('click',()=>shiftViewPayCycle(-1));$('homeNextFortnight')?.addEventListener('click',()=>shiftViewPayCycle(1));$('homeToday')?.addEventListener('click',()=>setCurrentPayCycle(true));$('homeCalendarView')?.addEventListener('click',()=>calendarViewBtn?.click());$('homeCompactView')?.addEventListener('click',()=>compactViewBtn?.click());$('homeHistory')?.addEventListener('click',()=>window.RosterBotDiary?.showAdvanced?.());

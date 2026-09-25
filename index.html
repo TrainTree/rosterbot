@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#111214">
-  <title>RosterBot 🤖 beta v0.28.0-sources</title>
+  <title>RosterBot 🤖 beta v0.29.0-employment-profile</title>
   <link rel="stylesheet" href="css/rosterbot.css">
 </head>
 <body>
@@ -154,7 +154,7 @@
       <div class="section-heading">
         <div>
           <div id="setupEyebrow" class="eyebrow">MY ROSTER</div>
-          <h2 id="setup-title">Let’s set up your roster</h2>
+          <h2 id="setup-title">Let’s set up your role &amp; schedule</h2>
         </div>
         <div class="setup-heading-actions">
           <button id="advancedRosterBtn" class="secondary diary-only" type="button">Roster History &amp; Changes</button>
@@ -162,21 +162,40 @@
         </div>
       </div>
       <div id="v28LookupBanner" class="v28-lookup-banner" hidden><div><strong>Roster Lookup</strong><small>Look at a roster without changing your saved personal roster.</small></div><button id="v28LookupBack" class="secondary" type="button">← Back</button></div>
-      <div id="v28OnboardingIntro" class="v28-onboarding-copy"><strong>Tell RosterBot where your rotation starts.</strong> We’ll show you the roster first so you can check it looks right. Nothing becomes your saved roster until you choose <strong>Use this as my roster</strong>.<div class="v28-onboarding-secondary"><button id="v28RosterLookupBtn" class="secondary" type="button">Roster Lookup</button><small>Just looking? Browse a roster without saving it.</small></div><div id="v30ExistingUser" class="v30-existing-user"><div><strong>Already have a roster set up?</strong><small>Restore your existing RosterBot setup instead of creating another one.</small></div><div class="v30-existing-actions"><button id="v30ExistingCloudBtn" class="secondary" type="button">Sign in &amp; restore</button><button id="v30ExistingImportBtn" class="secondary" type="button">Upload .rosterbot file</button></div></div></div>
+      <div id="v28OnboardingIntro" class="v28-onboarding-copy"><strong>Tell RosterBot your role and how your work is scheduled.</strong> We’ll show you the roster or work pattern first so you can check it looks right. Nothing becomes your saved schedule until you confirm it.<div class="v28-onboarding-secondary"><button id="v28RosterLookupBtn" class="secondary" type="button">Roster Lookup</button><small>Just looking? Browse a roster without saving it.</small></div><div id="v30ExistingUser" class="v30-existing-user"><div><strong>Already have a roster set up?</strong><small>Restore your existing RosterBot setup instead of creating another one.</small></div><div class="v30-existing-actions"><button id="v30ExistingCloudBtn" class="secondary" type="button">Sign in &amp; restore</button><button id="v30ExistingImportBtn" class="secondary" type="button">Upload .rosterbot file</button></div></div></div>
       <div id="localDataNotice" class="local-data-notice">
         <strong>LOCAL DATA ONLY.</strong> Your roster diary and pay entries are stored in this browser, not in a RosterBot account or database. You are responsible for keeping a backup. <button id="openDataFromNotice" type="button" class="text-action">DATA / BACKUP</button>
       </div>
 
       <div class="form-grid">
         <label class="field">
-          <span id="startDateLabel">Roster start date</span>
+          <span id="startDateLabel">Schedule / roster start date</span>
           <input id="startDate" type="date" required>
           <small id="wcHint">WC —</small>
         </label>
 
-        <label class="field"><span>Depot</span><select id="startDepot"></select><small>Historical and current depot rotations are date-aware.</small></label>
+        <label class="field"><span>Role / pay classification</span><select id="startRole">
+          <option value="PB205:none" selected>PB205 · Qualified Driver</option>
+          <option value="PF441:none">PF441 · Trainee Driver — new start</option>
+          <option value="PB311:none">PB311 · Trainee Driver — Stage 2</option>
+          <option value="PB312:none">PB312 · Trainee Driver — 12 months</option>
+          <option value="VL014:legacy">VL014 · Practical Driver Trainer — legacy scheme</option>
+          <option value="PB205:current">PB205 · Qualified Driver + current-scheme PDT</option>
+          <option value="VL007:none">VL007 · Driver Training Compliance Officer</option>
+          <option value="VL006:none">VL006 · Regional Driver Supervisor</option>
+        </select><small>Your role is stored separately from your roster so PayBot can apply the correct classification by date.</small></label>
 
-        <label class="field">
+        <label class="field"><span>Role effective from</span><input id="startRoleDate" type="date" required><small>Use the date this classification actually began. For a new PF441 trainee, use your employment start date. You can add later role changes at any time.</small></label>
+
+        <label class="field"><span>How are your work days scheduled?</span><select id="startScheduleMode">
+          <option value="official" selected>Official / master roster</option>
+          <option value="pattern">Regular manual work pattern</option>
+          <option value="adhoc">No default pattern — enter each fortnight manually</option>
+        </select><small>Trainees, DTCOs and RDSs can use a manual pattern without pretending they belong to an A/B/C/FLEX rotation.</small></label>
+
+        <label id="startDepotField" class="field"><span>Depot</span><select id="startDepot"></select><small>Historical and current depot rotations are date-aware.</small></label>
+
+        <label id="startRosterField" class="field">
           <span>Roster</span>
           <select id="startRoster">
             <option value="A">A Roster</option>
@@ -188,7 +207,7 @@
           <small id="rosterMeta">—</small>
         </label>
 
-        <label class="field">
+        <label id="startLineField" class="field">
           <span>Line</span>
           <select id="startLine"><option value="1">1</option></select>
           <small id="lineCountHint">—</small>
@@ -198,7 +217,7 @@
         <div class="field compact-field"><span>Quick view</span><small>Choose the visible date range above. This Quick / Basic sequence stays independent of any saved Personal Diary history.</small></div>
       </div>
 
-      <div class="swap-box">
+      <div id="officialSwapBox" class="swap-box">
         <label class="check-row">
           <input id="hasSwap" type="checkbox">
           <span>
@@ -226,6 +245,21 @@
           <div class="sequence-preview" id="sequencePreview" aria-live="polite"></div>
         </div>
       </div>
+
+      <div id="startManualPatternBox" class="manual-pattern-box" hidden>
+        <div class="manual-pattern-head"><div><strong>Regular work pattern</strong><small>These are your expected work times, not an official master roster. You can change any individual day later.</small></div><button id="startManualWeekdays" class="secondary" type="button">Mon–Fri 08:00–16:00</button></div>
+        <div class="manual-pattern-grid">
+          <label><span>SUN</span><input id="startPatternSunOn" type="checkbox"><input id="startPatternSunStart" type="time" value="08:00" disabled><span>→</span><input id="startPatternSunEnd" type="time" value="16:00" disabled></label>
+          <label><span>MON</span><input id="startPatternMonOn" type="checkbox" checked><input id="startPatternMonStart" type="time" value="08:00"><span>→</span><input id="startPatternMonEnd" type="time" value="16:00"></label>
+          <label><span>TUE</span><input id="startPatternTueOn" type="checkbox" checked><input id="startPatternTueStart" type="time" value="08:00"><span>→</span><input id="startPatternTueEnd" type="time" value="16:00"></label>
+          <label><span>WED</span><input id="startPatternWedOn" type="checkbox" checked><input id="startPatternWedStart" type="time" value="08:00"><span>→</span><input id="startPatternWedEnd" type="time" value="16:00"></label>
+          <label><span>THU</span><input id="startPatternThuOn" type="checkbox" checked><input id="startPatternThuStart" type="time" value="08:00"><span>→</span><input id="startPatternThuEnd" type="time" value="16:00"></label>
+          <label><span>FRI</span><input id="startPatternFriOn" type="checkbox" checked><input id="startPatternFriStart" type="time" value="08:00"><span>→</span><input id="startPatternFriEnd" type="time" value="16:00"></label>
+          <label><span>SAT</span><input id="startPatternSatOn" type="checkbox"><input id="startPatternSatStart" type="time" value="08:00" disabled><span>→</span><input id="startPatternSatEnd" type="time" value="16:00" disabled></label>
+        </div>
+      </div>
+
+      <div id="startAdhocNote" class="manual-pattern-box" hidden><strong>No default work pattern</strong><p>RosterBot will not invent rostered shifts. Open Pay and choose <strong>Enter shifts manually</strong> for each fortnight. Your full-time Part 7 guarantee can still be calculated from the days you enter.</p></div>
 
       <div class="annual-leave-box">
         <label class="check-row">
@@ -465,6 +499,7 @@
     <section id="v29MoreHub" class="v29-hub" aria-labelledby="v29MoreTitle">
       <div class="v29-hub-head"><div><div class="eyebrow">MORE</div><h2 id="v29MoreTitle">More</h2><p>Data, settings and secondary RosterBot tools.</p></div></div>
       <div class="v29-hub-grid v29-more-grid">
+        <button id="v29EmploymentBtn" class="v29-hub-card featured wide" type="button"><div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M17 10.5 19 12l2-2"/></svg></span><span class="v29-card-arrow">›</span></div><h3>Employment &amp; Pay Profile</h3><p>Record dated role changes, trainee progression, PDT arrangements and manual work patterns.</p><span class="v29-lookup-safety">Role history · date-aware pay grades · manual schedules</span></button>
         <button id="v28SourcesBtn" class="v29-hub-card featured wide" type="button"><div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a3 3 0 0 1 3-3h6z"/></svg></span><span class="v29-card-arrow">›</span></div><h3>Sources</h3><p>Pay rates, allowances, enterprise agreements and the public references used by RosterBot and PayBot.</p><span class="v29-lookup-safety">Public sources · calculation references · rate history</span></button>
         <button id="v29MoreDataBtn" class="v29-hub-card" type="button"><div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 18.5H6a4 4 0 0 1-.5-7.97A6.5 6.5 0 0 1 18 8.8a4.5 4.5 0 0 1 .5 8.97H16"/><path d="m9 15 2 2 4-4"/></svg></span><span class="v29-card-arrow">›</span></div><h3>Data &amp; Sync</h3><p>Backups, import/export, account and encrypted Cloud Sync.</p><span id="v29MoreSyncStatus" class="v29-more-status">Local saved</span></button>
         <button id="v29MoreSettingsBtn" class="v29-hub-card" type="button"><div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06-.06A1.7 1.7 0 0 0 19.4 9c.12.37.34.7.6 1 .28.27.66.4 1.1.4H21v4h-.09c-.44 0-.82.13-1.1.4-.27.28-.49.62-.61 1.01Z"/></svg></span><span class="v29-card-arrow">›</span></div><h3>Settings</h3><p>Appearance, theme and roster display preferences.</p></button>
@@ -475,7 +510,7 @@
 
 
     <footer>
-      RosterBot 🤖 beta v0.28.0-sources · Standalone HTML/JavaScript · Australia/Melbourne
+      RosterBot 🤖 beta v0.29.0-employment-profile · Standalone HTML/JavaScript · Australia/Melbourne
     </footer>
   </main>
 
@@ -492,13 +527,13 @@
     <section class="panel setup">
       <div class="setup-grid">
         <div class="field"><label>Pay fortnight</label><div class="period-row"><button class="btn" id="prevPeriod" title="Previous fortnight">‹</button><input type="date" id="periodDate"><button class="btn" id="nextPeriod" title="Next fortnight">›</button></div><button class="btn tiny soft period-current" id="thisPeriod" type="button">This pay cycle</button><div class="subnote" id="periodLabel"></div></div>
-        <div class="field"><label>Grade</label><select id="grade"></select><div class="subcontrol"><label for="pdtMode">PDT status</label><select id="pdtMode"><option value="none">No PDT (use selected grade)</option><option value="legacy">Legacy PDT (VL014 Practical Driver Trainer)</option><option value="current">Current PDT (choose days below)</option></select><div class="subnote" id="pdtHint">Uses the selected grade rate.</div></div></div>
+        <div class="field"><label>Grade</label><select id="grade"></select><div id="employmentProfileHint" class="subnote employment-profile-hint"></div><div class="subcontrol"><label for="pdtMode">PDT status</label><select id="pdtMode"><option value="none">No PDT (use selected grade)</option><option value="legacy">Legacy PDT (VL014 Practical Driver Trainer)</option><option value="current">Current PDT (choose days below)</option></select><div class="subnote" id="pdtHint">Uses the selected grade rate.</div></div></div>
         <div class="field"><label>Input method</label><select id="entryMode"><option value="forecast">Use roster from RosterBot</option><option value="roster">Choose roster lines</option><option value="manual">Enter shifts manually</option></select><div class="subnote entry-mode-hint" id="entryModeHint">Changing this does not alter the loaded fortnight until you press Load fortnight.</div></div>
         <div class="field roster-field"><label>Week 1 roster</label><select id="r1"></select></div>
         <div class="field roster-field"><label>Week 1 line</label><select id="l1"></select></div>
         <div class="field roster-field"><label>Week 2 roster</label><select id="r2"></select></div>
         <div class="field roster-field"><label>Week 2 line</label><select id="l2"></select></div>
-        <div class="field"><label>Employment</label><select disabled><option>Full Time (80h guarantee when applicable)</option></select></div>
+        <div class="field"><label>Employment</label><select disabled><option>Full Time · Part 7 Locomotive Operating (80h guarantee)</option></select></div>
         <div class="field"><button class="btn primary" id="loadBtn">Load fortnight</button></div>
         <div class="mode-note"><span id="datasetNote">Not loaded yet.</span> <strong>Unpaid leave</strong> is available for any day and may affect the 80-hour guarantee.</div>
       </div>
@@ -519,9 +554,39 @@
     <section id="editorView"></section>
     <section id="payslipView" class="panel results hidden"><table class="pay-table"><thead><tr><th>Pay element</th><th>Hours / units</th><th>Rate</th><th>Value</th></tr></thead><tbody id="payBody"></tbody><tfoot><tr><td colspan="3">Expected gross</td><td id="grossTotal">$0.00</td></tr></tfoot></table><div class="warning">PayBot is still in beta. Rest-job special rules, SDL 8:29 and tax/net calculations are not included yet.</div></section>
     <section id="dailyView" class="panel results hidden"><div class="day-breakdown" id="dailyBody"></div><div class="warning">Day totals include ordinary base or paid leave plus any penalties, overtime and allowances for that day. Time-based pay classes use a 0.1h minimum for any positive time, then round to the nearest 0.1h per shift/day before the fortnight totals are added.</div></section>
-    <footer class="footer">RosterBot 🤖 v2.0 + PayBot 🤖💰 beta v0.28.0-sources · Modular source / standalone release · Australia/Melbourne</footer>
+    <footer class="footer">RosterBot 🤖 + PayBot 🤖💰 beta v0.29.0-employment-profile · Modular source / standalone release · Australia/Melbourne</footer>
   </main>
 
+
+  <div id="employmentModal" class="feedback-modal" hidden>
+    <section class="feedback-dialog employment-dialog" role="dialog" aria-modal="true" aria-labelledby="employmentTitle">
+      <div class="feedback-dialog-header"><div><div class="eyebrow">MY PROFILE</div><h2 id="employmentTitle">Employment &amp; Pay Profile</h2></div><button id="employmentCloseBtn" class="feedback-close-btn" type="button" aria-label="Close Employment and Pay Profile">×</button></div>
+      <div class="employment-body">
+        <section id="employmentCurrent" class="employment-current"></section>
+        <section class="employment-section"><div class="employment-section-head"><div><div class="eyebrow">ROLE HISTORY</div><h3>Your classifications over time</h3><p>PayBot resolves this timeline separately for each date, so a role change in the middle of a pay fortnight uses the correct rate on each side.</p></div></div><div id="employmentTimeline" class="employment-timeline"></div></section>
+        <section id="employmentEditor" class="employment-section employment-editor"><div class="employment-section-head"><div><div class="eyebrow">ADD / EDIT</div><h3 id="employmentFormTitle">Add role change</h3></div></div><div class="form-grid">
+          <label class="field"><span>Effective date</span><input id="employmentDate" type="date"></label>
+          <label class="field"><span>Classification</span><select id="employmentClassification"></select></label>
+          <label class="field"><span>PDT arrangement</span><select id="employmentPdtScheme"><option value="none">Not PDT / no PDT treatment</option><option value="legacy">Legacy PDT — VL014 classification</option><option value="current">Current scheme — underlying grade + A704/A705 when training</option></select><small id="employmentPdtHint"></small></label>
+          <label class="field"><span>Note <small>(optional)</small></span><input id="employmentNote" type="text" maxlength="240" placeholder="e.g. Qualified as Driver"></label>
+        </div><div class="actions"><button id="employmentSave" class="primary" type="button">Save role change</button><button id="employmentCancel" class="secondary" type="button">Clear form</button></div></section>
+        <section class="employment-section"><div class="employment-section-head"><div><div class="eyebrow">WORK PATTERN</div><h3>Not on a master roster?</h3><p>Use a personal work pattern for trainees, DTCOs, RDSs or anyone whose shifts are not represented by the supplied master rotations. This is explicitly labelled as user-entered schedule data.</p></div></div>
+          <label class="field employment-pattern-date"><span>Use from</span><input id="employmentPatternDate" type="date"><small>The date is snapped to its week commencing Sunday.</small></label>
+          <div class="employment-pattern-grid">
+            <label><span>SUN</span><input id="employmentPatternSunOn" type="checkbox"><input id="employmentPatternSunStart" type="time"><span>→</span><input id="employmentPatternSunEnd" type="time"></label>
+            <label><span>MON</span><input id="employmentPatternMonOn" type="checkbox"><input id="employmentPatternMonStart" type="time"><span>→</span><input id="employmentPatternMonEnd" type="time"></label>
+            <label><span>TUE</span><input id="employmentPatternTueOn" type="checkbox"><input id="employmentPatternTueStart" type="time"><span>→</span><input id="employmentPatternTueEnd" type="time"></label>
+            <label><span>WED</span><input id="employmentPatternWedOn" type="checkbox"><input id="employmentPatternWedStart" type="time"><span>→</span><input id="employmentPatternWedEnd" type="time"></label>
+            <label><span>THU</span><input id="employmentPatternThuOn" type="checkbox"><input id="employmentPatternThuStart" type="time"><span>→</span><input id="employmentPatternThuEnd" type="time"></label>
+            <label><span>FRI</span><input id="employmentPatternFriOn" type="checkbox"><input id="employmentPatternFriStart" type="time"><span>→</span><input id="employmentPatternFriEnd" type="time"></label>
+            <label><span>SAT</span><input id="employmentPatternSatOn" type="checkbox"><input id="employmentPatternSatStart" type="time"><span>→</span><input id="employmentPatternSatEnd" type="time"></label>
+          </div>
+          <p id="employmentPatternState" class="muted"></p><div class="actions"><button id="employmentUsePattern" class="primary" type="button">Use this manual work pattern</button><button id="employmentUseAdhoc" class="secondary" type="button">No default pattern · enter fortnights manually</button></div>
+          <p class="sources-caution"><strong>Important:</strong> Changing to a manual pattern creates a dated schedule entry in your roster history. To return to an official roster later, add a normal roster change under Roster → Roster History &amp; Changes.</p>
+        </section>
+      </div>
+    </section>
+  </div>
 
   <div id="sourcesModal" class="feedback-modal" hidden>
     <section class="feedback-dialog sources-dialog" role="dialog" aria-modal="true" aria-labelledby="sourcesTitle">
@@ -534,14 +599,14 @@
         </section>
 
         <section class="sources-section" aria-labelledby="sourcesPayTitle">
-          <div class="sources-section-head"><div><div class="eyebrow">PAY RATES</div><h3 id="sourcesPayTitle">Driver grade rates</h3><p>Published Schedule A Table 6 rates. The table is rendered from the same frozen reference data PayBot loads.</p></div><span id="sourcesRateSourceBadge" class="sources-source-pill">Schedule A · Table 6</span></div>
+          <div class="sources-section-head"><div><div class="eyebrow">PAY RATES</div><h3 id="sourcesPayTitle">Locomotive operating grade rates</h3><p>Published Schedule A Table 6 rates. The table is rendered from the same frozen reference data PayBot loads.</p></div><span id="sourcesRateSourceBadge" class="sources-source-pill">Schedule A · Table 6</span></div>
           <div id="sourcesCurrentRate" class="sources-current-card"></div>
           <div class="sources-table-wrap"><table class="sources-table"><thead id="sourcesGradeHead"></thead><tbody id="sourcesGradeBody"></tbody></table></div>
           <details class="sources-details"><summary>How PayBot chooses the PB205 rate</summary><div class="sources-details-body"><p>Enterprise Agreement tables publish rounded rates to cents. Where verified payroll/backpay evidence establishes the exact entitlement APR used for calculation, PayBot retains that higher-precision chronology separately.</p><div class="sources-table-wrap"><table class="sources-table sources-history-table"><thead><tr><th>Effective pay period</th><th>PayBot entitlement APR</th><th>Published reference</th><th>Evidence</th></tr></thead><tbody id="sourcesEntitlementBody"></tbody></table></div></div></details>
         </section>
 
         <section class="sources-section" aria-labelledby="sourcesAllowanceTitle">
-          <div class="sources-section-head"><div><div class="eyebrow">ALLOWANCES &amp; SUNDRIES</div><h3 id="sourcesAllowanceTitle">Driver allowances</h3><p>The current EA explicitly lists these Driver allowances and their scheduled changes by date in Schedule A Table 6.</p></div><span class="sources-source-pill">EA Table 6</span></div>
+          <div class="sources-section-head"><div><div class="eyebrow">ALLOWANCES &amp; SUNDRIES</div><h3 id="sourcesAllowanceTitle">Locomotive operating allowances</h3><p>The current EA explicitly lists these Locomotive Operating allowances and their scheduled changes by date in Schedule A Table 6.</p></div><span class="sources-source-pill">EA Table 6</span></div>
           <div class="sources-table-wrap"><table class="sources-table"><thead id="sourcesAllowanceHead"></thead><tbody id="sourcesAllowanceBody"></tbody></table></div>
           <div class="sources-rule-grid">
             <article><strong>A640 · Wasted meal</strong><p>Clause 92.4 provides the allowance when a rostered meal break cannot be taken because of late running/unplanned disruption, and when more than two hours are worked beyond rostered finish subject to at least 10 hours on duty.</p><span>Source: 2023 EA · clause 92.4 + Schedule A Table 6</span></article>
@@ -610,7 +675,7 @@
       <div class="roster-builder-body">
         <div class="timeline-history-intro"><strong>Tell RosterBot when your permanent roster changed.</strong><span>Your saved history is what RosterBot uses for Today, your diary, Calendar and Pay. One-off changes to a single week belong in that week's diary instead.</span></div>
         <div id="timelineEmptyState" class="timeline-empty" hidden>No saved roster history yet. You can use the current setup as your first roster below.</div>
-        <div class="timeline-history-actions"><button id="timelineLaterBtn" class="primary" type="button">+ Add roster change</button><button id="timelineEarlierBtn" class="secondary" type="button">+ Add previous roster</button><button id="timelineUseQuickBtn" class="secondary" type="button">Use current setup as my roster</button></div>
+        <div class="timeline-history-actions"><button id="timelineLaterBtn" class="primary" type="button">+ Add roster change</button><button id="timelineEarlierBtn" class="secondary" type="button">+ Add previous roster</button><button id="timelineEmploymentProfileBtn" class="secondary" type="button">Employment &amp; Pay Profile</button><button id="timelineUseQuickBtn" class="secondary" type="button">Use current setup as my roster</button></div>
         <div id="rosterTimelineList" class="timeline-list timeline-history-list"></div>
 
         <section id="timelineEditorPanel" class="timeline-editor" hidden aria-labelledby="timelineFormTitle">
@@ -961,7 +1026,7 @@
         <button id="changelogCloseBtn" class="feedback-close-btn" type="button" aria-label="Close changelog">×</button>
       </div>
       <div class="changelog-body">
-        <article class="changelog-entry current"><div class="changelog-entry-head"><strong>v0.28.0 Sources</strong><span>Pay rates · allowances · agreements · public provenance</span><em>Current beta</em></div><ul><li>Added <strong>More → Sources</strong> as a public reference area for the information behind RosterBot and PayBot.</li><li>Driver grade and allowance tables are rendered directly from the same frozen PayBot reference pack used by calculations, including all scheduled 2023-EA rate dates.</li><li>Added PB205 entitlement-rate provenance so users can distinguish rounded published EA rates from higher-precision verified entitlement APR anchors used by PayBot.</li><li>Documented the current EA basis for wasted meals, T&amp;I and PDT allowances, plus public links and identifiers for the 2023 and 2019 enterprise agreements.</li><li>No roster data, payroll calculation rules, personal-data schema, Cloud Sync or calendar-subscription logic changed.</li></ul></article>
+        <article class="changelog-entry current"><div class="changelog-entry-head"><strong>v0.29.0 Employment &amp; Pay Profile</strong><span>Date-aware roles + manual work patterns</span><em>Current beta</em></div><ul><li>Added a dated Employment &amp; Pay Profile for trainee stages, Driver, legacy/current PDT, DTCO and RDS classifications.</li><li>PayBot can resolve classification and applicable pay rate separately for each day, including role changes inside a fortnight.</li><li>Added personal manual work patterns and no-default-pattern mode for employees who do not follow a supplied master rotation.</li><li>Kept the Part 7 guarantee/overtime engine shared across supported Locomotive Operating classifications, with PF441 treated consistently unless contrary evidence is found.</li><li>Fixed Sources mobile table overflow and standardised 14px spacing between Sources sections.</li><li>Frozen official roster and pay-reference datasets remain unchanged.</li></ul></article><article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.28.0 Sources</strong><span>Pay rates · allowances · agreements · public provenance</span></div><ul><li>Added <strong>More → Sources</strong> as a public reference area for the information behind RosterBot and PayBot.</li><li>Driver grade and allowance tables are rendered directly from the same frozen PayBot reference pack used by calculations, including all scheduled 2023-EA rate dates.</li><li>Added PB205 entitlement-rate provenance so users can distinguish rounded published EA rates from higher-precision verified entitlement APR anchors used by PayBot.</li><li>Documented the current EA basis for wasted meals, T&amp;I and PDT allowances, plus public links and identifiers for the 2023 and 2019 enterprise agreements.</li><li>No roster data, payroll calculation rules, personal-data schema, Cloud Sync or calendar-subscription logic changed.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.27.20 Onboarding &amp; View Hotfix</strong><span>Dismiss setup confirmation · Calendar default · fortnight spacing</span></div><ul><li>Fixed the first-run roster confirmation state so “Does this look like your roster?” is dismissed permanently after “Use this as my roster” and does not reappear when opening a month, This pay fortnight or another personal roster view.</li><li>Made Calendar the true default roster view on phones as well as desktop. Existing users who deliberately selected Compact keep that saved preference.</li><li>Added visual breathing room between Week 1 and Week 2 inside each pay fortnight.</li><li>Retains the v0.27.19 outstation MAIN onboarding fix; no official roster data, payroll rules, personal schema, Cloud Sync or calendar-subscription logic changed.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.27.19 Outstation Onboarding Hotfix</strong><span>Save and restore depot MAIN rosters correctly</span></div><ul><li>Fixed first-run “Use this as my roster” validation for date-aware outstation MAIN rotations such as Ballarat, Bendigo, Geelong, Seymour, Traralgon and other supplied depots.</li><li>Fixed saved-session restoration using the same depot/date-aware roster validation, so an outstation MAIN setup is not rejected simply because MAIN is not a top-level SCS roster name.</li><li>Validation now checks the selected depot, roster and actual date-aware line count, including the optional alternating second roster/line.</li><li>No official roster data, payroll rules, diary schema, Cloud Sync or calendar logic changed.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.27.18 UI Luxuries</strong><span>Animated year browsing + human-readable roster periods</span></div><ul><li>Added a directional slide/fade transition when moving between years in the Home progress calendar, including swipe and arrow navigation; reduced-motion preferences still switch years instantly.</li><li>Official roster-period choices now show the human-readable effective date range beside FP64–FP68 instead of an unexplained FP number alone.</li><li>FLEX is now shown using its own effective-date periods rather than being implied to follow every FP boundary. FP66 correctly offers both FLEX versions either side of the 19 Oct 2025 FLEX change.</li><li>The official roster viewer now reads FLEX master rotations from the effective-dated FLEX source, including periods where FLEX was not embedded directly in the selected FP dataset.</li><li>Official roster/pay data, payroll rules, diary schema, Cloud Sync and live-calendar publishing logic are unchanged.</li></ul></article>
@@ -1028,6 +1093,7 @@
 <script src="js/10-roster-official.js"></script>
 <script src="js/11-roster-engine.js"></script>
 <script src="js/12-roster-effective-dates.js"></script>
+<script src="js/40-employment-profile.js"></script>
 <script src="js/20-roster-ui.js"></script>
 
 <script src="js/30-feedback.js"></script>
