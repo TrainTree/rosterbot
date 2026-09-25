@@ -487,7 +487,14 @@
     if(!currentRosterPosition)return;if(isDiaryMode()&&!hasSavedTimeline()){currentRosterPosition.textContent='Roster history not configured';return}try{const today=localTodayIso(),one=E.buildWeeks(data,engineSettingsForView(today),1)?.[0];if(one&&!one.timelineMissing){currentRosterPosition.textContent=one.roster==='MANUAL'?`Manual work pattern · WC ${E.formatDateLong(one.wcDate)}`:`${one.depot&&one.depot!=='SCS'?one.depot+' · ':''}${one.roster}${one.line} · WC ${E.formatDateLong(one.wcDate)}`;return}}catch(_){}currentRosterPosition.textContent=isDiaryMode()?'Roster history not configured':'Quick sequence unavailable';
   }
 
-  function weekPositionHtml(week){if(week.roster==='MANUAL')return '<span class="roster-name">PERSONAL WORK PATTERN</span>';return `${weekPositionHtml(week)}`}
+  function weekPositionHtml(week){
+    if(week.roster==='MANUAL')return '<span class="roster-name">PERSONAL WORK PATTERN</span>';
+    const depot=week.depot&&week.depot!=='SCS'?`<span class="depot-tag">${escapeHtml(week.depot)} · </span>`:'';
+    const roster=`<span class="roster-name">${escapeHtml(week.roster==='MAIN'?'MAIN':week.roster)}</span>`;
+    const line=Number.isFinite(+week.line)?` · LINE ${escapeHtml(String(week.line))}`:'';
+    const override=week.isWeekOverride?' · OVERRIDE':'';
+    return `${depot}${roster}${line}${override}`;
+  }
   function weekPositionText(week){return week.roster==='MANUAL'?'Personal work pattern':`${week.roster} ${week.line}`}
 
   function renderCompactDay(day, week, selectedStartDate) {
