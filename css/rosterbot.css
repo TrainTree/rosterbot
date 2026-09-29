@@ -2245,3 +2245,35 @@ html[data-theme="7"] .manual-pattern-box,html[data-theme="7"] .manual-pattern-gr
   .employment-event{align-items:stretch;flex-direction:column}.employment-event-actions{display:grid;grid-template-columns:1fr 1fr}.employment-event-actions button{width:100%}
 }
 @media(max-width:430px){.manual-pattern-grid label,.employment-pattern-grid label{grid-template-columns:34px 22px minmax(0,1fr) 12px minmax(0,1fr)}.manual-pattern-grid input[type="time"],.employment-pattern-grid input[type="time"]{padding-inline:4px}.employment-section{padding:12px}}
+
+
+/* ==========================================================================
+   Combined roster dashboard card + unified week/pay-fortnight view
+   ========================================================================== */
+.v31-roster-card{min-height:218px!important;padding:18px 20px!important;border-color:color-mix(in srgb,var(--accent) 62%,var(--border))!important;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 10%,var(--surface-2)),var(--surface-2))!important}
+.v31-roster-card .v27-card-watermark{width:92px;height:92px;right:16px;bottom:11px;opacity:.07}.v31-roster-card .v27-card-watermark .v27-svg{width:78px;height:78px}
+.v31-roster-period{position:relative;z-index:2;display:flex;align-items:baseline;justify-content:space-between;gap:16px;width:100%;margin-top:12px}.v31-roster-period>strong{font-size:clamp(1.08rem,2.4vw,1.32rem);line-height:1.2}.v31-roster-period>small{color:var(--muted);font-size:.76rem;font-weight:800;text-align:right}
+.v31-roster-week-heading{position:relative;z-index:2;display:flex;align-items:baseline;gap:8px;margin-top:14px}.v31-roster-week-heading small{font-size:.62rem;font-weight:900;letter-spacing:.09em;color:var(--accent)}.v31-roster-week-heading strong{font-size:.77rem}
+.v31-roster-card .v27-week-strip{max-width:440px;margin-top:7px}
+.v31-roster-pay-row{position:relative;z-index:2;display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;width:100%;margin-top:12px;padding-top:11px;border-top:1px solid color-mix(in srgb,var(--accent) 24%,var(--border))}.v31-roster-pay-row .v27-card-line,.v31-roster-pay-row .v27-card-pay,.v31-roster-pay-row .v27-status-line{margin-top:0}.v31-roster-pay-row .v27-card-line{font-weight:800}.v31-roster-pay-row .v27-card-pay{font-size:.9rem}.v31-roster-pay-row .v27-status-line{margin-left:auto}
+
+.v31-roster-drilldown-head{display:none;width:100%;margin-top:20px}.v31-roster-title{display:grid;gap:3px}.v31-roster-title>.eyebrow{margin:0}.v31-roster-title>strong{font-size:clamp(1.55rem,4vw,2.25rem);line-height:1.16}.v31-roster-title>small{color:var(--muted);font-size:.8rem;font-weight:750}
+.v31-roster-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}.v31-period-toggle{display:inline-flex;padding:3px;border:1px solid var(--border);border-radius:13px;background:var(--surface-2)}.v31-period-toggle button{min-height:38px;padding:7px 13px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:.76rem;font-weight:850;box-shadow:none}.v31-period-toggle button.active{background:color-mix(in srgb,var(--accent) 17%,var(--surface));color:var(--text);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 50%,var(--border))}
+html.v27-view-week .v31-roster-drilldown-head,html.v27-view-fortnight .v31-roster-drilldown-head{display:block}
+html.v27-view-week .v27-drilldown-nav,html.v27-view-fortnight .v27-drilldown-nav{display:block}
+html.v27-view-week .v27-fortnight-nav,html.v27-view-fortnight .v27-fortnight-nav{display:flex;margin-left:0}
+html.v27-view-week .fortnight-group-head{display:none!important}
+html.v27-view-week .fortnight-pay-footer{display:grid!important}
+.timeline-missing-note{display:grid;gap:4px;padding:22px 18px;border-top:1px solid var(--border);background:color-mix(in srgb,var(--surface-2) 72%,var(--surface));color:var(--muted)}.timeline-missing-note strong{color:var(--text);font-size:.92rem}.timeline-missing-note span{font-size:.78rem;line-height:1.45}
+
+@media(max-width:620px){
+  .v31-roster-card{min-height:220px!important;padding:15px!important}.v31-roster-period{align-items:flex-start;flex-direction:column;gap:3px;margin-top:10px}.v31-roster-period>small{text-align:left}.v31-roster-week-heading{margin-top:11px}.v31-roster-card .v27-week-strip{width:100%;max-width:none}.v31-roster-pay-row{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:10px;padding-top:9px}.v31-roster-pay-row .v27-status-line{grid-column:1/-1;justify-self:start;margin-left:0}.v31-roster-pay-row .v27-card-pay{text-align:right}
+  .v31-roster-drilldown-head{margin-top:17px}.v31-roster-toolbar{align-items:stretch;flex-direction:column;gap:10px;margin-top:13px}.v31-period-toggle{display:grid;grid-template-columns:1fr 1fr;width:100%}.v31-period-toggle button{width:100%}.v31-roster-toolbar .v27-fortnight-nav{display:grid!important;grid-template-columns:46px 1fr 46px;width:100%}.v31-roster-toolbar .v27-fortnight-nav button{justify-content:center}.timeline-missing-note{padding:18px 14px}
+}
+html[data-theme="7"] .v31-period-toggle,html[data-theme="7"] .v31-period-toggle button,html[data-theme="7"] .timeline-missing-note{border-radius:0!important;background:transparent!important;box-shadow:none!important}
+/* Keep the static legacy shell out of view until saved local state has been hydrated. */
+.app-startup{display:none}
+html.rb-booting body>:not(#appStartup):not(#fatalError):not(noscript){display:none!important}
+html.rb-booting .app-startup{display:grid;min-height:100dvh;place-items:center;padding:24px;background:var(--bg);color:var(--text)}
+.app-startup-card{display:grid;gap:7px;justify-items:center;padding:22px 26px;border:1px solid var(--border);border-radius:18px;background:var(--surface);box-shadow:0 14px 35px rgba(0,0,0,.18);font-family:inherit}
+.app-startup-card strong{font-size:1.35rem}.app-startup-card span{color:var(--muted);font-size:.9rem}

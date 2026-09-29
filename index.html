@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU">
+<html lang="en-AU" class="rb-booting">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -8,8 +8,14 @@
   <link rel="stylesheet" href="css/rosterbot.css">
 </head>
 <body>
+  <div id="appStartup" class="app-startup" role="status" aria-live="polite">
+    <div class="app-startup-card">
+      <strong>RosterBot 🤖</strong>
+      <span>Loading your saved roster…</span>
+    </div>
+  </div>
   <div id="fatalError" hidden style="max-width:1180px;margin:12px auto;padding:12px 14px;background:#5b1e1e;color:#fff;border:1px solid #a84a4a;border-radius:10px;font-family:system-ui,sans-serif"></div>
-  <noscript><div style="max-width:1180px;margin:12px auto;padding:12px 14px;background:#5b1e1e;color:#fff;border-radius:10px;font-family:system-ui,sans-serif">JavaScript is disabled. RosterBot needs JavaScript enabled in this browser.</div></noscript>
+  <noscript><style>#appStartup{display:none!important}</style><div style="max-width:1180px;margin:12px auto;padding:12px 14px;background:#5b1e1e;color:#fff;border-radius:10px;font-family:system-ui,sans-serif">JavaScript is disabled. RosterBot needs JavaScript enabled in this browser.</div></noscript>
   <header class="topbar v27-topbar">
     <div class="shell v27-header-shell">
       <div class="v27-brand-row">
@@ -57,29 +63,21 @@
 
       <div class="v27-card-pager" id="dashboardCardPager" aria-label="Dashboard cards">
         <div class="v27-card-page" data-dashboard-page="0">
+          <button id="dashRosterCard" class="v27-dash-card v27-wide-card v31-roster-card" type="button">
+            <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2M15 17h2"/></svg></span><span>My roster</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
+            <span class="v31-roster-period"><strong id="dashFortnightRange">—</strong><small id="dashRosterPosition">—</small></span>
+            <span class="v31-roster-week-heading"><small>THIS WEEK</small><strong id="dashWeekRange">—</strong></span>
+            <div id="dashWeekDays" class="v27-week-strip" aria-label="This week"></div>
+            <span class="v31-roster-pay-row"><span id="dashFortnightHours" class="v27-card-line">—</span><span id="dashFortnightPay" class="v27-card-pay">Expected —</span><span id="dashFortnightPayslip" class="v27-status-line neutral">Payslip · Not checked</span></span>
+            <span class="v27-card-watermark" aria-hidden="true"><svg class="v27-svg" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2M15 17h2"/></svg></span>
+          </button>
+
           <button id="dashTodayCard" class="v27-dash-card v27-today-card" type="button">
             <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span><span>Today</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
             <strong id="dashTodayJob">—</strong>
             <span id="dashTodayDate" class="v27-card-line">—</span>
             <span id="dashTodayTimes" class="v27-card-line">—</span>
             <span class="v27-card-watermark" aria-hidden="true"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span>
-          </button>
-
-          <button id="dashWeekCard" class="v27-dash-card" type="button">
-            <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2M15 17h2"/></svg></span><span>This week</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
-            <strong id="dashWeekRange">—</strong>
-            <div id="dashWeekDays" class="v27-week-strip" aria-label="This week"></div>
-            <span id="dashWeekNext" class="v27-card-line">Resolving next shift…</span>
-            <span class="v27-card-watermark" aria-hidden="true"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2M15 17h2"/></svg></span>
-          </button>
-
-          <button id="dashFortnightCard" class="v27-dash-card" type="button">
-            <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h15a2 2 0 0 1 2 2v9H5a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2h12v4"/><path d="M16 12h5v4h-5a2 2 0 0 1 0-4Z"/></svg></span><span>This pay fortnight</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
-            <strong id="dashFortnightRange">—</strong>
-            <span id="dashFortnightHours" class="v27-card-line">—</span>
-            <span id="dashFortnightPay" class="v27-card-pay">Expected —</span>
-            <span id="dashFortnightPayslip" class="v27-status-line neutral">Payslip · Not checked</span>
-            <span class="v27-card-watermark" aria-hidden="true"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h15a2 2 0 0 1 2 2v9H5a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2h12v4"/><path d="M16 12h5v4h-5a2 2 0 0 1 0-4Z"/></svg></span>
           </button>
 
           <button id="dashVarianceCard" class="v27-dash-card" type="button">
@@ -306,7 +304,17 @@
           <button id="v27ClassicCompact" class="secondary" type="button">Compact</button>
         </div>
       </div>
-      <div class="v27-drilldown-nav"><button id="v27BackHome" class="v27-back-home" type="button"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span>Back to Home</span></button><div class="v27-fortnight-nav" aria-label="Pay fortnight navigation"><button id="v27FortnightPrev" class="v27-back-home" type="button" aria-label="Previous pay fortnight">‹</button><button id="v27FortnightToday" class="v27-back-home" type="button">Today</button><button id="v27FortnightNext" class="v27-back-home" type="button" aria-label="Next pay fortnight">›</button></div><div class="v27-month-nav" aria-label="Month navigation"><button id="v27MonthPrev" class="v27-back-home" type="button" aria-label="Previous month">‹</button><strong id="v27MonthLabel"></strong><button id="v27MonthNext" class="v27-back-home" type="button" aria-label="Next month">›</button></div></div>
+      <div class="v27-drilldown-nav">
+        <button id="v27BackHome" class="v27-back-home" type="button"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span>Back to Home</span></button>
+        <div class="v31-roster-drilldown-head">
+          <div class="v31-roster-title"><span class="eyebrow">MY ROSTER</span><strong id="v31RosterPeriod">—</strong><small id="v31RosterPosition">—</small></div>
+          <div class="v31-roster-toolbar">
+            <div class="v31-period-toggle" role="group" aria-label="Roster period"><button id="v31RosterWeek" type="button" aria-pressed="false">Week</button><button id="v31RosterFortnight" type="button" aria-pressed="true">Pay fortnight</button></div>
+            <div class="v27-fortnight-nav" aria-label="Roster period navigation"><button id="v27FortnightPrev" class="v27-back-home" type="button" aria-label="Previous period">‹</button><button id="v27FortnightToday" class="v27-back-home" type="button">Today</button><button id="v27FortnightNext" class="v27-back-home" type="button" aria-label="Next period">›</button></div>
+          </div>
+        </div>
+        <div class="v27-month-nav" aria-label="Month navigation"><button id="v27MonthPrev" class="v27-back-home" type="button" aria-label="Previous month">‹</button><strong id="v27MonthLabel"></strong><button id="v27MonthNext" class="v27-back-home" type="button" aria-label="Next month">›</button></div>
+      </div>
       <div class="section-heading output-heading">
         <div>
           <div id="outputEyebrow" class="eyebrow">YOUR ROSTER</div>

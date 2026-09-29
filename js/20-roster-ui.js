@@ -587,6 +587,7 @@
           <div><div class="line-label">${weekPositionHtml(week)}${locked?' · <span class="week-lock-state">LOCKED ✓</span>':''}</div><div class="wc-label">WC ${escapeHtml(E.formatDateLong(week.wcDate))}</div>${week.futureWarning?'<span class="week-warning">⚠ Forecast beyond expected Nov 2026 roster change — verify against the current roster.</span>':''}</div>
           <div class="week-header-actions">${weekLeaveType(week.wcDate)?`<span class="week-leave-badge">${escapeHtml(({annual:'Annual leave',personal:'Personal leave',unpaid:'Unpaid leave'})[weekLeaveType(week.wcDate)]||'Leave')}</span>`:''}${weekActionsHtml(week)}</div>
         </header>`;
+    if(week.timelineMissing)return `<article class="week-card compact-week timeline-missing-week">${header}<div class="timeline-missing-note"><strong>No roster saved for this week</strong><span>This week is before your first roster-history arrangement.</span></div></article>`;
     if (week.isAnnualLeave) {
       const end = E.addDays(week.wcDate, 6);
       return `<article class="week-card compact-week annual-leave-week${locked?' locked-week':''}">${header}<div class="annual-leave-banner"><strong>ANNUAL LEAVE</strong><span>${escapeHtml(E.formatDateLong(week.wcDate))} – ${escapeHtml(E.formatDateLong(end))}</span>${locked?'<span class="locked-note">Historical facts protected from accidental editing.</span>':''}</div></article>`;
@@ -601,6 +602,8 @@
           <div><div class="line-label">${weekPositionHtml(week)}${locked?' · <span class="week-lock-state">LOCKED ✓</span>':''}</div><div class="wc-label">WC ${escapeHtml(E.formatDateLong(week.wcDate))}</div>${week.futureWarning?'<span class="week-warning">⚠ Forecast beyond expected Nov 2026 roster change — verify against the current roster.</span>':''}</div>
           <div class="week-header-actions">${weekLeaveType(week.wcDate)?`<span class="week-leave-badge">${escapeHtml(({annual:'Annual leave',personal:'Personal leave',unpaid:'Unpaid leave'})[weekLeaveType(week.wcDate)]||'Leave')}</span>`:''}${weekActionsHtml(week)}</div>
         </header>`;
+
+    if(week.timelineMissing)return `<article class="week-card timeline-missing-week">${header}<div class="timeline-missing-note"><strong>No roster saved for this week</strong><span>This week is before your first roster-history arrangement.</span></div></article>`;
 
     if (week.isAnnualLeave) {
       const end = E.addDays(week.wcDate, 6);
