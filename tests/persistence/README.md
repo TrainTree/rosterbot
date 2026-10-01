@@ -8,6 +8,8 @@ npm run check:syntax
 npm run report:persistence
 ```
 
+The Phase 3 decision table, startup gate, raw-copy preservation contract, safe replacement protocol, and Phase 4 boundary are documented in [`docs/persistence-recovery-policy.md`](../../docs/persistence-recovery-policy.md).
+
 `tests/fixtures/persistence-v029.json` contains synthetic input states for current v0.29.x behaviour. Objects and arrays in `localStorage` are serialized by `helpers.mjs`; `{ "$raw": "..." }` represents deliberately malformed raw storage text. IndexedDB rows use the current `RosterBotPersonalDB` / `kv` shape and are serialized the same way before recovery tests.
 
 The registry is authoritative for backup, Cloud Sync, and IndexedDB inclusion metadata. It also owns classifications, sensitivity labels, compatibility aliases, and side-effect-free validators. Readers receive `missing`, `valid`, `legacy`, `malformed`, or `unsupported` state while retaining the original raw string; validation never writes to storage.

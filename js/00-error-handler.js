@@ -1,6 +1,17 @@
-// IndexedDB recovery runs after the feature modules have loaded. Remember the
-// real starting keys so module-created defaults cannot mask a saved mirror value.
-try { window.__rosterbotLocalKeysAtStartup = Object.keys(localStorage); } catch (_) { window.__rosterbotLocalKeysAtStartup = null; }
+// Capture exact raw values before any feature module can create defaults. The
+// recovery preflight compares this immutable view with IndexedDB.
+try {
+  var rosterbotStartupStorage = {};
+  for (var rosterbotStorageIndex = 0; rosterbotStorageIndex < localStorage.length; rosterbotStorageIndex++) {
+    var rosterbotStorageKey = localStorage.key(rosterbotStorageIndex);
+    if (rosterbotStorageKey != null) rosterbotStartupStorage[rosterbotStorageKey] = localStorage.getItem(rosterbotStorageKey);
+  }
+  window.__rosterbotLocalStateAtStartup = Object.freeze(rosterbotStartupStorage);
+  window.__rosterbotLocalKeysAtStartup = Object.freeze(Object.keys(rosterbotStartupStorage));
+} catch (_) {
+  window.__rosterbotLocalStateAtStartup = null;
+  window.__rosterbotLocalKeysAtStartup = null;
+}
 
 window.addEventListener('error', function (event) {
   // Browsers/extensions can emit an opaque cross-origin "Script error." with no

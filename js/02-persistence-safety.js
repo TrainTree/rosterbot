@@ -8,6 +8,7 @@
   const CLEAR_KEY='rosterbot-cleared-v1';
   const AUTO_HOLD_KEY='rosterbot-cloud-auto-hold-v1';
   const CLEAR_REASON='explicit-local-clear';
+  const RECOVERABLE_STATES=new Set(['valid','legacy']);
 
   function objectValue(raw){try{const value=JSON.parse(raw||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{}}catch(_){return {}}}
   function isExplicitlyCleared(storage){try{return !!storage?.getItem(CLEAR_KEY)}catch(_){return false}}
@@ -21,16 +22,146 @@
     storage.setItem(AUTO_HOLD_KEY,JSON.stringify(all));
     return {clearedAt:stamp,hold:all.__device};
   }
-  function shouldMirror(storage){return !isExplicitlyCleared(storage)}
-  function recoverRows({storage,rows,personalKeys,startupKeys}){
-    if(isExplicitlyCleared(storage))return {restored:false,count:0,reason:'explicit-clear'};
-    const allowed=new Set(personalKeys||[]),started=startupKeys==null?null:new Set(startupKeys),list=Array.isArray(rows)?rows:[];let count=0;
-    for(const row of list){
-      if(!row||!allowed.has(row.key)||typeof row.value!=='string')continue;
-      const missingAtStartup=started?!started.has(row.key):storage.getItem(row.key)==null;
-      if(missingAtStartup&&storage.getItem(row.key)!==row.value){storage.setItem(row.key,row.value);count++}
-    }
-    return {restored:count>0,count,reason:count?'restored':'no-missing-keys'};
+  function shouldMirror(storage,recoveryState=null){return !isExplicitlyCleared(storage)&&recoveryState?.mirrorAllowed!==false}
+
+  function canonical(value){
+    if(Array.isArray(value))return `[${value.map(canonical).join(',')}]`;
+    if(value&&typeof value==='object')return `{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
+    return JSON.stringify(value);
   }
-  return Object.freeze({CLEAR_KEY,AUTO_HOLD_KEY,CLEAR_REASON,isExplicitlyCleared,autoHoldFor,markExplicitClear,shouldMirror,recoverRows});
+  function validation(registry,key,raw,source,present=raw!=null){
+    if(!present)return registry.validate(key,null);
+    if(source==='indexeddb'&&typeof raw!=='string')return {known:true,key,state:'unsupported',valid:false,missing:false,raw,value:raw,reason:'IndexedDB value is not a string'};
+    return registry.validate(key,raw);
+  }
+  function recoverable(checked){return RECOVERABLE_STATES.has(checked?.state)}
+  function semanticallyEqual(a,b){return recoverable(a)&&recoverable(b)&&canonical(a.value)===canonical(b.value)}
+  function recoveryDecision({registry,key,localRaw=null,indexedDbRaw=null,indexedDbUpdatedAt=null,indexedDbPresent=indexedDbRaw!=null}){
+    if(!registry||typeof registry.validate!=='function')throw new TypeError('A persistence registry is required');
+    const local=validation(registry,key,localRaw,'local'),indexedDb=validation(registry,key,indexedDbRaw,'indexeddb',indexedDbPresent);
+    let issueType,startupAllowed=true,automaticRecoveryAllowed=false,userChoiceRequired=false;
+    if(local.state==='unsupported'||indexedDb.state==='unsupported'){
+      issueType='unsupported';startupAllowed=false;userChoiceRequired=true;
+    }else if(local.state==='missing'&&indexedDb.state==='missing')issueType='empty';
+    else if(recoverable(local)&&indexedDb.state==='missing')issueType='use-local';
+    else if(local.state==='missing'&&recoverable(indexedDb)){issueType='restore-indexeddb';automaticRecoveryAllowed=true}
+    else if(recoverable(local)&&recoverable(indexedDb)){
+      if(semanticallyEqual(local,indexedDb))issueType='identical';
+      else{issueType='conflict';startupAllowed=false;userChoiceRequired=true}
+    }else if(local.state==='malformed'&&recoverable(indexedDb)){
+      issueType='malformed-local-recoverable';startupAllowed=false;userChoiceRequired=true;
+    }else if(recoverable(local)&&indexedDb.state==='malformed'){
+      issueType='malformed-indexeddb-recoverable';userChoiceRequired=true;
+    }else{
+      issueType='unrecoverable';startupAllowed=false;userChoiceRequired=true;
+    }
+    return {
+      issueType,key,affectedKeys:[key],localValidationState:local.state,indexedDbValidationState:indexedDb.state,
+      automaticRecoveryAllowed,userChoiceRequired,startupAllowed,
+      local,indexedDb:{...indexedDb,updatedAt:indexedDbUpdatedAt},
+      preservedRawCopies:{local:localRaw,indexedDb:indexedDbRaw}
+    };
+  }
+  function tombstoneDecision({registry,localValues,rows,personalKeys}){
+    const raw=Object.prototype.hasOwnProperty.call(localValues,CLEAR_KEY)?localValues[CLEAR_KEY]:null;
+    if(raw==null)return null;
+    const checked=registry.validate(CLEAR_KEY,raw),clearTime=Date.parse(String(raw));
+    if(!recoverable(checked)||!Number.isFinite(clearTime))return {
+      issueType:'unsupported',affectedKeys:[CLEAR_KEY],localValidationState:checked.state,indexedDbValidationState:'missing',
+      automaticRecoveryAllowed:false,userChoiceRequired:true,startupAllowed:false,mirrorAllowed:false,
+      preservedRawCopies:{[CLEAR_KEY]:{local:raw,indexedDb:null}},reason:'clear tombstone is not a supported timestamp'
+    };
+    const rowMap=new Map((rows||[]).filter(row=>row&&typeof row.key==='string').map(row=>[row.key,row]));
+    const presentLocalKeys=(personalKeys||[]).filter(key=>Object.prototype.hasOwnProperty.call(localValues,key)),retainedRows=(personalKeys||[]).map(key=>rowMap.get(key)).filter(Boolean);
+    const retainedKeys=[...new Set([...presentLocalKeys,...retainedRows.map(row=>row.key)])],localChecks=Object.fromEntries(retainedKeys.map(key=>[key,validation(registry,key,Object.prototype.hasOwnProperty.call(localValues,key)?localValues[key]:null,'local')]));
+    const indexedDbChecks=Object.fromEntries(retainedKeys.map(key=>[key,validation(registry,key,rowMap.has(key)?rowMap.get(key).value:null,'indexeddb',rowMap.has(key))]));
+    const localRecoverable=(personalKeys||[]).filter(key=>registry.get(key)?.category==='personal').some(key=>recoverable(localChecks[key]));
+    const localProblems=presentLocalKeys.filter(key=>['malformed','unsupported'].includes(localChecks[key]?.state)),recoverableRows=retainedRows.filter(row=>recoverable(indexedDbChecks[row.key]));
+    const newerThanRows=recoverableRows.every(row=>Number.isFinite(Date.parse(String(row.updatedAt||'')))&&Date.parse(String(row.updatedAt))<=clearTime);
+    const affectedKeys=retainedKeys,preservedRows=Object.fromEntries(retainedKeys.map(key=>[key,{local:Object.prototype.hasOwnProperty.call(localValues,key)?localValues[key]:null,indexedDb:rowMap.has(key)?rowMap.get(key).value:null}]));
+    const localStates=Object.fromEntries(retainedKeys.map(key=>[key,localChecks[key].state])),indexedDbStates=Object.fromEntries(retainedKeys.map(key=>[key,indexedDbChecks[key].state]));
+    const indexedStateSet=new Set(Object.values(indexedDbStates)),indexedDbValidationState=indexedStateSet.size===0?'missing':indexedStateSet.size===1?[...indexedStateSet][0]:'mixed';
+    if(localProblems.length)return {
+      issueType:localProblems.some(key=>localChecks[key].state==='unsupported')?'unsupported':'unrecoverable',affectedKeys:[CLEAR_KEY,...affectedKeys],localValidationState:'mixed',indexedDbValidationState,
+      automaticRecoveryAllowed:false,userChoiceRequired:true,startupAllowed:false,mirrorAllowed:false,clearedAt:String(raw),
+      preservedRawCopies:{[CLEAR_KEY]:{local:raw,indexedDb:null},...preservedRows},validationStates:{local:{[CLEAR_KEY]:checked.state,...localStates},indexedDb:indexedDbStates},
+      reason:'clear tombstone coexists with malformed or unsupported local data'
+    };
+    if(!localRecoverable&&newerThanRows)return {
+      issueType:'cleared',affectedKeys,localValidationState:'missing',indexedDbValidationState,
+      automaticRecoveryAllowed:false,userChoiceRequired:false,startupAllowed:true,mirrorAllowed:false,clearedAt:String(raw),
+      preservedRawCopies:preservedRows,validationStates:{local:localStates,indexedDb:indexedDbStates}
+    };
+    return {
+      issueType:'conflict',affectedKeys:[CLEAR_KEY,...affectedKeys],localValidationState:localRecoverable?'valid':'missing',indexedDbValidationState:recoverableRows.length?'valid':'missing',
+      automaticRecoveryAllowed:false,userChoiceRequired:true,startupAllowed:false,mirrorAllowed:false,clearedAt:String(raw),
+      preservedRawCopies:{[CLEAR_KEY]:{local:raw,indexedDb:null},...preservedRows},validationStates:{local:{[CLEAR_KEY]:checked.state,...localStates},indexedDb:indexedDbStates},
+      reason:'clear tombstone is not demonstrably newer than every recoverable copy'
+    };
+  }
+  function aggregateType(decisions){
+    const types=new Set(decisions.map(item=>item.issueType));
+    for(const type of ['unrecoverable','unsupported','conflict','malformed-local-recoverable','malformed-indexeddb-recoverable','restore-indexeddb','use-local','identical'])if(types.has(type))return type;
+    return 'empty';
+  }
+  function decideRecovery({registry,localValues={},rows=[],personalKeys=[]}){
+    const keys=[...new Set(personalKeys)],local=localValues&&typeof localValues==='object'?localValues:{},list=Array.isArray(rows)?rows:[];
+    const tombstone=tombstoneDecision({registry,localValues:local,rows:list,personalKeys:keys});
+    if(tombstone)return {decisions:[],validationStates:{local:{},indexedDb:{}},replacementEntries:[],...tombstone};
+    const rowMap=new Map(list.filter(row=>row&&typeof row.key==='string').map(row=>[row.key,row]));
+    const decisions=keys.map(key=>{const row=rowMap.get(key);return recoveryDecision({registry,key,localRaw:Object.prototype.hasOwnProperty.call(local,key)?local[key]:null,indexedDbRaw:row?row.value:null,indexedDbUpdatedAt:row?.updatedAt??null,indexedDbPresent:!!row})});
+    const blocking=decisions.filter(item=>!item.startupAllowed),issues=decisions.filter(item=>!['empty','use-local','identical'].includes(item.issueType));
+    const affectedKeys=[...new Set(issues.flatMap(item=>item.affectedKeys))];
+    return {
+      issueType:aggregateType(decisions),affectedKeys,
+      localValidationState:affectedKeys.length===1?decisions.find(item=>item.key===affectedKeys[0])?.localValidationState:'mixed',
+      indexedDbValidationState:affectedKeys.length===1?decisions.find(item=>item.key===affectedKeys[0])?.indexedDbValidationState:'mixed',
+      automaticRecoveryAllowed:blocking.length===0&&decisions.some(item=>item.automaticRecoveryAllowed),
+      userChoiceRequired:decisions.some(item=>item.userChoiceRequired),startupAllowed:blocking.length===0,
+      mirrorAllowed:decisions.every(item=>!['malformed-indexeddb-recoverable','unsupported','conflict','unrecoverable','malformed-local-recoverable'].includes(item.issueType)),
+      decisions,
+      validationStates:{local:Object.fromEntries(decisions.map(item=>[item.key,item.localValidationState])),indexedDb:Object.fromEntries(decisions.map(item=>[item.key,item.indexedDbValidationState]))},
+      preservedRawCopies:Object.fromEntries(issues.map(item=>[item.key,item.preservedRawCopies])),
+      replacementEntries:decisions.filter(item=>item.issueType==='restore-indexeddb').map(item=>[item.key,item.preservedRawCopies.indexedDb])
+    };
+  }
+
+  async function replacePersistentState({storage,replacements,registry}){
+    if(!storage||typeof storage.getItem!=='function'||typeof storage.setItem!=='function')throw new TypeError('A Storage-compatible target is required');
+    if(!registry||typeof registry.validate!=='function')throw new TypeError('A persistence registry is required');
+    const entries=replacements instanceof Map?[...replacements.entries()]:Array.isArray(replacements)?replacements:Object.entries(replacements||{}),before={};
+    for(const [key,raw] of entries){
+      before[key]=storage.getItem(key);
+      if(typeof raw!=='string')return {ok:false,stage:'validation',rolledBack:false,rollbackVerified:true,before,error:new Error(`Replacement for ${key} is not a raw string`)};
+      const checked=registry.validate(key,raw);
+      if(!recoverable(checked))return {ok:false,stage:'validation',rolledBack:false,rollbackVerified:true,before,error:new Error(`Replacement for ${key} is ${checked.state}`)};
+    }
+    const rollback=()=>{
+      let rollbackError=null;
+      for(const [key] of entries)try{if(before[key]==null)storage.removeItem(key);else storage.setItem(key,before[key])}catch(error){rollbackError=rollbackError||error}
+      let rollbackVerified=!rollbackError;
+      for(const [key] of entries)try{if(storage.getItem(key)!==before[key])rollbackVerified=false}catch(_){rollbackVerified=false}
+      return {rolledBack:true,rollbackVerified,rollbackError};
+    };
+    try{
+      for(const [key,raw] of entries)storage.setItem(key,raw);
+    }catch(error){return {ok:false,stage:'write',before,error,...rollback()}}
+    try{
+      for(const [key,raw] of entries){
+        const reread=storage.getItem(key),checked=registry.validate(key,reread);
+        if(reread!==raw||!recoverable(checked))throw new Error(`Verification failed for ${key}`);
+      }
+      return {ok:true,stage:'verified',before,replacedKeys:entries.map(([key])=>key),rolledBack:false,rollbackVerified:true};
+    }catch(error){return {ok:false,stage:'verification',before,error,...rollback()}}
+  }
+
+  async function recoverRows({storage,rows,personalKeys,startupKeys,startupValues,registry}){
+    const sourceRegistry=registry||(typeof globalThis!=='undefined'?globalThis.RosterBotPersistenceRegistry:null);
+    const localValues=startupValues||Object.fromEntries((startupKeys||personalKeys||[]).map(key=>[key,storage.getItem(key)]).filter(([,value])=>value!=null));
+    const decision=decideRecovery({registry:sourceRegistry,localValues,rows,personalKeys});
+    if(!decision.startupAllowed||!decision.replacementEntries.length)return {restored:false,count:0,reason:decision.issueType,decision};
+    const result=await replacePersistentState({storage,replacements:decision.replacementEntries,registry:sourceRegistry});
+    return {restored:result.ok,count:result.ok?decision.replacementEntries.length:0,reason:result.ok?'restored':`replacement-${result.stage}-failed`,decision,replacement:result};
+  }
+  return Object.freeze({CLEAR_KEY,AUTO_HOLD_KEY,CLEAR_REASON,isExplicitlyCleared,autoHoldFor,markExplicitClear,shouldMirror,recoveryDecision,decideRecovery,replacePersistentState,recoverRows,semanticallyEqual});
 });
