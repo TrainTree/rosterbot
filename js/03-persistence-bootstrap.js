@@ -13,8 +13,10 @@
     getState:()=>state,
     isBlocked:()=>state?.startupAllowed===false||state?.userChoiceRequired===true,
     canMirror:()=>state?.mirrorAllowed!==false,
+    getIndexedDbTarget:()=>indexedDbTarget,
     exportEvidence:()=>downloadEvidence(),
-    resolve:choice=>resolveRecovery(choice)
+    resolve:choice=>resolveRecovery(choice),
+    enterReplacementFailure:failure=>enterReplacementFailure(failure)
   };
   window.RosterBotRecovery=Object.freeze(recoveryApi);
 
@@ -72,6 +74,17 @@
     read:async keys=>{const wanted=new Set(keys),rows=await readRows();return new Map(keys.map(key=>[key,rows.find(row=>wanted.has(row.key)&&row.key===key)||null]))},
     apply:applyRows
   };
+  function enterReplacementFailure(failure={}){
+    state={
+      issueType:'unrecoverable',affectedKeys:[...(failure.affectedKeys||[])],localValidationState:'unknown',indexedDbValidationState:'unknown',
+      automaticRecoveryAllowed:false,userChoiceRequired:true,startupAllowed:false,mirrorAllowed:false,decisions:[],replacementEntries:[],
+      validationStates:failure.validationStates||{local:{},indexedDb:{}},preservedRawCopies:failure.preservedRawCopies||{},replacement:failure.replacement||null,
+      reason:failure.reason||'A state replacement failed and rollback could not be verified.'
+    };
+    showRecovery('RosterBot could not verify exact rollback after replacing saved data. Automatic sync and mirroring are paused. Export the recovery evidence before continuing.');
+    window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));
+    return state;
+  }
   function downloadEvidence(){
     if(!recoveryUi||!state)return null;
     const artifact=recoveryUi.buildRecoveryExport({state,registry}),text=JSON.stringify(artifact,null,2),blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');

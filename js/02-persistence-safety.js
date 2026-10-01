@@ -9,6 +9,9 @@
   const AUTO_HOLD_KEY='rosterbot-cloud-auto-hold-v1';
   const CLEAR_REASON='explicit-local-clear';
   const RECOVERABLE_STATES=new Set(['valid','legacy']);
+  const BACKUP_APP='RosterBotPayBot';
+  const RECOVERY_FORMAT='rosterbot-recovery-evidence-v1';
+  let replacementDepth=0;
 
   function objectValue(raw){try{const value=JSON.parse(raw||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{}}catch(_){return {}}}
   function isExplicitlyCleared(storage){try{return !!storage?.getItem(CLEAR_KEY)}catch(_){return false}}
@@ -22,7 +25,10 @@
     storage.setItem(AUTO_HOLD_KEY,JSON.stringify(all));
     return {clearedAt:stamp,hold:all.__device};
   }
-  function shouldMirror(storage,recoveryState=null){return !isExplicitlyCleared(storage)&&recoveryState?.mirrorAllowed!==false}
+  function beginReplacement(){replacementDepth++;return replacementDepth}
+  function endReplacement(){replacementDepth=Math.max(0,replacementDepth-1);return replacementDepth}
+  function isReplacementInProgress(){return replacementDepth>0}
+  function shouldMirror(storage,recoveryState=null){return !isReplacementInProgress()&&!isExplicitlyCleared(storage)&&recoveryState?.mirrorAllowed!==false}
 
   function canonical(value){
     if(Array.isArray(value))return `[${value.map(canonical).join(',')}]`;
@@ -36,6 +42,53 @@
   }
   function recoverable(checked){return RECOVERABLE_STATES.has(checked?.state)}
   function semanticallyEqual(a,b){return recoverable(a)&&recoverable(b)&&canonical(a.value)===canonical(b.value)}
+  function isObject(value){return !!value&&typeof value==='object'&&!Array.isArray(value)}
+  function countObject(value){return isObject(value)?Object.keys(value).length:0}
+  function stageReplacementPayload({payload,registry,surface='backup'}={}){
+    if(!registry||typeof registry.validate!=='function')throw new TypeError('A persistence registry is required');
+    const errors=[],warnings=[],wrapperUnknown={},unknownStorage={},validations={},storage={},surfaceKeys=registry.surfaceKeys(surface),allowed=new Set(surfaceKeys);
+    if(!isObject(payload))return {ok:false,kind:'malformed-wrapper',errors:['The backup wrapper must be a JSON object.'],warnings,storage,unknownStorage,wrapperUnknown,validations,surface,surfaceKeys,schemaVersion:null};
+    if(payload.format===RECOVERY_FORMAT)return {ok:false,kind:'recovery-artifact',errors:['This is a RosterBot recovery/diagnostic artifact, not a normal .rosterbot backup. It has not been restored.'],warnings,storage,unknownStorage,wrapperUnknown,validations,surface,surfaceKeys,schemaVersion:null,recoveryArtifact:true};
+    for(const field of ['app','schemaVersion','storage'])if(!Object.prototype.hasOwnProperty.call(payload,field))errors.push(`Missing required wrapper field: ${field}.`);
+    if(Object.prototype.hasOwnProperty.call(payload,'app')&&payload.app!==BACKUP_APP)errors.push('The app identifier is not RosterBotPayBot.');
+    const schema=Number(payload.schemaVersion);
+    if(Object.prototype.hasOwnProperty.call(payload,'schemaVersion')&&schema!==registry.schemaVersion)errors.push(`Schema ${String(payload.schemaVersion)} is unsupported; this client accepts schema ${registry.schemaVersion}.`);
+    if(Object.prototype.hasOwnProperty.call(payload,'storage')&&!isObject(payload.storage))errors.push('The storage field must be an object, not an array or scalar value.');
+    for(const [key,value] of Object.entries(payload))if(!['app','version','schemaVersion','exportedAt','privacy','storage'].includes(key))wrapperUnknown[key]=value;
+    if(isObject(payload.storage))for(const [key,value] of Object.entries(payload.storage)){
+      if(!allowed.has(key)){unknownStorage[key]=value;continue}
+      if(typeof value!=='string'){
+        validations[key]={known:true,key,state:'unsupported',valid:false,reason:'persisted backup values must be raw strings',raw:value};
+        errors.push(`${key}: persisted value is not a raw string.`);continue;
+      }
+      const checked=registry.validate(key,value);validations[key]=checked;
+      if(!recoverable(checked)){errors.push(`${key}: ${checked.state}${checked.reason?` (${checked.reason})`:''}.`);continue}
+      storage[key]=value;
+      if(checked.state==='legacy')warnings.push(`${key}: ${checked.reason||'older compatible value'}.`);
+    }
+    if(Object.prototype.hasOwnProperty.call(storage,'rosterbot-db-schema-v1')&&storage['rosterbot-db-schema-v1']!==String(registry.schemaVersion))errors.push('The persisted schema marker does not match schema 4.');
+    const presentKeys=Object.keys(storage),timeline=validations['rosterbot-timeline-v1']?.value,employment=validations['rosterbot-employment-profile-v1']?.value,day=validations['rosterbot-day-overrides-v1']?.value;
+    const substantive=key=>{const item=registry.get(key),value=validations[key]?.value;if(item?.category!=='personal')return false;if(Array.isArray(value))return value.length>0;if(isObject(value)){if(['rosterbot-manual-schedule-v1','rosterbot-session-settings-v1','rosterbot-calendar-subscription-settings-v1','paybot-v06-state','paybot-v05-state','paybot-v04-state','paybot-v03-state','paybot-v02-state'].includes(key))return true;return Object.keys(value).length>0}return value!=null&&String(value)!==''};
+    const diaryKeys=['rosterbot-diary-annual-leave-v1','rosterbot-week-leave-v1','rosterbot-week-overrides-v1','rosterbot-day-overrides-v1','rosterbot-week-locks-v1','rosterbot-pay-checks-v1','rosterbot-fortnight-allowances-v1','rosterbot-fortnight-notes-v1'];
+    const paybotPresent=['paybot-v06-state','paybot-v05-state','paybot-v04-state','paybot-v03-state','paybot-v02-state'].some(key=>Object.prototype.hasOwnProperty.call(storage,key));
+    const summary={
+      app:payload.app??null,version:payload.version??null,schemaVersion:Number.isFinite(schema)?schema:null,
+      rosterHistoryFound:Array.isArray(timeline)&&timeline.length>0,rosterHistoryCount:Array.isArray(timeline)?timeline.length:0,
+      employmentHistoryFound:Array.isArray(employment)&&employment.length>0,employmentHistoryCount:Array.isArray(employment)?employment.length:0,
+      diaryChangesFound:diaryKeys.some(substantive),
+      diaryChangeCount:countObject(day),manualSchedulePresent:Object.prototype.hasOwnProperty.call(storage,'rosterbot-manual-schedule-v1'),paybotStatePresent:paybotPresent,
+      calendarSettingsPresent:Object.prototype.hasOwnProperty.call(storage,'rosterbot-calendar-subscription-settings-v1'),
+      recognisedCount:presentKeys.length,totalRecognisedKeys:surfaceKeys.length,malformedOrUnsupported:errors.filter(message=>!message.startsWith('Missing required wrapper')&&!message.startsWith('The app identifier')&&!message.startsWith('Schema ')&&!message.startsWith('The storage field')),
+      unknownKeys:Object.keys(unknownStorage),unknownWrapperFields:Object.keys(wrapperUnknown),empty:!presentKeys.some(substantive),partial:presentKeys.length<surfaceKeys.length
+    };
+    return {ok:errors.length===0,kind:errors.length?'invalid':'candidate',errors,warnings,payload,storage,unknownStorage,wrapperUnknown,validations,surface,surfaceKeys,schemaVersion:schema,summary,fullReplacement:true};
+  }
+  function replacementPlan(candidate,{extraRemovals=[]}={}){
+    if(!candidate?.ok)throw new Error('Only a fully validated staged candidate can be applied.');
+    const keys=candidate.surfaceKeys||null,surfaceKeys=keys||Object.keys(candidate.validations||{}).concat(Object.keys(candidate.storage||{}));
+    const uniqueSurface=[...new Set(surfaceKeys)],localSet=Object.entries(candidate.storage||{}),present=new Set(localSet.map(([key])=>key));
+    return {localSet,localRemove:[...new Set([...uniqueSurface.filter(key=>!present.has(key)),...extraRemovals])].filter(key=>!present.has(key))};
+  }
   function recoveryDecision({registry,key,localRaw=null,indexedDbRaw=null,indexedDbUpdatedAt=null,indexedDbPresent=indexedDbRaw!=null}){
     if(!registry||typeof registry.validate!=='function')throw new TypeError('A persistence registry is required');
     const local=validation(registry,key,localRaw,'local'),indexedDb=validation(registry,key,indexedDbRaw,'indexeddb',indexedDbPresent);
@@ -127,33 +180,38 @@
     };
   }
 
-  async function replacePersistentState({storage,replacements,registry}){
-    if(!storage||typeof storage.getItem!=='function'||typeof storage.setItem!=='function')throw new TypeError('A Storage-compatible target is required');
+  async function replacePersistentState({storage,replacements,removals=[],registry}){
+    if(!storage||typeof storage.getItem!=='function'||typeof storage.setItem!=='function'||typeof storage.removeItem!=='function')throw new TypeError('A Storage-compatible target is required');
     if(!registry||typeof registry.validate!=='function')throw new TypeError('A persistence registry is required');
-    const entries=replacements instanceof Map?[...replacements.entries()]:Array.isArray(replacements)?replacements:Object.entries(replacements||{}),before={};
+    const entries=replacements instanceof Map?[...replacements.entries()]:Array.isArray(replacements)?replacements:Object.entries(replacements||{}),writeKeys=new Set(entries.map(([key])=>key)),deleteKeys=[...new Set(removals||[])].filter(key=>!writeKeys.has(key)),affected=[...new Set([...entries.map(([key])=>key),...deleteKeys])],before={};
+    for(const key of affected)before[key]=storage.getItem(key);
     for(const [key,raw] of entries){
-      before[key]=storage.getItem(key);
       if(typeof raw!=='string')return {ok:false,stage:'validation',rolledBack:false,rollbackVerified:true,before,error:new Error(`Replacement for ${key} is not a raw string`)};
       const checked=registry.validate(key,raw);
       if(!recoverable(checked))return {ok:false,stage:'validation',rolledBack:false,rollbackVerified:true,before,error:new Error(`Replacement for ${key} is ${checked.state}`)};
     }
+    try{for(const key of affected)if(storage.getItem(key)!==before[key])return {ok:false,stage:'capture',rolledBack:false,rollbackVerified:false,before,error:new Error(`Snapshot changed while capturing ${key}`)}}catch(error){return {ok:false,stage:'capture',rolledBack:false,rollbackVerified:false,before,error}}
     const rollback=()=>{
       let rollbackError=null;
-      for(const [key] of entries)try{if(before[key]==null)storage.removeItem(key);else storage.setItem(key,before[key])}catch(error){rollbackError=rollbackError||error}
+      for(const key of affected)try{if(before[key]==null)storage.removeItem(key);else storage.setItem(key,before[key])}catch(error){rollbackError=rollbackError||error}
       let rollbackVerified=!rollbackError;
-      for(const [key] of entries)try{if(storage.getItem(key)!==before[key])rollbackVerified=false}catch(_){rollbackVerified=false}
+      for(const key of affected)try{if(storage.getItem(key)!==before[key])rollbackVerified=false}catch(_){rollbackVerified=false}
       return {rolledBack:true,rollbackVerified,rollbackError};
     };
+    beginReplacement();
     try{
       for(const [key,raw] of entries)storage.setItem(key,raw);
-    }catch(error){return {ok:false,stage:'write',before,error,...rollback()}}
+      for(const key of deleteKeys)storage.removeItem(key);
+    }catch(error){const result={ok:false,stage:'write',before,error,...rollback()};endReplacement();return result}
     try{
       for(const [key,raw] of entries){
         const reread=storage.getItem(key),checked=registry.validate(key,reread);
         if(reread!==raw||!recoverable(checked))throw new Error(`Verification failed for ${key}`);
       }
-      return {ok:true,stage:'verified',before,replacedKeys:entries.map(([key])=>key),rolledBack:false,rollbackVerified:true};
+      for(const key of deleteKeys)if(storage.getItem(key)!==null)throw new Error(`Verification failed for removed ${key}`);
+      return {ok:true,stage:'verified',before,replacedKeys:entries.map(([key])=>key),removedKeys:deleteKeys,rolledBack:false,rollbackVerified:true};
     }catch(error){return {ok:false,stage:'verification',before,error,...rollback()}}
+    finally{endReplacement()}
   }
 
   async function replacePersistenceCopies({storage,indexedDbTarget,localSet=[],localRemove=[],indexedDbSet=[],indexedDbRemove=[],registry}){
@@ -169,9 +227,11 @@
       if(!recoverable(checked))return {ok:false,stage:'validation',rolledBack:false,rollbackVerified:true,error:new Error(`Replacement for ${key} is ${checked.state}`)};
     }
     const beforeLocal=Object.fromEntries(localKeys.map(key=>[key,storage.getItem(key)]));
+    try{for(const key of localKeys)if(storage.getItem(key)!==beforeLocal[key])return {ok:false,stage:'capture',rolledBack:false,rollbackVerified:false,beforeLocal,error:new Error(`Snapshot changed while capturing ${key}`)}}catch(error){return {ok:false,stage:'capture',rolledBack:false,rollbackVerified:false,beforeLocal,error}}
     let beforeIndexedDb;
     try{beforeIndexedDb=await indexedDbTarget.read(idbKeys)}catch(error){return {ok:false,stage:'capture',rolledBack:false,rollbackVerified:false,beforeLocal,error}}
     const beforeRows=beforeIndexedDb instanceof Map?beforeIndexedDb:new Map(Object.entries(beforeIndexedDb||{}));
+    try{const verified=await indexedDbTarget.read(idbKeys);for(const key of idbKeys)if(canonical(verified.get(key)||null)!==canonical(beforeRows.get(key)||null))return {ok:false,stage:'capture',rolledBack:false,rollbackVerified:false,beforeLocal,beforeIndexedDb:beforeRows,error:new Error(`Saved mirror changed while capturing ${key}`)}}catch(error){return {ok:false,stage:'capture',rolledBack:false,rollbackVerified:false,beforeLocal,beforeIndexedDb:beforeRows,error}}
     const desiredRows=new Map(idbWrites.map(([key,value])=>[key,{key,value,updatedAt:new Date().toISOString()}]));
     const desiredLocal=new Map(localWrites);
     const rollback=async()=>{
@@ -183,17 +243,19 @@
       try{const rows=await indexedDbTarget.read(idbKeys);for(const key of idbKeys){const expected=beforeRows.get(key)||null,actual=rows.get(key)||null;if(canonical(expected)!==canonical(actual))rollbackVerified=false}}catch(_){rollbackVerified=false}
       return {rolledBack:true,rollbackVerified,rollbackError};
     };
+    beginReplacement();
     try{
       for(const [key,raw] of localWrites)storage.setItem(key,raw);
       for(const key of localDeletes)storage.removeItem(key);
       await indexedDbTarget.apply({put:[...desiredRows.values()],remove:idbDeletes});
-    }catch(error){return {ok:false,stage:'write',beforeLocal,beforeIndexedDb:beforeRows,error,...await rollback()}}
+    }catch(error){const result={ok:false,stage:'write',beforeLocal,beforeIndexedDb:beforeRows,error,...await rollback()};endReplacement();return result}
     try{
       for(const key of localKeys){const expected=desiredLocal.has(key)?desiredLocal.get(key):null,actual=storage.getItem(key);if(actual!==expected)throw new Error(`Verification failed for local ${key}`);if(expected!=null&&!recoverable(registry.validate(key,actual)))throw new Error(`Validation failed for local ${key}`)}
       const rows=await indexedDbTarget.read(idbKeys);
       for(const key of idbKeys){const expected=desiredRows.get(key)?.value??null,actual=rows.get(key)?.value??null;if(actual!==expected)throw new Error(`Verification failed for saved mirror ${key}`);if(expected!=null&&!recoverable(registry.validate(key,actual)))throw new Error(`Validation failed for saved mirror ${key}`)}
       return {ok:true,stage:'verified',replacedLocalKeys:localWrites.map(([key])=>key),removedLocalKeys:localDeletes,replacedIndexedDbKeys:idbWrites.map(([key])=>key),removedIndexedDbKeys:idbDeletes,rolledBack:false,rollbackVerified:true};
     }catch(error){return {ok:false,stage:'verification',beforeLocal,beforeIndexedDb:beforeRows,error,...await rollback()}}
+    finally{endReplacement()}
   }
 
   async function recoverRows({storage,rows,personalKeys,startupKeys,startupValues,registry}){
@@ -204,5 +266,5 @@
     const result=await replacePersistentState({storage,replacements:decision.replacementEntries,registry:sourceRegistry});
     return {restored:result.ok,count:result.ok?decision.replacementEntries.length:0,reason:result.ok?'restored':`replacement-${result.stage}-failed`,decision,replacement:result};
   }
-  return Object.freeze({CLEAR_KEY,AUTO_HOLD_KEY,CLEAR_REASON,isExplicitlyCleared,autoHoldFor,markExplicitClear,shouldMirror,recoveryDecision,decideRecovery,replacePersistentState,replacePersistenceCopies,recoverRows,semanticallyEqual});
+  return Object.freeze({CLEAR_KEY,AUTO_HOLD_KEY,CLEAR_REASON,BACKUP_APP,RECOVERY_FORMAT,isExplicitlyCleared,autoHoldFor,markExplicitClear,beginReplacement,endReplacement,isReplacementInProgress,shouldMirror,stageReplacementPayload,replacementPlan,recoveryDecision,decideRecovery,replacePersistentState,replacePersistenceCopies,recoverRows,semanticallyEqual});
 });

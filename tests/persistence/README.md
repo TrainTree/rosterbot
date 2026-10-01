@@ -8,7 +8,9 @@ npm run check:syntax
 npm run report:persistence
 ```
 
-The Phase 3 decision table and Phase 4 recovery UI, redacted evidence export, restart durability, and cross-store replacement/rollback contract are documented in [`docs/persistence-recovery-policy.md`](../../docs/persistence-recovery-policy.md).
+The Phase 3 decision table, Phase 4 recovery UI/evidence/restart durability, and Phase 5 staged backup/Cloud replacement contract are documented in [`docs/persistence-recovery-policy.md`](../../docs/persistence-recovery-policy.md).
+
+`import-transaction.test.mjs` covers side-effect-free staging, wrapper/schema/value rejection, preview metadata, empty and partial full-replacement semantics, recovery-artifact recognition, v0.29.x compatibility, first/middle/final write failures, verification failure, exact local/cross-store rollback, rollback failure, and replacement-time side-effect suppression.
 
 `tests/fixtures/persistence-v029.json` contains synthetic input states for current v0.29.x behaviour. Objects and arrays in `localStorage` are serialized by `helpers.mjs`; `{ "$raw": "..." }` represents deliberately malformed raw storage text. IndexedDB rows use the current `RosterBotPersonalDB` / `kv` shape and are serialized the same way before recovery tests.
 

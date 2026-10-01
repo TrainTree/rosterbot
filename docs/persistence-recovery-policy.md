@@ -1,4 +1,4 @@
-# v0.30 recovery policy (Phases 3–4)
+# v0.30 recovery and replacement policy (Phases 3–5)
 
 Recovery is decided per registered IndexedDB key before normal feature modules load. The decision function is read-only: it receives the exact localStorage startup strings and the exact IndexedDB row values, validates both through the persistence registry, and returns a structured result. It does not read from or write to either store itself.
 
@@ -36,15 +36,30 @@ Raw malformed or unsupported values are never converted to defaults by recovery.
 
 ## Safe replacement
 
-`RosterBotPersistenceSafety.replacePersistentState()` accepts raw replacement strings and registered keys. It:
+`RosterBotPersistenceSafety.replacePersistentState()` accepts raw replacement strings, explicit removals, and registered keys. It:
 
 1. captures every current raw localStorage value;
 2. validates every proposed raw replacement;
-3. writes all replacements;
-4. re-reads each value and verifies exact raw equality and registry validity;
-5. restores every captured raw value (including restoring absence) if a write or verification fails, then reports whether rollback itself verified.
+3. re-reads the captured snapshot before the first write to verify that it stayed stable;
+4. writes all replacements and performs the explicit removals;
+5. re-reads every affected key and verifies exact raw equality/absence and registry validity;
+6. restores every captured raw value (including restoring absence) if a write or verification fails, then reports whether rollback itself verified.
 
 Phase 3 uses this helper for unambiguous `restore-indexeddb` startup recovery. Phase 4 adds `replacePersistenceCopies()`, which applies one validated plan across localStorage and the existing IndexedDB mirror, verifies both targets, and restores the exact captured local values and IndexedDB rows if any write or verification fails. Mirroring is not resumed until a fresh recovery decision confirms there is no remaining user choice.
+
+## Phase 5 staged import and Cloud restore
+
+`stageReplacementPayload()` is side-effect free. Before either replacement path can write, it requires an object wrapper with `app`, `schemaVersion`, and object-valued `storage`; requires the `RosterBotPayBot` app identifier and schema 4; and validates every recognised raw persisted value through the central registry. Arrays are not accepted as `storage`. Unsupported or malformed recognised values make the candidate ineligible for import. Unknown wrapper fields and storage keys remain attached to the in-memory candidate for review, but their values are neither displayed nor applied.
+
+The preview reports only non-secret structure: roster/employment counts, whether diary changes, a manual schedule, PayBot state, or calendar settings are present, app/schema version, validation problems, and unknown key names. A selected `rosterbot-recovery-evidence-v1` artifact is identified as diagnostic/recovery evidence and is not treated as a normal backup or restored automatically.
+
+The `.rosterbot` compatibility contract remains **full replacement** for the registry's backup surface. A partial backup is labelled as partial and the confirmation explains that omitted recognised backup keys will be removed. An incoming backup with no substantive personal data requires a second exceptional confirmation before it can clear existing backup-scoped data. Missing keys are not treated as deletions until this format-specific full-replacement action is confirmed.
+
+After confirmation, manual import builds one localStorage/IndexedDB plan and uses `replacePersistenceCopies()`. Cloud restore follows the same sequence after fetch/decrypt: stage and validate, preserve device-only volatile session fields, calculate the expected fingerprint, capture a verified safety snapshot, transactionally replace both stores, and only then update Cloud sync metadata. Write or verification failure invokes exact cross-store rollback. Failed replacements retain redacted `rosterbot-recovery-evidence-v1` evidence; an unverified rollback enters the Phase 4 recovery screen and keeps startup/mirroring blocked.
+
+Automatic Cloud Sync, IndexedDB mirroring, and calendar publication are suppressed while replacement is active. A successful manual import then places Cloud auto-sync on review hold. A failed Cloud restore does not update the Cloud baseline/revision metadata and never writes to Supabase.
+
+`rosterbot-cloud-restore-safety-v1` remains as the user-visible one-step Cloud undo mechanism for compatibility. It now wraps the pre-restore schema-4 payload with transaction scope/mechanism metadata and is verified before local replacement begins. This is additional coverage: the transactional helper owns immediate exact rollback, while the safety wrapper continues to support a later deliberate undo. Undo itself now uses the same staged transactional replacement path.
 
 ## Phase 4 recovery screen
 
@@ -69,6 +84,6 @@ Recovery evidence uses `rosterbot-recovery-evidence-v1` JSON and a `.json` filen
 
 No separate canonical recovery record is introduced. An unresolved problem is deterministically reconstructed from the untouched localStorage values, IndexedDB rows, and clear tombstone after every reload. Because feature modules never load while a choice is pending, default creation, mirroring, Cloud Sync, and calendar publication cannot mutate the evidence. After verified recovery, the ordinary decision is `identical`, `use-local`, `empty`, or authoritative `cleared`, so normal startup resumes on the next load as well.
 
-## Deferred to Phase 5
+## Deferred to Phase 6
 
-Phase 5 can adopt transactional replacement for manual backup import and Cloud restore, improve recovery artifact re-import/support tooling, and address broader versioned migration work when explicitly scoped. Schema 5, ordered migrations, canonical envelopes/generations/checksums, migration journals, Cloud payload v2, Supabase contract changes, and IndexedDB canonicalisation remain out of scope here.
+Schema 5, ordered migrations, canonical state envelopes/generations/checksums, a migration journal, IndexedDB canonicalisation, Cloud payload v2, Supabase contract changes, and server downgrade protection remain deferred. Recovery artifacts are recognised but are still diagnostic files rather than an automatic restore format; richer support-assisted recovery import can be considered separately.
