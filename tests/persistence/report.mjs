@@ -1,5 +1,8 @@
 import {createRequire} from 'node:module';
+import fs from 'node:fs';
+import path from 'node:path';
 import {root} from './helpers.mjs';
+import {JOURNAL_STATES,SCHEMA5_FORMAT,SCHEMA5_STORAGE_SCHEMA} from './schema5-design.mjs';
 
 const require=createRequire(import.meta.url);
 const registry=require(`${root}/js/01-persistence-registry.js`);
@@ -47,3 +50,11 @@ console.log(`- internal metadata excluded from backup/Cloud/mirror: ${[canonical
 
 const divergent=await safety.reconcileCanonicalState({registry,localValues:{'rosterbot-week-leave-v1':'{"a":1}'},rows:[{key:'rosterbot-week-leave-v1',value:'{"a":2}',updatedAt:'2099-01-01T00:00:00.000Z'}],personalKeys:registry.surfaceKeys('indexedDb')});
 console.log(`- divergent valid generations: ${divergent.issueType} · choice=${divergent.userChoiceRequired} · timestamp-authority=false`);
+
+const schema5Fixtures=JSON.parse(fs.readFileSync(path.join(root,'tests/fixtures/schema4-to-schema5-golden.json'),'utf8'));
+const schema5Cases=Object.values(schema5Fixtures.cases),schema5Successful=schema5Cases.filter(item=>item.expected.classification==='success');
+console.log(`\nPhase 7A schema-5 migration design`);
+console.log(`- envelope: ${SCHEMA5_FORMAT} · schema=${SCHEMA5_STORAGE_SCHEMA} · production writes=false`);
+console.log(`- golden fixtures: ${schema5Successful.length} success · ${schema5Cases.length-schema5Successful.length} rejected · exact fingerprints=true`);
+console.log(`- journal checkpoints: ${JOURNAL_STATES.join(' → ')}`);
+console.log(`- compatibility: production registry=${registry.schemaVersion} · backup/cloud remain schema 4`);

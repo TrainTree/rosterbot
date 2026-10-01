@@ -10,11 +10,15 @@ npm run report:persistence
 
 The Phase 3 decision table, Phase 4 recovery UI/evidence/restart durability, and Phase 5 staged backup/Cloud replacement contract are documented in [`docs/persistence-recovery-policy.md`](../../docs/persistence-recovery-policy.md).
 
+The Phase 7A schema-5 envelope, pure 4 → 5 contract, crash journal, snapshot, downgrade boundary, and Cloud prerequisites are documented in [`docs/schema5-migration-design.md`](../../docs/schema5-migration-design.md). `schema5-migration-design.test.mjs` consumes complete deterministic outputs from `tests/fixtures/schema4-to-schema5-golden.json`. The generator and migration contract are test-only and never loaded by the application.
+
 `import-transaction.test.mjs` covers side-effect-free staging, wrapper/schema/value rejection, preview metadata, empty and partial full-replacement semantics, recovery-artifact recognition, v0.29.x compatibility, first/middle/final write failures, verification failure, exact local/cross-store rollback, rollback failure, and replacement-time side-effect suppression.
 
 `tests/fixtures/persistence-v029.json` contains synthetic input states for current v0.29.x behaviour. Objects and arrays in `localStorage` are serialized by `helpers.mjs`; `{ "$raw": "..." }` represents deliberately malformed raw storage text. IndexedDB rows use the current `RosterBotPersonalDB` / `kv` shape and are serialized the same way before recovery tests.
 
 `canonical-generation.test.mjs` covers the Phase 6 in-memory model, deterministic SHA-256 identity, internal generation/previous-known-good records, ancestry-based mirror repair, divergent generation refusal, explicit clear authority, and restart after simulated interruption at each cross-store phase. The simulation deliberately leaves pending metadata and partial projections in the in-memory stores so reconciliation observes the same evidence a browser restart would see.
+
+`schema5-migration-design.test.mjs` covers exact golden schema-5 envelopes and fingerprints, malformed/unsupported classifications, schema-marker interpretation, semantic invariants, unknown tolerated data, secret/device exclusions, pure repeatability/idempotence, pre-migration evidence, compatibility projection, ancestry, journal completeness, and the design-only production boundary.
 
 The registry is authoritative for backup, Cloud Sync, and IndexedDB inclusion metadata. It also owns classifications, sensitivity labels, compatibility aliases, and side-effect-free validators. Readers receive `missing`, `valid`, `legacy`, `malformed`, or `unsupported` state while retaining the original raw string; validation never writes to storage.
 

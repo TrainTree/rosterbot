@@ -122,6 +122,8 @@ Generation metadata that does not match its store's actual canonical fingerprint
 
 An unresolved legacy problem is still reconstructed from untouched schema-4 raw values, IndexedDB rows, and the clear tombstone. A Phase 6 interrupted replacement is reconstructed from those same values plus internal generation metadata and the one previous-known-good projection. Feature modules remain behind the boot gate while a choice is pending. After automatic or user-selected repair, both stores are re-read, re-fingerprinted, and reconciled before startup proceeds.
 
-## Deferred to Phase 7 and later
+## Phase 7A design boundary
 
-Schema 5, ordered schema migrations, a persisted canonical schema-5 envelope, a migration journal, Cloud payload v2, Cloud generation metadata, Supabase schema/RPC changes, server downgrade protection, and removal of schema-4 compatibility keys remain deferred. Phase 7 should design the ordered schema-4-to-schema-5 migration and journal around the Phase 6 candidate/fingerprint/generation primitives, including downgrade and crash-resume rules, without changing external formats until their dedicated phase.
+The schema-5 envelope, ordered schema-4-to-schema-5 transformation, journal, retained snapshot, downgrade boundary, golden fixtures, and Cloud prerequisites are now specified in [`schema5-migration-design.md`](schema5-migration-design.md). Phase 7A remains design/test-only: no schema-5 record or journal is registered or written by the application, and backup, Cloud, encryption, Supabase, and schema-4 compatibility contracts remain unchanged.
+
+Persisted migration, Cloud payload v2, Cloud generation metadata, Supabase schema/RPC changes, server downgrade protection, and any removal of schema-4 compatibility keys remain deferred to separately reviewed implementation phases.
