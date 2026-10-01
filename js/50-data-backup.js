@@ -56,7 +56,7 @@
   function retainFailureEvidence(candidate,replacement,source){
     const failure=replacementFailureState(candidate,replacement,source),ui=window.RosterBotRecoveryUI;
     if(!ui?.buildRecoveryExport)return failure;
-    const artifact=ui.buildRecoveryExport({state:failure,registry,appVersion:'v0.30-phase5'});
+    const artifact=ui.buildRecoveryExport({state:failure,registry,appVersion:'v0.30-phase6'});
     artifact.replacement={source,stage:replacement.stage,rolledBack:!!replacement.rolledBack,rollbackVerified:!!replacement.rollbackVerified,unknownIncomingKeys:Object.keys(candidate?.unknownStorage||{}),unknownIncomingWrapperFields:Object.keys(candidate?.wrapperUnknown||{})};
     window.__rosterbotLastRecoveryEvidence=artifact;
     try{download(`rosterbot-${source}-failure-${artifact.exportedAt.replace(/[:.]/g,'-')}.json`,JSON.stringify(artifact,null,2))}catch(_){}
@@ -65,7 +65,8 @@
   async function applyImportCandidate(candidate){
     const staged={...candidate,storage:{...candidate.storage,'rosterbot-db-schema-v1':String(registry.schemaVersion)}},plan=window.RosterBotPersistenceSafety.replacementPlan(staged,{extraRemovals:['paybot-lastcalc','rosterbot-cleared-v1']}),idbKeys=registry.surfaceKeys('indexedDb'),writes=new Map(plan.localSet),indexedDbSet=idbKeys.filter(key=>writes.has(key)).map(key=>[key,writes.get(key)]),indexedDbRemove=idbKeys.filter(key=>!writes.has(key));
     const common={storage:localStorage,registry,localSet:plan.localSet,localRemove:plan.localRemove,indexedDbSet,indexedDbRemove},target=window.RosterBotRecovery?.getIndexedDbTarget?.();
-    return target?window.RosterBotPersistenceSafety.replacePersistenceCopies({...common,indexedDbTarget:target}):window.RosterBotPersistenceSafety.replacePersistentState({storage:localStorage,registry,replacements:plan.localSet,removals:plan.localRemove});
+    const replaceCopies=window.RosterBotPersistenceSafety.replaceCanonicalPersistenceCopies||window.RosterBotPersistenceSafety.replacePersistenceCopies;
+    return target?replaceCopies({...common,indexedDbTarget:target}):window.RosterBotPersistenceSafety.replacePersistentState({storage:localStorage,registry,replacements:plan.localSet,removals:plan.localRemove});
   }
   function markExplicitClear(){
     const stamp=new Date().toISOString(),safety=window.RosterBotPersistenceSafety;

@@ -1,4 +1,4 @@
-# v0.30 recovery and replacement policy (Phases 3–5)
+# v0.30 recovery and replacement policy (Phases 3–6)
 
 Recovery is decided per registered IndexedDB key before normal feature modules load. The decision function is read-only: it receives the exact localStorage startup strings and the exact IndexedDB row values, validates both through the persistence registry, and returns a structured result. It does not read from or write to either store itself.
 
@@ -80,10 +80,48 @@ Every action that replaces or clears data first downloads the recovery evidence 
 
 Recovery evidence uses `rosterbot-recovery-evidence-v1` JSON and a `.json` filename. It is intentionally separate from the unchanged `.rosterbot` backup contract. The artifact records its export time, app/build label, personal-data schema number, decision type/reason, validation states, source summaries, and the exact relevant preserved raw values. Registry entries classified as credentials or as secret/cryptographic are replaced by redaction records; unregistered values are not exported.
 
+## Phase 6 canonical in-memory state
+
+`RosterBotCanonicalPersistence` constructs a whole-state candidate from either localStorage values or IndexedDB rows using registry entries classified as personal and mirrored. Compatibility aliases are read as the canonical registry key. Each entry records `presence: "missing"` or `presence: "present"`, so an absent key differs from a present empty object or array. Present entries contain the registry-validated semantic value, its exact raw string, validation state, and source key. The candidate also retains the source and all relevant raw compatibility values for recovery evidence.
+
+The identity includes every registered live personal datum while collapsing compatibility aliases onto their canonical registry entry. It excludes device preferences, caches, derived values, credentials, encryption material, Cloud session state, Cloud transaction recovery artifacts, and the new generation records. Unknown fields inside supported personal JSON values remain part of the value and therefore survive projection and affect identity. Unregistered top-level browser keys are not admitted because their privacy and semantics are unknown. A validated candidate projects back to the existing individual schema-4 keys; Phase 6 does not persist a canonical envelope.
+
+## Fingerprint semantics
+
+Canonical serialisation sorts every object key recursively while preserving array order, primitive types, missing-entry markers, and the schema number. Equivalent JSON formatting and property order therefore produce the same SHA-256 fingerprint. A meaningful registered personal-data change produces a different fingerprint; device/cache/credential changes do not.
+
+The serialiser explicitly rejects `undefined`, functions, symbols, big integers, non-finite numbers, cyclic values, and non-plain objects. A candidate containing malformed or unsupported registered raw data is ineligible for hashing. Raw damage is retained in the candidate instead of being parsed into a default or accidentally receiving a valid checksum. SHA-256 is an identity/integrity check through browser Web Crypto, not an authentication mechanism.
+
+## Local generations and previous known-good
+
+Phase 6 adds two registered internal keys that are absent from the backup, Cloud, and legacy IndexedDB surfaces:
+
+- `rosterbot-local-generation-v1` is stored independently in localStorage and as an internal IndexedDB row. It records a positive generation number, canonical SHA-256 fingerprint, predecessor fingerprint, timestamp, writer/build, `pending` or `verified` status, and `state` or `clear` kind.
+- `rosterbot-previous-generation-v1` retains one verified predecessor and its schema-4 personal projection in localStorage. It contains no credentials, device secrets, caches, Cloud metadata, or generation metadata.
+
+A canonical replacement first retains the current verified/equal state as previous known-good, writes `pending` generation metadata to both stores, writes localStorage and IndexedDB projections in separate verified phases, verifies both whole-state fingerprints, and only then records `verified` metadata in both stores. Any ordinary caught error still invokes exact cross-store rollback. If the page/process stops between phases, the persisted `pending` status and previous snapshot make the interruption recoverable on restart. This extends the Phase 4/5 transaction machinery; it is not a separate backup system.
+
+Timestamps remain diagnostic only. Authority comes from verified fingerprint equality and predecessor ancestry. A verified clear generation can outrank its retained predecessor even when row timestamps are absent or misleading. Older installations without generation metadata continue through the Phase 3 decision table.
+
+## Generation-aware reconciliation
+
+Startup constructs and hashes both whole-state candidates before feature modules load:
+
+| Evidence | Decision |
+|---|---|
+| Same valid fingerprint | Identical, regardless of raw JSON property order |
+| One verified generation whose predecessor fingerprint is the other store | Automatically repair the known older mirror |
+| Both valid but different, with no proved ancestry | Gate startup for user choice; never choose by timestamp |
+| Pending/damaged newer generation plus a valid previous snapshot | Restore the last completely verified generation in both stores |
+| Malformed copy without generation proof | Preserve exact raw data and retain the existing Phase 3 recovery policy |
+| Verified clear generation descending from retained state | Clear wins; stale retained state is not resurrected |
+
+Generation metadata that does not match its store's actual canonical fingerprint is not trusted. Likewise, a projected state that matches a `pending` generation is not promoted merely because all keys appear present: recovery prefers the prior `verified` generation. Automatic repair plans are applied transactionally and re-reconciled before normal modules start. A valid divergence without ancestry remains on the recovery screen.
+
 ## Restart behaviour
 
-No separate canonical recovery record is introduced. An unresolved problem is deterministically reconstructed from the untouched localStorage values, IndexedDB rows, and clear tombstone after every reload. Because feature modules never load while a choice is pending, default creation, mirroring, Cloud Sync, and calendar publication cannot mutate the evidence. After verified recovery, the ordinary decision is `identical`, `use-local`, `empty`, or authoritative `cleared`, so normal startup resumes on the next load as well.
+An unresolved legacy problem is still reconstructed from untouched schema-4 raw values, IndexedDB rows, and the clear tombstone. A Phase 6 interrupted replacement is reconstructed from those same values plus internal generation metadata and the one previous-known-good projection. Feature modules remain behind the boot gate while a choice is pending. After automatic or user-selected repair, both stores are re-read, re-fingerprinted, and reconciled before startup proceeds.
 
-## Deferred to Phase 6
+## Deferred to Phase 7 and later
 
-Schema 5, ordered migrations, canonical state envelopes/generations/checksums, a migration journal, IndexedDB canonicalisation, Cloud payload v2, Supabase contract changes, and server downgrade protection remain deferred. Recovery artifacts are recognised but are still diagnostic files rather than an automatic restore format; richer support-assisted recovery import can be considered separately.
+Schema 5, ordered schema migrations, a persisted canonical schema-5 envelope, a migration journal, Cloud payload v2, Cloud generation metadata, Supabase schema/RPC changes, server downgrade protection, and removal of schema-4 compatibility keys remain deferred. Phase 7 should design the ordered schema-4-to-schema-5 migration and journal around the Phase 6 candidate/fingerprint/generation primitives, including downgrade and crash-resume rules, without changing external formats until their dedicated phase.

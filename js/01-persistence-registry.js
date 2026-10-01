@@ -100,6 +100,25 @@
     if(Object.prototype.hasOwnProperty.call(value,'range')&&!['30_6','90_12','365_24','all'].includes(value.range))return unsupported(value,'calendar range is unsupported');
     return required(value,[...booleans,'range'])?valid(value):legacy(value,'calendar settings omit recoverable optional preferences');
   }
+  function generationValue(value){
+    if(!isObject(value)||value.format!=='rosterbot-local-generation-v1')return unsupported(value,'expected Phase 6 generation metadata');
+    if(!Number.isSafeInteger(value.generation)||value.generation<1)return unsupported(value,'generation must be a positive safe integer');
+    if(!/^[a-f0-9]{64}$/.test(String(value.fingerprint||'')))return unsupported(value,'generation fingerprint must be SHA-256');
+    if(value.predecessorFingerprint!=null&&!/^[a-f0-9]{64}$/.test(String(value.predecessorFingerprint)))return unsupported(value,'predecessor fingerprint must be SHA-256 or null');
+    if(!Number.isFinite(Date.parse(String(value.timestamp||''))))return unsupported(value,'generation timestamp must be ISO-compatible');
+    if(typeof value.writer!=='string'||!value.writer)return unsupported(value,'generation writer is required');
+    if(!['pending','verified'].includes(value.verification))return unsupported(value,'generation verification status is unsupported');
+    if(!['state','clear'].includes(value.kind))return unsupported(value,'generation kind is unsupported');
+    return valid(value);
+  }
+  function previousGenerationValue(value){
+    if(!isObject(value)||value.format!=='rosterbot-previous-generation-v1'||!isObject(value.generation)||!isObject(value.projection))return unsupported(value,'expected a previous-generation snapshot');
+    const generation=generationValue(value.generation);
+    if(!generation.valid||generation.value.verification!=='verified')return unsupported(value,'previous generation metadata must be verified');
+    if(Number(value.projection.schemaVersion)!==4||!isObject(value.projection.storage))return unsupported(value,'previous projection must contain schema-4 storage');
+    if(Object.values(value.projection.storage).some(raw=>typeof raw!=='string'))return unsupported(value,'previous projection values must be raw strings');
+    return valid(value);
+  }
 
   const validators=Object.freeze({
     string:raw=>valid(String(raw)),
@@ -121,7 +140,9 @@
     editorView:raw=>['full','compact'].includes(String(raw))?valid(String(raw)):unsupported(String(raw),'unknown editor view'),
     booleanFlag:raw=>['0','1'].includes(String(raw))?valid(String(raw)):unsupported(String(raw),'expected 0 or 1'),
     colorMode:raw=>['light','dark'].includes(String(raw))?valid(String(raw)):unsupported(String(raw),'unknown colour mode'),
-    rosterPeriod:raw=>['week','fortnight'].includes(String(raw))?valid(String(raw)):unsupported(String(raw),'unknown roster period')
+    rosterPeriod:raw=>['week','fortnight'].includes(String(raw))?valid(String(raw)):unsupported(String(raw),'unknown roster period'),
+    generation:jsonValidator(generationValue),
+    previousGeneration:jsonValidator(previousGenerationValue)
   });
 
   const definitions=[
@@ -168,14 +189,16 @@
     ['rosterbot-cloud-config-v1','device','jsonObject','public-config',null],
     ['rosterbot-cloud-client-id-v1','device','string','identifier',null],
     ['rosterbot-cloud-sync-meta-v1','device','jsonObject','metadata',null],
-    ['rosterbot-cloud-restore-safety-v1','personal','jsonObject','sensitive',null],
+    ['rosterbot-cloud-restore-safety-v1','recovery','jsonObject','sensitive',null],
     ['rosterbot-cloud-session-persistent-v1','credential','jsonObject','secret',['rosterbot-cloud-session-v1']],
     ['rosterbot-cloud-session-v1','credential','jsonObject','secret',null,'rosterbot-cloud-session-persistent-v1','sessionStorage'],
     ['rosterbot-cloud-auto-v1','device','booleanFlag','none',null],
     ['rosterbot-cloud-auto-hold-v1','device','jsonObject','metadata',null],
     ['rosterbot-cloud-crypto-profile-v1','credential','jsonObject','cryptographic',null],
     ['rosterbot-cloud-device-key-v1','credential','jsonObject','secret',null],
-    ['rosterbot-cloud-post-reload-v1','cache','string','none',null,null,'sessionStorage']
+    ['rosterbot-cloud-post-reload-v1','cache','string','none',null,null,'sessionStorage'],
+    ['rosterbot-local-generation-v1','internal','generation','metadata',null],
+    ['rosterbot-previous-generation-v1','internal','previousGeneration','sensitive',null]
   ];
 
   const surfaceSets=Object.fromEntries(Object.entries(SURFACES).map(([name,keys])=>[name,new Set(keys)]));

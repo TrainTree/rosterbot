@@ -97,9 +97,9 @@
     try{
       const localValues=currentLocalValues(),plan=recoveryUi.createRecoveryPlan({state,choice,registry,safety,localValues});
       downloadEvidence();status(choice==='clear'?'Preserving evidence, then clearing saved personal data…':'Preserving evidence, then verifying your choice…');
-      const replacement=await safety.replacePersistenceCopies({storage:localStorage,indexedDbTarget,registry,...plan});
+      const replacement=await safety.replaceCanonicalPersistenceCopies({storage:localStorage,indexedDbTarget,registry,...plan});
       if(!replacement.ok){state={...state,startupAllowed:false,mirrorAllowed:false,userChoiceRequired:true,replacement,resolutionFailure:{stage:replacement.stage,rolledBack:replacement.rolledBack,rollbackVerified:replacement.rollbackVerified},reason:`Recovery ${replacement.stage} failed; prior raw state ${replacement.rollbackVerified?'was restored':'could not be fully verified after rollback'}.`};status(`Recovery failed safely during ${replacement.stage}. ${replacement.rollbackVerified?'Both prior copies were restored and verified.':'Rollback could not be fully verified; export the evidence and leave this screen open.'}`,'error');return false}
-      const rows=await readRows();state={...safety.decideRecovery({registry,localValues:currentLocalValues(),rows,personalKeys}),resolution:{choice,replacement,completedAt:new Date().toISOString()}};
+      const rows=await readRows();state={...await safety.reconcileCanonicalState({registry,localValues:currentLocalValues(),rows,personalKeys}),resolution:{choice,replacement,completedAt:new Date().toISOString()}};
       if(!state.startupAllowed||state.userChoiceRequired){showRecovery('That choice was applied and verified, but another saved-data decision still needs review.');window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));return false}
       window.dispatchEvent(new CustomEvent('rosterbot:recovery-resolved',{detail:state}));status('Recovery verified. Starting RosterBot…','success');await loadApplication();return true;
     }catch(error){state={...(state||readFailureState(error)),startupAllowed:false,mirrorAllowed:false,userChoiceRequired:true,reason:error?.message||String(error)};showRecovery(`Recovery could not continue: ${error?.message||error}. No unverified copy was accepted.`);return false}
@@ -125,13 +125,20 @@
     try{
       if(window.__rosterbotLocalStateAtStartup==null)throw new Error('localStorage could not be read safely');
       const rows=await readRows(),localValues=window.__rosterbotLocalStateAtStartup;
-      state=safety.decideRecovery({registry,localValues,rows,personalKeys});
+      state=await safety.reconcileCanonicalState({registry,localValues,rows,personalKeys});
       if(!state.startupAllowed||state.userChoiceRequired){showRecovery();window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));return}
+      if(state.reconciliationPlan){
+        const replacement=await safety.replacePersistenceCopies({storage:localStorage,indexedDbTarget,registry,...state.reconciliationPlan});
+        state={...state,replacement};
+        if(!replacement.ok){state={...state,issueType:'unrecoverable',startupAllowed:false,mirrorAllowed:false,userChoiceRequired:true,automaticRecoveryAllowed:false,reason:`Generation recovery ${replacement.stage} failed; prior raw state was restored.`};showRecovery('Generation recovery failed safely. Your prior data was restored and no feature modules were started.');window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));return}
+        state={...await safety.reconcileCanonicalState({registry,localValues:currentLocalValues(),rows:await readRows(),personalKeys}),replacement};
+        if(!state.startupAllowed||state.userChoiceRequired){showRecovery('Automatic generation recovery was applied, but the resulting copies still require review.');window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));return}
+      }
       if(state.replacementEntries.length){
         const replacement=await safety.replacePersistentState({storage:localStorage,replacements:state.replacementEntries,registry});
         state={...state,replacement};
         if(!replacement.ok){state={...state,issueType:'unrecoverable',startupAllowed:false,mirrorAllowed:false,userChoiceRequired:true,automaticRecoveryAllowed:false,reason:`Automatic recovery ${replacement.stage} failed; prior raw state was restored.`};showRecovery('Automatic recovery failed safely. Your prior data was restored and no feature modules were started.');window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));return}
-        state={...safety.decideRecovery({registry,localValues:currentLocalValues(),rows,personalKeys}),replacement};
+        state={...await safety.reconcileCanonicalState({registry,localValues:currentLocalValues(),rows,personalKeys}),replacement};
       }
       await loadApplication();
     }catch(error){state=readFailureState(error);showRecovery('RosterBot could not safely inspect saved data. No stored copy has been changed.');window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}))}

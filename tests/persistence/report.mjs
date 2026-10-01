@@ -3,6 +3,7 @@ import {root} from './helpers.mjs';
 
 const require=createRequire(import.meta.url);
 const registry=require(`${root}/js/01-persistence-registry.js`);
+const canonical=require(`${root}/js/02-canonical-state.js`);
 const safety=require(`${root}/js/02-persistence-safety.js`);
 const recoveryUi=require(`${root}/js/03-recovery-ui.js`);
 const report=registry.report();
@@ -36,3 +37,13 @@ for(const type of ['conflict','malformed-local-recoverable','malformed-indexeddb
 const redactionState={issueType:'unrecoverable',affectedKeys:['rosterbot-calendar-subscription-tokens-v2'],preservedRawCopies:{'rosterbot-calendar-subscription-tokens-v2':{local:'synthetic-secret',indexedDb:null}}};
 const artifact=recoveryUi.buildRecoveryExport({state:redactionState,registry,now:'2026-10-01T00:00:00.000Z'});
 console.log(`\nRecovery export: ${artifact.format} · schema ${artifact.personalDataSchema} · credential redacted=${artifact.preservedRawCopies['rosterbot-calendar-subscription-tokens-v2'].local.redacted}`);
+
+const orderedA={'rosterbot-week-leave-v1':'{"2026-10-04":{"z":1,"a":2}}'},orderedB={'rosterbot-week-leave-v1':'{"2026-10-04":{"a":2,"z":1}}'};
+const [fingerprintA,fingerprintB]=await Promise.all([orderedA,orderedB].map(values=>canonical.fingerprint(canonical.fromLocalStorage(values,{registry}))));
+console.log(`\nPhase 6 canonical identity`);
+console.log(`- deterministic SHA-256: ${fingerprintA.value} · reordered-equal=${fingerprintA.value===fingerprintB.value}`);
+console.log(`- canonical live personal keys: ${canonical.stateKeys(registry).length} · schema=${registry.schemaVersion}`);
+console.log(`- internal metadata excluded from backup/Cloud/mirror: ${[canonical.GENERATION_KEY,canonical.PREVIOUS_KEY].every(metadataKey=>['backup','cloud','indexedDb'].every(surface=>!registry.surfaceKeys(surface).includes(metadataKey)))}`);
+
+const divergent=await safety.reconcileCanonicalState({registry,localValues:{'rosterbot-week-leave-v1':'{"a":1}'},rows:[{key:'rosterbot-week-leave-v1',value:'{"a":2}',updatedAt:'2099-01-01T00:00:00.000Z'}],personalKeys:registry.surfaceKeys('indexedDb')});
+console.log(`- divergent valid generations: ${divergent.issueType} · choice=${divergent.userChoiceRequired} · timestamp-authority=false`);

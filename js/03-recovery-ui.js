@@ -5,7 +5,7 @@
   if(root)root.RosterBotRecoveryUI=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
-  const BUILD_VERSION='v0.30-phase5';
+  const BUILD_VERSION='v0.30-phase6';
   const RECOVERABLE=new Set(['valid','legacy']);
   const SECRET_SENSITIVITY=new Set(['secret','cryptographic']);
   const LABELS={
@@ -130,7 +130,7 @@
   }
   function createRecoveryPlan({state,choice,registry,safety,localValues={},now=new Date().toISOString()}){
     if(choice==='clear'){
-      const keys=registry.surfaceKeys('indexedDb'),localRemove=registry.items.filter(item=>item.category==='personal'||item.category==='derived').map(item=>item.key),indexedDbRemove=[...keys];
+      const keys=registry.surfaceKeys('indexedDb'),localRemove=registry.items.filter(item=>['personal','derived','recovery'].includes(item.category)).map(item=>item.key),indexedDbRemove=[...keys];
       return {choice,localSet:[[safety.CLEAR_KEY,new Date(now).toISOString()]],localRemove:localRemove.filter(key=>key!==safety.CLEAR_KEY),indexedDbSet:[],indexedDbRemove,destructive:true};
     }
     if(!['local','indexedDb'].includes(choice))throw new Error('Unknown recovery choice.');

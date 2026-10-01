@@ -1,9 +1,10 @@
 (function(root,factory){
   'use strict';
-  const api=factory();
+  const canonical=root?.RosterBotCanonicalPersistence||(typeof module!=='undefined'&&module.exports?require('./02-canonical-state.js'):null);
+  const api=factory(canonical);
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(root)root.RosterBotPersistenceSafety=api;
-})(typeof window!=='undefined'?window:globalThis,function(){
+})(typeof window!=='undefined'?window:globalThis,function(canonicalState){
   'use strict';
   const CLEAR_KEY='rosterbot-cleared-v1';
   const AUTO_HOLD_KEY='rosterbot-cloud-auto-hold-v1';
@@ -180,6 +181,75 @@
     };
   }
 
+  function rawRow(rows,key){return (rows||[]).find(row=>row?.key===key)||null}
+  function candidatePlan(candidate,registry){
+    const projection=canonicalState.toSchema4Projection(candidate,{registry});
+    if(!projection.ok)throw new Error(projection.reason||'Canonical candidate cannot be projected to schema 4');
+    const set=Object.entries(projection.storage),remove=[...projection.removals];
+    return {localSet:[...set],localRemove:[...remove],indexedDbSet:[...set],indexedDbRemove:[...remove]};
+  }
+  function mergePlan(plan,{localSet=[],localRemove=[],indexedDbSet=[],indexedDbRemove=[]}={}){
+    const merge=(left,right)=>[...new Map([...left,...right]).entries()];
+    const localWrites=merge(plan.localSet||[],localSet),idbWrites=merge(plan.indexedDbSet||[],indexedDbSet),localWritten=new Set(localWrites.map(([key])=>key)),idbWritten=new Set(idbWrites.map(([key])=>key));
+    return {localSet:localWrites,localRemove:[...new Set([...(plan.localRemove||[]),...localRemove])].filter(key=>!localWritten.has(key)),indexedDbSet:idbWrites,indexedDbRemove:[...new Set([...(plan.indexedDbRemove||[]),...indexedDbRemove])].filter(key=>!idbWritten.has(key))};
+  }
+  async function reconcileCanonicalState({registry,localValues={},rows=[],personalKeys=[],cryptoImpl=globalThis.crypto}={}){
+    if(!canonicalState)return decideRecovery({registry,localValues,rows,personalKeys});
+    const localCandidate=canonicalState.fromLocalStorage(localValues,{registry}),indexedDbCandidate=canonicalState.fromIndexedDb(rows,{registry});
+    const [localFingerprint,indexedDbFingerprint]=await Promise.all([canonicalState.fingerprint(localCandidate,{cryptoImpl}),canonicalState.fingerprint(indexedDbCandidate,{cryptoImpl})]);
+    const localGeneration=canonicalState.parseGeneration(localValues[canonicalState.GENERATION_KEY],{registry}),idbGeneration=canonicalState.parseGeneration(rawRow(rows,canonicalState.GENERATION_KEY)?.value??null,{registry});
+    const previousParsed=canonicalState.parsePrevious(localValues[canonicalState.PREVIOUS_KEY],{registry});
+    const previous=previousParsed.ok?await canonicalState.verifyPrevious(previousParsed.value,{registry,cryptoImpl}):{ok:false,state:previousParsed.state,reason:previousParsed.reason};
+    const canonicalInfo={localCandidate,indexedDbCandidate,localFingerprint,indexedDbFingerprint,generations:{local:localGeneration,indexedDb:idbGeneration,previous}};
+    const legacy=()=>({...decideRecovery({registry,localValues,rows,personalKeys}),canonical:canonicalInfo});
+    const verifiedFor=(parsed,hash)=>parsed.ok&&parsed.value.verification==='verified'&&parsed.value.fingerprint===hash;
+    const pending=[localGeneration,idbGeneration].filter(parsed=>parsed.ok&&parsed.value.verification==='pending').map(parsed=>parsed.value);
+    const descendsFromPrevious=parsed=>parsed.ok&&previous.ok&&parsed.value.predecessorFingerprint===previous.fingerprint&&parsed.value.generation>previous.generation.generation;
+    const interrupted=pending.find(meta=>previous.ok&&meta.predecessorFingerprint===previous.fingerprint&&meta.generation>previous.generation.generation);
+    const damagedNewer=(descendsFromPrevious(localGeneration)&&(!localFingerprint.ok||localGeneration.value.fingerprint!==localFingerprint.value))||(descendsFromPrevious(idbGeneration)&&(!indexedDbFingerprint.ok||idbGeneration.value.fingerprint!==indexedDbFingerprint.value));
+    if(previous.ok&&(interrupted||damagedNewer)){
+      const previousRaw=JSON.stringify(previous.generation),snapshotRaw=previousParsed.raw,plan=mergePlan(candidatePlan(previous.candidate,registry),{localSet:[[canonicalState.GENERATION_KEY,previousRaw],[canonicalState.PREVIOUS_KEY,snapshotRaw]],indexedDbSet:[[canonicalState.GENERATION_KEY,previousRaw]]});
+      return {...legacy(),issueType:'restore-previous-verified-generation',affectedKeys:canonicalState.stateKeys(registry),automaticRecoveryAllowed:true,userChoiceRequired:false,startupAllowed:true,mirrorAllowed:false,replacementEntries:[],reconciliationPlan:plan,reason:'a newer generation is incomplete or damaged; restoring the previous verified generation',canonical:canonicalInfo};
+    }
+    if(!localFingerprint.ok||!indexedDbFingerprint.ok)return legacy();
+    const localHash=localFingerprint.value,idbHash=indexedDbFingerprint.value;
+    const verified=[localGeneration,idbGeneration].filter((parsed,index)=>verifiedFor(parsed,index===0?localHash:idbHash)).map(parsed=>parsed.value);
+    const newestVerified=verified.sort((a,b)=>b.generation-a.generation)[0]||null;
+    const base=legacy();
+    if(Object.prototype.hasOwnProperty.call(localValues,CLEAR_KEY)){
+      const clearMeta=verifiedFor(localGeneration,localHash)?localGeneration.value:null;
+      const previousOlder=previous.ok&&clearMeta&&previous.generation.generation<clearMeta.generation&&clearMeta.predecessorFingerprint===previous.fingerprint;
+      const localEmpty=Object.values(localCandidate.entries).every(entry=>entry.presence==='missing');
+      if(clearMeta?.kind==='clear'&&localEmpty&&(idbHash===clearMeta.predecessorFingerprint||idbHash===clearMeta.fingerprint||previousOlder)){
+        const emptyPlan=candidatePlan(localCandidate,registry),raw=JSON.stringify(clearMeta),plan=mergePlan(emptyPlan,{localSet:[[canonicalState.GENERATION_KEY,raw]],indexedDbSet:[[canonicalState.GENERATION_KEY,raw]]});
+        return {...base,issueType:'cleared',automaticRecoveryAllowed:idbHash!==localHash,userChoiceRequired:false,startupAllowed:true,mirrorAllowed:false,replacementEntries:[],reconciliationPlan:idbHash!==localHash?plan:null,reason:'verified clear generation is authoritative',canonical:canonicalInfo};
+      }
+      return base;
+    }
+    if(localHash===idbHash){
+      return {...base,issueType:Object.values(localCandidate.entries).every(entry=>entry.presence==='missing')?'empty':'identical',automaticRecoveryAllowed:false,userChoiceRequired:false,startupAllowed:true,mirrorAllowed:true,replacementEntries:[],canonical:canonicalInfo};
+    }
+    const localTrusted=verifiedFor(localGeneration,localHash),idbTrusted=verifiedFor(idbGeneration,idbHash);
+    if(localTrusted&&localGeneration.value.predecessorFingerprint===idbHash&&(!idbTrusted||localGeneration.value.generation>idbGeneration.value.generation)){
+      const plan=mergePlan(candidatePlan(localCandidate,registry),{indexedDbSet:[[canonicalState.GENERATION_KEY,JSON.stringify(localGeneration.value)]],localSet:[[canonicalState.GENERATION_KEY,JSON.stringify(localGeneration.value)]]});
+      return {...base,issueType:'repair-indexeddb-from-newer-generation',affectedKeys:canonicalState.stateKeys(registry),automaticRecoveryAllowed:true,userChoiceRequired:false,startupAllowed:true,mirrorAllowed:false,replacementEntries:[],reconciliationPlan:plan,reason:'verified local generation descends from the saved mirror fingerprint',canonical:canonicalInfo};
+    }
+    if(idbTrusted&&idbGeneration.value.predecessorFingerprint===localHash&&(!localTrusted||idbGeneration.value.generation>localGeneration.value.generation)){
+      const plan=mergePlan(candidatePlan(indexedDbCandidate,registry),{localSet:[[canonicalState.GENERATION_KEY,JSON.stringify(idbGeneration.value)]],indexedDbSet:[[canonicalState.GENERATION_KEY,JSON.stringify(idbGeneration.value)]]});
+      return {...base,issueType:'repair-local-from-newer-generation',affectedKeys:canonicalState.stateKeys(registry),automaticRecoveryAllowed:true,userChoiceRequired:false,startupAllowed:true,mirrorAllowed:false,replacementEntries:[],reconciliationPlan:plan,reason:'verified saved-mirror generation descends from the local fingerprint',canonical:canonicalInfo};
+    }
+    const incomplete=(localGeneration.ok||idbGeneration.ok)&&previous.ok&&!newestVerified?{generation:previous.generation.generation+1}:null;
+    const mismatch=(localGeneration.ok&&localGeneration.value.fingerprint!==localHash)||(idbGeneration.ok&&idbGeneration.value.fingerprint!==idbHash);
+    if(previous.ok&&(incomplete||mismatch)){
+      const previousRaw=JSON.stringify(previous.generation),snapshotRaw=previousParsed.raw,plan=mergePlan(candidatePlan(previous.candidate,registry),{localSet:[[canonicalState.GENERATION_KEY,previousRaw],[canonicalState.PREVIOUS_KEY,snapshotRaw]],indexedDbSet:[[canonicalState.GENERATION_KEY,previousRaw]]});
+      return {...base,issueType:'restore-previous-verified-generation',affectedKeys:canonicalState.stateKeys(registry),automaticRecoveryAllowed:true,userChoiceRequired:false,startupAllowed:true,mirrorAllowed:false,replacementEntries:[],reconciliationPlan:plan,reason:'a newer generation is incomplete or fails fingerprint verification; restoring the previous verified generation',canonical:canonicalInfo};
+    }
+    if(!localGeneration.ok&&!idbGeneration.ok&&!previous.ok){
+      return base.issueType==='conflict'?{...base,reason:'valid canonical states diverge and no verified ancestry proves authority; timestamps are not used to choose',canonical:canonicalInfo}:base;
+    }
+    return {...base,issueType:'conflict',affectedKeys:canonicalState.stateKeys(registry),automaticRecoveryAllowed:false,userChoiceRequired:true,startupAllowed:false,mirrorAllowed:false,replacementEntries:[],reason:'valid canonical states diverge and no verified ancestry proves authority; timestamps are not used to choose',canonical:canonicalInfo};
+  }
+
   async function replacePersistentState({storage,replacements,removals=[],registry}){
     if(!storage||typeof storage.getItem!=='function'||typeof storage.setItem!=='function'||typeof storage.removeItem!=='function')throw new TypeError('A Storage-compatible target is required');
     if(!registry||typeof registry.validate!=='function')throw new TypeError('A persistence registry is required');
@@ -258,6 +328,60 @@
     finally{endReplacement()}
   }
 
+  async function replaceCanonicalPersistenceCopies({storage,indexedDbTarget,localSet=[],localRemove=[],indexedDbSet=[],indexedDbRemove=[],registry,writer,now=new Date().toISOString(),interruptAfter=null}={}){
+    if(!canonicalState)throw new Error('Canonical persistence support is unavailable');
+    const stateKeys=canonicalState.stateKeys(registry),metadataKeys=[canonicalState.GENERATION_KEY,canonicalState.PREVIOUS_KEY];
+    const localWrites=localSet instanceof Map?[...localSet.entries()]:Array.isArray(localSet)?localSet:Object.entries(localSet||{}),idbWrites=indexedDbSet instanceof Map?[...indexedDbSet.entries()]:Array.isArray(indexedDbSet)?indexedDbSet:Object.entries(indexedDbSet||{});
+    const localDeletes=[...new Set(localRemove||[])],idbDeletes=[...new Set(indexedDbRemove||[])],allLocalKeys=[...new Set([...stateKeys,...metadataKeys,...localWrites.map(([key])=>key),...localDeletes])],allIdbKeys=[...new Set([...stateKeys,canonicalState.GENERATION_KEY,...idbWrites.map(([key])=>key),...idbDeletes])];
+    const beforeLocal=Object.fromEntries(allLocalKeys.map(key=>[key,storage.getItem(key)])),beforeRows=await indexedDbTarget.read(allIdbKeys);
+    const beforeIndexedDb=beforeRows instanceof Map?beforeRows:new Map(Object.entries(beforeRows||{}));
+    const localObject=Object.fromEntries(stateKeys.map(key=>[key,beforeLocal[key]]).filter(([,raw])=>raw!=null)),idbRows=[...beforeIndexedDb.values()].filter(Boolean);
+    const localBeforeCandidate=canonicalState.fromLocalStorage(localObject,{registry}),idbBeforeCandidate=canonicalState.fromIndexedDb(idbRows,{registry});
+    const [localBeforeHash,idbBeforeHash]=await Promise.all([canonicalState.fingerprint(localBeforeCandidate),canonicalState.fingerprint(idbBeforeCandidate)]);
+    const desiredLocal={...localObject};for(const [key,raw] of localWrites)desiredLocal[key]=raw;for(const key of localDeletes)delete desiredLocal[key];
+    const desiredRowsMap=new Map(idbRows.map(row=>[row.key,{...row}]));for(const [key,value] of idbWrites)desiredRowsMap.set(key,{key,value});for(const key of idbDeletes)desiredRowsMap.delete(key);
+    const desiredLocalCandidate=canonicalState.fromLocalStorage(desiredLocal,{registry}),desiredIdbCandidate=canonicalState.fromIndexedDb([...desiredRowsMap.values()],{registry});
+    const [desiredLocalHash,desiredIdbHash]=await Promise.all([canonicalState.fingerprint(desiredLocalCandidate),canonicalState.fingerprint(desiredIdbCandidate)]);
+    if(!desiredLocalHash.ok||!desiredIdbHash.ok||desiredLocalHash.value!==desiredIdbHash.value)return {ok:false,stage:'canonical-validation',rolledBack:false,rollbackVerified:true,error:new Error('Replacement projections do not produce one valid canonical state'),canonical:{local:desiredLocalHash,indexedDb:desiredIdbHash}};
+    const localMeta=canonicalState.parseGeneration(beforeLocal[canonicalState.GENERATION_KEY],{registry}),idbMeta=canonicalState.parseGeneration(beforeIndexedDb.get(canonicalState.GENERATION_KEY)?.value??null,{registry});
+    const parsedMetas=[localMeta,idbMeta].filter(item=>item.ok),highest=Math.max(0,...parsedMetas.map(item=>item.value.generation));
+    let predecessor=null,previousSnapshot=null;
+    const trustedLocal=localMeta.ok&&localMeta.value.verification==='verified'&&localBeforeHash.ok&&localMeta.value.fingerprint===localBeforeHash.value,trustedIdb=idbMeta.ok&&idbMeta.value.verification==='verified'&&idbBeforeHash.ok&&idbMeta.value.fingerprint===idbBeforeHash.value;
+    if(trustedLocal){predecessor=localMeta.value;previousSnapshot=canonicalState.makePrevious({candidate:localBeforeCandidate,generation:predecessor,registry})}
+    else if(trustedIdb){predecessor=idbMeta.value;previousSnapshot=canonicalState.makePrevious({candidate:idbBeforeCandidate,generation:predecessor,registry})}
+    else if(localBeforeHash.ok&&idbBeforeHash.ok&&localBeforeHash.value===idbBeforeHash.value){
+      predecessor=canonicalState.makeGeneration({generation:Math.max(1,highest+1),fingerprint:localBeforeHash.value,timestamp:now,writer:writer||canonicalState.WRITER_VERSION,verification:'verified',kind:'state'});
+      previousSnapshot=canonicalState.makePrevious({candidate:localBeforeCandidate,generation:predecessor,registry});
+    }
+    const generationNumber=Math.max(highest,predecessor?.generation||0)+1,kind=Object.values(desiredLocalCandidate.entries).every(entry=>entry.presence==='missing')&&desiredLocal[CLEAR_KEY]!=null?'clear':'state';
+    const pending=canonicalState.makeGeneration({generation:generationNumber,fingerprint:desiredLocalHash.value,predecessorFingerprint:predecessor?.fingerprint||null,timestamp:now,writer:writer||canonicalState.WRITER_VERSION,verification:'pending',kind}),verified={...pending,verification:'verified'};
+    const interrupt=stage=>{if(interruptAfter!==stage)return false;const error=new Error(`Simulated interruption after ${stage}`);error.interrupted=true;throw error};
+    const rollback=async()=>{
+      let rollbackError=null;beginReplacement();
+      try{for(const key of allLocalKeys){if(beforeLocal[key]==null)storage.removeItem(key);else storage.setItem(key,beforeLocal[key])}}catch(error){rollbackError=error}
+      try{await indexedDbTarget.apply({put:[...beforeIndexedDb.values()].filter(Boolean),remove:allIdbKeys.filter(key=>!beforeIndexedDb.get(key))})}catch(error){rollbackError=rollbackError||error}
+      finally{endReplacement()}
+      let rollbackVerified=!rollbackError;
+      for(const key of allLocalKeys)try{if(storage.getItem(key)!==beforeLocal[key])rollbackVerified=false}catch(_){rollbackVerified=false}
+      try{const rows=await indexedDbTarget.read(allIdbKeys);for(const key of allIdbKeys)if(canonical(rows.get(key)||null)!==canonical(beforeIndexedDb.get(key)||null))rollbackVerified=false}catch(_){rollbackVerified=false}
+      return {rolledBack:true,rollbackVerified,rollbackError};
+    };
+    beginReplacement();
+    try{
+      if(previousSnapshot){const snapshotRaw=JSON.stringify(previousSnapshot),saved=await replacePersistentState({storage,replacements:[[canonicalState.PREVIOUS_KEY,snapshotRaw]],registry});if(!saved.ok)throw Object.assign(saved.error||new Error('Previous generation snapshot failed'),{phaseResult:saved});interrupt('previous-snapshot')}
+      const pendingRaw=JSON.stringify(pending),metadata=await replacePersistenceCopies({storage,indexedDbTarget,localSet:[[canonicalState.GENERATION_KEY,pendingRaw]],indexedDbSet:[[canonicalState.GENERATION_KEY,pendingRaw]],registry});if(!metadata.ok)throw Object.assign(metadata.error||new Error('Pending generation metadata failed'),{phaseResult:metadata});interrupt('metadata-pending');
+      const localPhase=await replacePersistenceCopies({storage,indexedDbTarget,localSet:localWrites,localRemove:localDeletes,registry});if(!localPhase.ok)throw Object.assign(localPhase.error||new Error('Local projection failed'),{phaseResult:localPhase});interrupt('local-projection');
+      const idbPhase=await replacePersistenceCopies({storage,indexedDbTarget,indexedDbSet:idbWrites,indexedDbRemove:idbDeletes,registry});if(!idbPhase.ok)throw Object.assign(idbPhase.error||new Error('Saved projection failed'),{phaseResult:idbPhase});interrupt('indexeddb-projection');
+      const verifiedLocal=canonicalState.fromLocalStorage(storage,{registry}),verifiedRows=await indexedDbTarget.read(stateKeys),verifiedIdb=canonicalState.fromIndexedDb([...verifiedRows.values()].filter(Boolean),{registry}),[localHash,idbHash]=await Promise.all([canonicalState.fingerprint(verifiedLocal),canonicalState.fingerprint(verifiedIdb)]);
+      if(!localHash.ok||!idbHash.ok||localHash.value!==pending.fingerprint||idbHash.value!==pending.fingerprint)throw new Error('Canonical fingerprint verification failed after projection write');
+      const verifiedRaw=JSON.stringify(verified),finalised=await replacePersistenceCopies({storage,indexedDbTarget,localSet:[[canonicalState.GENERATION_KEY,verifiedRaw]],indexedDbSet:[[canonicalState.GENERATION_KEY,verifiedRaw]],registry});if(!finalised.ok)throw Object.assign(finalised.error||new Error('Generation verification metadata failed'),{phaseResult:finalised});
+      return {ok:true,stage:'verified',rolledBack:false,rollbackVerified:true,generation:verified,previousGeneration:predecessor,canonicalFingerprint:verified.fingerprint,replacedLocalKeys:localWrites.map(([key])=>key),removedLocalKeys:localDeletes,replacedIndexedDbKeys:idbWrites.map(([key])=>key),removedIndexedDbKeys:idbDeletes};
+    }catch(error){
+      if(error.interrupted)return {ok:false,stage:'interrupted',interruptedAfter:interruptAfter,rolledBack:false,rollbackVerified:false,error,generation:pending};
+      return {ok:false,stage:error.phaseResult?.stage||'verification',error,beforeLocal,beforeIndexedDb,...await rollback()};
+    }finally{endReplacement()}
+  }
+
   async function recoverRows({storage,rows,personalKeys,startupKeys,startupValues,registry}){
     const sourceRegistry=registry||(typeof globalThis!=='undefined'?globalThis.RosterBotPersistenceRegistry:null);
     const localValues=startupValues||Object.fromEntries((startupKeys||personalKeys||[]).map(key=>[key,storage.getItem(key)]).filter(([,value])=>value!=null));
@@ -266,5 +390,5 @@
     const result=await replacePersistentState({storage,replacements:decision.replacementEntries,registry:sourceRegistry});
     return {restored:result.ok,count:result.ok?decision.replacementEntries.length:0,reason:result.ok?'restored':`replacement-${result.stage}-failed`,decision,replacement:result};
   }
-  return Object.freeze({CLEAR_KEY,AUTO_HOLD_KEY,CLEAR_REASON,BACKUP_APP,RECOVERY_FORMAT,isExplicitlyCleared,autoHoldFor,markExplicitClear,beginReplacement,endReplacement,isReplacementInProgress,shouldMirror,stageReplacementPayload,replacementPlan,recoveryDecision,decideRecovery,replacePersistentState,replacePersistenceCopies,recoverRows,semanticallyEqual});
+  return Object.freeze({CLEAR_KEY,AUTO_HOLD_KEY,CLEAR_REASON,BACKUP_APP,RECOVERY_FORMAT,isExplicitlyCleared,autoHoldFor,markExplicitClear,beginReplacement,endReplacement,isReplacementInProgress,shouldMirror,stageReplacementPayload,replacementPlan,recoveryDecision,decideRecovery,reconcileCanonicalState,replacePersistentState,replacePersistenceCopies,replaceCanonicalPersistenceCopies,recoverRows,semanticallyEqual});
 });

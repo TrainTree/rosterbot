@@ -14,6 +14,8 @@ The Phase 3 decision table, Phase 4 recovery UI/evidence/restart durability, and
 
 `tests/fixtures/persistence-v029.json` contains synthetic input states for current v0.29.x behaviour. Objects and arrays in `localStorage` are serialized by `helpers.mjs`; `{ "$raw": "..." }` represents deliberately malformed raw storage text. IndexedDB rows use the current `RosterBotPersonalDB` / `kv` shape and are serialized the same way before recovery tests.
 
+`canonical-generation.test.mjs` covers the Phase 6 in-memory model, deterministic SHA-256 identity, internal generation/previous-known-good records, ancestry-based mirror repair, divergent generation refusal, explicit clear authority, and restart after simulated interruption at each cross-store phase. The simulation deliberately leaves pending metadata and partial projections in the in-memory stores so reconciliation observes the same evidence a browser restart would see.
+
 The registry is authoritative for backup, Cloud Sync, and IndexedDB inclusion metadata. It also owns classifications, sensitivity labels, compatibility aliases, and side-effect-free validators. Readers receive `missing`, `valid`, `legacy`, `malformed`, or `unsupported` state while retaining the original raw string; validation never writes to storage.
 
 Calendar subscription preferences are included in all three personal-state recovery surfaces. Calendar token keys remain credential-classified and excluded from backup, Cloud Sync, and IndexedDB recovery.
