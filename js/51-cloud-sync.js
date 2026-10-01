@@ -70,7 +70,7 @@
   function setMeta(patch){if(!session?.user?.id)return;const all=metaMap(),uid=session.user.id;all[uid]={...(all[uid]||{}),...patch};localStorage.setItem(META_KEY,JSON.stringify(all));try{window.dispatchEvent(new CustomEvent('rosterbot:cloud-sync-meta',{detail:{direction:String(patch?.lastDirection||''),baseRevision:all[uid]?.baseRevision??null}}))}catch(_){}}
   function autoEnabled(){return localStorage.getItem(AUTO_KEY)!=='0'}
   function autoHoldMap(){return jparse(localStorage.getItem(AUTO_HOLD_KEY),{})||{}}
-  function getAutoHold(){const all=autoHoldMap(),uid=session?.user?.id;return (uid&&all[uid])||all.__device||null}
+  function getAutoHold(){const uid=session?.user?.id,safety=window.RosterBotPersistenceSafety;if(safety)return safety.autoHoldFor(localStorage,uid);const all=autoHoldMap();return (uid&&all[uid])||all.__device||null}
   function markAutoHold(reason){const all=autoHoldMap(),key=session?.user?.id||'__device';all[key]={reason:String(reason||'review'),at:nowIso()};localStorage.setItem(AUTO_HOLD_KEY,JSON.stringify(all))}
   function clearAutoHold(){const all=autoHoldMap(),uid=session?.user?.id;if(uid)delete all[uid];delete all.__device;if(Object.keys(all).length)localStorage.setItem(AUTO_HOLD_KEY,JSON.stringify(all));else localStorage.removeItem(AUTO_HOLD_KEY)}
   function durableSessionComparable(raw){try{const o=JSON.parse(String(raw??''));if(!o||typeof o!=='object')return String(raw??'');for(const k of SESSION_VOLATILE)delete o[k];return canonical(o)}catch(_){return String(raw??'')}}

@@ -103,7 +103,8 @@
   }
 
   function timelineFor(settings) {
-    const supplied = Array.isArray(settings.rosterTimeline) ? settings.rosterTimeline : safeJsonStorage('rosterbot-timeline-v1', []);
+    const stored = safeJsonStorage('rosterbot-timeline-v1', []);
+    const supplied = Array.isArray(settings.rosterTimeline) ? settings.rosterTimeline : (Array.isArray(stored) ? stored : []);
     const clean = supplied.filter(x => x && x.startWC && x.trackA?.roster && Number(x.trackA?.line)).map(x => ({...x, startWC:weekCommencing(x.startWC)})).sort((a,b)=>a.startWC.localeCompare(b.startWC));
     if (clean.length) return clean;
     if (settings.timelineMode === 'diary') return [];

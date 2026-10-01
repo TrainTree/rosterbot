@@ -1,0 +1,210 @@
+{
+  "fixtureFormat": 1,
+  "description": "Synthetic, deterministic RosterBot v0.29.x persistence states",
+  "scenarios": {
+    "fresh": {
+      "localStorage": {},
+      "indexedDb": []
+    },
+    "configured": {
+      "localStorage": {
+        "rosterbot-db-schema-v1": "4",
+        "rosterbot-experience-v1": "diary",
+        "rosterbot-theme-v1.9": "1",
+        "rosterbot-view-mode-v1": "calendar",
+        "rosterbot-session-settings-v1": {
+          "startDate": "2026-01-04",
+          "startDepot": "SCS",
+          "startRoster": "A",
+          "startLine": 4,
+          "startRole": "PB205:none",
+          "roleStartDate": "2026-01-04",
+          "scheduleMode": "official",
+          "hasSwap": false,
+          "annualLeaveWeeks": [],
+          "experienceMode": "diary",
+          "displayWeeks": 2,
+          "lastViewedFrom": "2026-09-20",
+          "lastViewedTo": "2026-10-03"
+        },
+        "rosterbot-timeline-v1": [
+          {
+            "id": "arr-configured",
+            "startWC": "2026-01-04",
+            "mode": "single",
+            "trackA": {"depot": "SCS", "roster": "A", "line": 4},
+            "trackB": null,
+            "createdAt": "2026-01-04T00:00:00.000Z",
+            "source": "synthetic fixture"
+          }
+        ],
+        "rosterbot-day-overrides-v1": {
+          "2026-09-29": {
+            "date": "2026-09-29",
+            "status": "worked",
+            "actualCode": "SP123",
+            "actualStart": "06:00",
+            "actualEnd": "14:00",
+            "notes": "Synthetic test duty",
+            "pdtCurrent": false,
+            "phMode": "",
+            "allowances": {},
+            "editedAt": "2026-09-29T10:00:00.000Z",
+            "source": "synthetic fixture"
+          }
+        },
+        "rosterbot-diary-annual-leave-v1": ["2026-12-06"],
+        "rosterbot-week-leave-v1": {},
+        "rosterbot-week-overrides-v1": {},
+        "rosterbot-week-locks-v1": {},
+        "rosterbot-pay-checks-v1": {},
+        "rosterbot-employment-profile-v1": [
+          {"id": "role-driver", "effectiveDate": "2026-01-04", "classification": "PB205", "pdtScheme": "none", "note": "Synthetic", "createdAt": "2026-01-04T00:00:00.000Z"}
+        ]
+      },
+      "indexedDb": []
+    },
+    "partial": {
+      "localStorage": {
+        "rosterbot-db-schema-v1": "4",
+        "rosterbot-session-settings-v1": {
+          "startDate": "2026-05-03",
+          "startRoster": "B",
+          "startLine": 2
+        },
+        "rosterbot-fortnight-notes-v1": {
+          "2026-09-20": "Synthetic partial setup note"
+        }
+      },
+      "indexedDb": []
+    },
+    "multipleEffectiveRosters": {
+      "localStorage": {
+        "rosterbot-db-schema-v1": "4",
+        "rosterbot-timeline-v1": [
+          {"id": "arr-early", "startWC": "2025-06-01", "mode": "single", "trackA": {"depot": "SCS", "roster": "A", "line": 1}, "trackB": null, "createdAt": "2025-06-01T00:00:00.000Z", "source": "synthetic fixture"},
+          {"id": "arr-middle", "startWC": "2026-01-04", "mode": "single", "trackA": {"depot": "Geelong", "roster": "MAIN", "line": 8}, "trackB": null, "createdAt": "2026-01-04T00:00:00.000Z", "source": "synthetic fixture"},
+          {"id": "arr-future", "startWC": "2027-01-03", "mode": "single", "trackA": {"depot": "SCS", "roster": "C", "line": 20}, "trackB": null, "createdAt": "2026-09-01T00:00:00.000Z", "source": "synthetic future change"}
+        ]
+      },
+      "indexedDb": []
+    },
+    "permanentSwap": {
+      "localStorage": {
+        "rosterbot-db-schema-v1": "4",
+        "rosterbot-timeline-v1": [
+          {"id": "arr-swap", "startWC": "2026-01-04", "mode": "swap", "trackA": {"depot": "SCS", "roster": "A", "line": 1}, "trackB": {"depot": "SCS", "roster": "B", "line": 10}, "createdAt": "2026-01-04T00:00:00.000Z", "source": "synthetic permanent swap"}
+        ]
+      },
+      "indexedDb": []
+    },
+    "manualHistoricalSnapshot": {
+      "localStorage": {
+        "rosterbot-db-schema-v1": "4",
+        "rosterbot-manual-schedule-v1": {
+          "version": 1,
+          "label": "Current reusable pattern",
+          "days": {
+            "sun": {"on": false, "start": "", "end": ""},
+            "mon": {"on": true, "start": "09:00", "end": "17:00"},
+            "tue": {"on": false, "start": "", "end": ""},
+            "wed": {"on": false, "start": "", "end": ""},
+            "thu": {"on": false, "start": "", "end": ""},
+            "fri": {"on": false, "start": "", "end": ""},
+            "sat": {"on": false, "start": "", "end": ""}
+          },
+          "updatedAt": "2026-09-01T00:00:00.000Z"
+        },
+        "rosterbot-timeline-v1": [
+          {
+            "id": "manual-history",
+            "startWC": "2026-01-04",
+            "mode": "manual",
+            "manualType": "pattern",
+            "manualPattern": {
+              "version": 1,
+              "label": "Historical snapshot",
+              "days": {
+                "sun": {"on": false, "start": "", "end": ""},
+                "mon": {"on": true, "start": "06:00", "end": "14:00"},
+                "tue": {"on": false, "start": "", "end": ""},
+                "wed": {"on": false, "start": "", "end": ""},
+                "thu": {"on": false, "start": "", "end": ""},
+                "fri": {"on": false, "start": "", "end": ""},
+                "sat": {"on": false, "start": "", "end": ""}
+              },
+              "updatedAt": "2026-01-04T00:00:00.000Z"
+            },
+            "trackA": {"depot": "PERSONAL", "roster": "MANUAL", "line": 1},
+            "trackB": null,
+            "createdAt": "2026-01-04T00:00:00.000Z",
+            "source": "synthetic historical manual work pattern"
+          }
+        ]
+      },
+      "indexedDb": []
+    },
+    "employmentProgression": {
+      "localStorage": {
+        "rosterbot-db-schema-v1": "4",
+        "rosterbot-employment-profile-v1": [
+          {"id": "role-qualified", "effectiveDate": "2026-07-01", "classification": "PB205", "pdtScheme": "current", "note": "Synthetic qualification", "createdAt": "2026-02-01T00:00:00.000Z"},
+          {"id": "role-stage2", "effectiveDate": "2025-07-01", "classification": "PB311", "pdtScheme": "none", "note": "Synthetic stage two", "createdAt": "2025-07-01T00:00:00.000Z"},
+          {"id": "role-start", "effectiveDate": "2025-01-01", "classification": "PF441", "pdtScheme": "none", "note": "Synthetic start", "createdAt": "2025-01-01T00:00:00.000Z"}
+        ]
+      },
+      "indexedDb": []
+    },
+    "localStorageOnly": {
+      "localStorage": {
+        "rosterbot-db-schema-v1": "4",
+        "rosterbot-timeline-v1": [
+          {"id": "local-only", "startWC": "2026-03-01", "mode": "single", "trackA": {"depot": "SCS", "roster": "C", "line": 3}, "trackB": null, "createdAt": "2026-03-01T00:00:00.000Z", "source": "synthetic local only"}
+        ]
+      },
+      "indexedDb": []
+    },
+    "indexedDbOnly": {
+      "localStorage": {},
+      "indexedDb": [
+        {"key": "rosterbot-db-schema-v1", "value": "4", "updatedAt": "2026-09-29T00:00:00.000Z"},
+        {"key": "rosterbot-timeline-v1", "value": [{"id": "idb-only", "startWC": "2026-04-05", "mode": "single", "trackA": {"depot": "SCS", "roster": "B", "line": 7}, "trackB": null, "createdAt": "2026-04-05T00:00:00.000Z", "source": "synthetic IndexedDB recovery"}], "updatedAt": "2026-09-29T00:00:00.000Z"}
+      ]
+    },
+    "malformedLocalValidIndexedDb": {
+      "localStorage": {
+        "rosterbot-db-schema-v1": "4",
+        "rosterbot-timeline-v1": {"$raw": "{not-json"},
+        "rosterbot-employment-profile-v1": {"$raw": "{\"wrong\":\"container\"}"}
+      },
+      "indexedDb": [
+        {"key": "rosterbot-timeline-v1", "value": [{"id": "valid-idb-copy", "startWC": "2026-02-01", "mode": "single", "trackA": {"depot": "SCS", "roster": "A", "line": 2}, "trackB": null, "createdAt": "2026-02-01T00:00:00.000Z", "source": "synthetic valid mirror"}], "updatedAt": "2026-09-29T00:00:00.000Z"}
+      ]
+    },
+    "explicitCleared": {
+      "localStorage": {
+        "rosterbot-cleared-v1": "2026-09-29T12:00:00.000Z",
+        "rosterbot-cloud-auto-hold-v1": {"__device": {"reason": "explicit-local-clear", "at": "2026-09-29T12:00:00.000Z"}},
+        "rosterbot-cloud-session-persistent-v1": {"access_token": "synthetic-access-token", "refresh_token": "synthetic-refresh-token", "expires_at": 4102444800, "user": {"id": "00000000-0000-4000-8000-000000000001", "email": "synthetic@example.invalid"}}
+      },
+      "indexedDb": [
+        {"key": "rosterbot-timeline-v1", "value": [{"id": "must-not-recover", "startWC": "2025-01-05", "mode": "single", "trackA": {"depot": "SCS", "roster": "A", "line": 1}, "trackB": null}], "updatedAt": "2026-09-28T00:00:00.000Z"}
+      ]
+    },
+    "legacyPayBotAliases": {
+      "localStorage": {
+        "rosterbot-db-schema-v1": "4",
+        "paybot-v04-state": {"logicVersion": "0.12", "period": "2026-09-20", "grade": "PB205", "entryMode": "manual", "r1": "A", "l1": "1", "r2": "A", "l2": "2", "pdt": "none", "days": []}
+      },
+      "indexedDb": []
+    },
+    "legacyThemeKeys": {
+      "localStorage": {
+        "rosterbot-theme-v1.8": "3",
+        "rosterbot-theme-v1.7": "2",
+        "rosterbot-theme": "1"
+      },
+      "indexedDb": []
+    }
+  }
+}
