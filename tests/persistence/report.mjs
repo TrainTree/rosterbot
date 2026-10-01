@@ -5,6 +5,7 @@ import {root} from './helpers.mjs';
 import {JOURNAL_STATES,SCHEMA5_FORMAT,SCHEMA5_STORAGE_SCHEMA} from './schema5-design.mjs';
 
 const require=createRequire(import.meta.url);
+const compatibility=require(`${root}/js/01-storage-compatibility.js`);
 const registry=require(`${root}/js/01-persistence-registry.js`);
 const canonical=require(`${root}/js/02-canonical-state.js`);
 const safety=require(`${root}/js/02-persistence-safety.js`);
@@ -33,7 +34,7 @@ for(const [label,localRaw,indexedDbRaw] of recoveryCases){
 }
 
 console.log('\nPhase 4 recovery presentations');
-for(const type of ['conflict','malformed-local-recoverable','malformed-indexeddb-recoverable','unsupported','unrecoverable']){
+for(const type of ['newer-schema','conflict','malformed-local-recoverable','malformed-indexeddb-recoverable','unsupported','unrecoverable']){
   const view=recoveryUi.presentation({issueType:type});
   console.log(`- ${type}: ${view.kind} · ${view.title}`);
 }
@@ -58,3 +59,12 @@ console.log(`- envelope: ${SCHEMA5_FORMAT} · schema=${SCHEMA5_STORAGE_SCHEMA} �
 console.log(`- golden fixtures: ${schema5Successful.length} success · ${schema5Cases.length-schema5Successful.length} rejected · exact fingerprints=true`);
 console.log(`- journal checkpoints: ${JOURNAL_STATES.join(' → ')}`);
 console.log(`- compatibility: production registry=${registry.schemaVersion} · backup/cloud remain schema 4`);
+
+const futureFixture=JSON.parse(fs.readFileSync(path.join(root,'tests/fixtures/schema5-bootstrap-guard.json'),'utf8'));
+const futureLocal=Object.fromEntries(Object.entries(futureFixture.localStorage).map(([key,value])=>[key,typeof value==='string'?value:JSON.stringify(value)]));
+const futureDecision=compatibility.inspect({localValues:futureLocal});
+console.log(`\nPhase 7B rollback-proof bootstrap guard`);
+console.log(`- client capability: supported=${compatibility.POLICY.currentSupportedStorageSchema} · reader=${compatibility.POLICY.readerSchema} · writer=${compatibility.POLICY.writerSchema} · highest-write=${compatibility.POLICY.highestSafeWriteSchema}`);
+console.log(`- future fixture: blocked=${futureDecision.blocked} · detected-schema=${futureDecision.detected.highestStorageSchema} · projection-writable=${futureDecision.detected.projectionWritable}`);
+console.log(`- normal schema 4: allowed=${compatibility.inspect({localValues:{'rosterbot-db-schema-v1':'4'}}).allowed} · production writes remain schema 4`);
+console.log(`- Cloud boundary: client startup guard only · server-side schema downgrade rejection still required`);

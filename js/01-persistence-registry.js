@@ -119,6 +119,13 @@
     if(Object.values(value.projection.storage).some(raw=>typeof raw!=='string'))return unsupported(value,'previous projection values must be raw strings');
     return valid(value);
   }
+  function storageGuardValue(value){
+    if(!isObject(value)||value.format!=='rosterbot-storage-guard'||Number(value.formatVersion)!==1)return unsupported(value,'expected the durable storage downgrade guard');
+    for(const key of ['migratedSchema','minimumReaderSchema','minimumWriterSchema'])if(!Number.isSafeInteger(Number(value[key]))||Number(value[key])<1)return unsupported(value,`${key} must be a positive schema number`);
+    if(!isObject(value.migrationEvidence))return unsupported(value,'migration evidence is required');
+    if(value.compatibilityProjection!=null&&(!isObject(value.compatibilityProjection)||!Number.isSafeInteger(Number(value.compatibilityProjection.schemaVersion))||!['lossless','lossy','unavailable'].includes(value.compatibilityProjection.status)))return unsupported(value,'compatibility projection metadata is invalid');
+    return valid(value);
+  }
 
   const validators=Object.freeze({
     string:raw=>valid(String(raw)),
@@ -142,7 +149,8 @@
     colorMode:raw=>['light','dark'].includes(String(raw))?valid(String(raw)):unsupported(String(raw),'unknown colour mode'),
     rosterPeriod:raw=>['week','fortnight'].includes(String(raw))?valid(String(raw)):unsupported(String(raw),'unknown roster period'),
     generation:jsonValidator(generationValue),
-    previousGeneration:jsonValidator(previousGenerationValue)
+    previousGeneration:jsonValidator(previousGenerationValue),
+    storageGuard:jsonValidator(storageGuardValue)
   });
 
   const definitions=[
@@ -160,6 +168,12 @@
     ['rosterbot-session-settings-v1','personal','sessionSettings','personal',null],
     ['rosterbot-shared-settings-v1','derived','jsonObject','personal',null],
     ['rosterbot-db-schema-v1','device','schema4','none',null],
+    // Phase 7B detection-only records. They are deliberately absent from every
+    // writable surface and are never created during normal schema-4 operation.
+    ['rosterbot-storage-guard-v1','internal','storageGuard','metadata',null],
+    ['rosterbot-personal-state-v1','internal','jsonObject','sensitive',null],
+    ['rosterbot-schema5-migration-journal-v1','internal','jsonObject','metadata',null],
+    ['rosterbot-schema4-pre-migration-snapshot-v1','internal','jsonObject','sensitive',null],
     ['rosterbot-cleared-v1','device','iso','none',null],
     ['rosterbot-theme-v1.9','device','theme','none',['rosterbot-theme-v1.8','rosterbot-theme-v1.7','rosterbot-theme']],
     ['rosterbot-theme-v1.8','device','string','none',null,'rosterbot-theme-v1.9'],

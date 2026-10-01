@@ -178,10 +178,11 @@ test('journal state machine is total and never advances the marker before both v
   assert.equal(JOURNAL_CONTRACT.failed.ui,true);
 });
 
-test('Phase 7A remains design-only and production schema/backup/Cloud contracts stay at schema 4',()=>{
+test('Phase 7B only recognises reserved future records while production schema/backup/Cloud contracts stay at schema 4',()=>{
   assert.equal(registry.schemaVersion,4);
   assert.doesNotMatch(readSource('index.html'),/schema5-design|schema5-migration/);
-  assert.doesNotMatch(readSource('js/01-persistence-registry.js'),/rosterbot-personal-state/);
+  assert.equal(registry.get('rosterbot-personal-state-v1').category,'internal');
+  assert(['backup','cloud','indexedDb'].every(surface=>!registry.surfaceKeys(surface).includes('rosterbot-personal-state-v1')));
   assert.match(readSource('js/50-data-backup.js'),/schemaVersion:4/);
   assert.match(readSource('js/51-cloud-sync.js'),/new_schema_version:4/);
   assert.doesNotMatch(readSource('js/51-cloud-sync.js'),/new_schema_version:5/);

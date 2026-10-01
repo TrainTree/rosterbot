@@ -5,7 +5,7 @@
   if(root)root.RosterBotRecoveryUI=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
-  const BUILD_VERSION='v0.30-phase6';
+  const BUILD_VERSION='v0.30-phase7b';
   const RECOVERABLE=new Set(['valid','legacy']);
   const SECRET_SENSITIVITY=new Set(['secret','cryptographic']);
   const LABELS={
@@ -84,6 +84,7 @@
     return {
       format:'rosterbot-recovery-evidence-v1',exportedAt:new Date(now).toISOString(),app:'RosterBot',appVersion,
       personalDataSchema:registry.schemaVersion,recovery:{type:state?.issueType||'unavailable',reason:state?.reason||null,clearedAt:state?.clearedAt||null,affectedKeys:[...(state?.affectedKeys||[])]},
+      storageCompatibility:state?.storageCompatibility?JSON.parse(JSON.stringify(state.storageCompatibility)):null,
       validationStates:{local:{...(state?.validationStates?.local||{})},recoveredBackup:{...(state?.validationStates?.indexedDb||{})}},
       sources:{local:{id:'this-device',summary:summaries.local},recoveredBackup:{id:'recovery-mirror',summary:summaries.indexedDb}},
       preservedRawCopies:normalizedCopies(state,registry),
@@ -101,6 +102,7 @@
   function presentation(state){
     if(state?.ambiguousTombstone)return {title:'Choose whether to keep cleared data',intro:'RosterBot found a clear record and retained saved data, but cannot safely tell which is newer.',detail:'Automatically generated defaults are not being used to make this decision. RosterBot will not replace or restore anything until you choose.',kind:'tombstone'};
     switch(state?.issueType){
+      case 'newer-schema':return {title:'This RosterBot data was created by a newer version of RosterBot.',intro:'Your saved data has not been changed.',detail:'Open this data with the newer version of RosterBot. This version will remain read-only; any schema-4 compatibility projection is recovery evidence only and cannot be opened as ordinary writable data.',kind:'update-required'};
       case 'conflict':return {title:'Choose which saved copy to use',intro:'RosterBot found two different saved copies of your data.',detail:'Both copies are preserved. RosterBot will not replace anything until you choose.',kind:'choice'};
       case 'malformed-local-recoverable':return {title:'A saved copy needs recovery',intro:'The copy RosterBot normally opens appears damaged, but another recoverable copy exists.',detail:'You can export the evidence, then recover using the valid saved copy.',kind:'recover-local'};
       case 'malformed-indexeddb-recoverable':return {title:'A saved mirror needs repair',intro:'Your current copy is valid, but its recovery mirror appears damaged.',detail:'RosterBot has paused startup and mirroring until you approve a verified repair.',kind:'repair-mirror'};
@@ -139,18 +141,19 @@
     return {choice,...plan,destructive:false};
   }
 
-  function summaryHtml(summary,label){
-    const status=summary.status==='valid'?'Valid copy':summary.status==='damaged'?'Needs recovery':'No saved information';
+  function summaryHtml(summary,label,{preserved=false}={}){
+    const hasData=['valid','legacy','malformed','unsupported'].some(key=>Number(summary.states?.[key])>0),status=preserved?(hasData?'Preserved — not opened':'No saved information'):(summary.status==='valid'?'Valid copy':summary.status==='damaged'?'Needs recovery':'No saved information'),copyStatus=preserved?(hasData?'valid':'empty'):summary.status;
     const roster=summary.currentRoster?`${summary.currentRoster.depot?summary.currentRoster.depot+' · ':''}${summary.currentRoster.roster || 'Roster'}${summary.currentRoster.line!==''?' line '+summary.currentRoster.line:''}`:'Not available';
     const range=summary.rosterDateRange?`${summary.rosterDateRange.from} to ${summary.rosterDateRange.to}`:'Not available';
-    return `<article class="recovery-copy recovery-copy-${escapeHtml(summary.status)}"><div class="recovery-copy-head"><h3>${escapeHtml(label)}</h3><span>${escapeHtml(status)}</span></div><dl><div><dt>Current roster</dt><dd>${escapeHtml(roster)}</dd></div><div><dt>Roster history</dt><dd>${summary.rosterHistoryCount} entr${summary.rosterHistoryCount===1?'y':'ies'} · ${escapeHtml(range)}</dd></div><div><dt>Employment history</dt><dd>${summary.employmentHistoryCount} entr${summary.employmentHistoryCount===1?'y':'ies'}</dd></div><div><dt>Diary changes</dt><dd>${summary.diaryOverrideCount}</dd></div>${summary.lastModified?`<div><dt>Recovery copy saved</dt><dd>${escapeHtml(friendlyDate(summary.lastModified))}</dd></div>`:''}</dl>${summary.missingInformation.length?`<p class="recovery-missing"><strong>Missing here:</strong> ${escapeHtml(summary.missingInformation.join(', '))}</p>`:''}</article>`;
+    return `<article class="recovery-copy recovery-copy-${escapeHtml(copyStatus)}"><div class="recovery-copy-head"><h3>${escapeHtml(label)}</h3><span>${escapeHtml(status)}</span></div><dl><div><dt>Current roster</dt><dd>${escapeHtml(roster)}</dd></div><div><dt>Roster history</dt><dd>${summary.rosterHistoryCount} entr${summary.rosterHistoryCount===1?'y':'ies'} · ${escapeHtml(range)}</dd></div><div><dt>Employment history</dt><dd>${summary.employmentHistoryCount} entr${summary.employmentHistoryCount===1?'y':'ies'}</dd></div><div><dt>Diary changes</dt><dd>${summary.diaryOverrideCount}</dd></div>${summary.lastModified?`<div><dt>Recovery copy saved</dt><dd>${escapeHtml(friendlyDate(summary.lastModified))}</dd></div>`:''}</dl>${summary.missingInformation.length?`<p class="recovery-missing"><strong>Missing here:</strong> ${escapeHtml(summary.missingInformation.join(', '))}</p>`:''}</article>`;
   }
   function technicalHtml(state){
-    const details={type:state?.issueType||'unavailable',reason:state?.reason||null,affectedKeys:state?.affectedKeys||[],validationStates:state?.validationStates||{},clearedAt:state?.clearedAt||null};
+    const details={type:state?.issueType||'unavailable',reason:state?.reason||null,affectedKeys:state?.affectedKeys||[],validationStates:state?.validationStates||{},clearedAt:state?.clearedAt||null,storageCompatibility:state?.storageCompatibility||null};
     return `<details class="recovery-technical"><summary>Technical details</summary><p>Raw saved values are intentionally hidden here. The recovery export contains eligible raw evidence with device secrets redacted.</p><pre>${escapeHtml(JSON.stringify(details,null,2))}</pre></details>`;
   }
   function actionsHtml(state){
     const view=presentation(state),localOk=sourceAvailable(state,'local'),idbOk=sourceAvailable(state,'indexedDb');
+    if(view.kind==='update-required')return '<div class="recovery-actions"><button type="button" class="primary" data-recovery-export>Export preserved recovery data</button></div>';
     if(view.kind==='unsupported')return '<div class="recovery-actions"><button type="button" class="primary" data-recovery-export>Export preserved data</button></div>';
     if(view.kind==='unrecoverable')return '<div class="recovery-actions"><button type="button" class="primary" data-recovery-export>Export preserved raw data</button><label class="recovery-confirm"><input type="checkbox" data-recovery-clear-confirm> I understand this will clear the saved personal data in this browser.</label><button type="button" class="danger" data-recovery-choice="clear" disabled>Clear and start again</button></div>';
     const buttons=[];
@@ -171,7 +174,8 @@
     const view=presentation(state),summaries=summarizeRecovery(state,registry);
     container.dataset.recoveryState=state?.issueType||'unavailable';
     container.setAttribute('role','main');container.removeAttribute('aria-live');
-    container.innerHTML=`<div class="recovery-screen"><header><span class="recovery-kicker">SAFE DATA RECOVERY</span><h1>${escapeHtml(view.title)}</h1><p class="recovery-lead">${escapeHtml(view.intro)}</p><p>${escapeHtml(view.detail)}</p></header><section class="recovery-copies" aria-label="Saved copy comparison">${summaryHtml(summaries.local,'This device')}${summaryHtml(summaries.indexedDb,'Recovered saved copy')}</section><p class="recovery-preserve-note">A redacted recovery evidence file is downloaded automatically before RosterBot replaces or clears a copy.</p>${actionsHtml(state)}<p class="recovery-status" data-recovery-status role="status" aria-live="polite"></p>${technicalHtml(state)}</div>`;
+    const updateRequired=view.kind==='update-required',kicker=updateRequired?'UPDATE REQUIRED':'SAFE DATA RECOVERY',preserveNote=updateRequired?'RosterBot has not written defaults, changed a compatibility projection, mirrored data, or contacted Cloud/calendar publishing. You may export a redacted recovery evidence file without changing saved state.':'A redacted recovery evidence file is downloaded automatically before RosterBot replaces or clears a copy.';
+    container.innerHTML=`<div class="recovery-screen"><header><span class="recovery-kicker">${kicker}</span><h1>${escapeHtml(view.title)}</h1><p class="recovery-lead">${escapeHtml(view.intro)}</p><p>${escapeHtml(view.detail)}</p></header><section class="recovery-copies" aria-label="Saved copy comparison">${summaryHtml(summaries.local,'This device',{preserved:updateRequired})}${summaryHtml(summaries.indexedDb,'Recovered saved copy',{preserved:updateRequired})}</section><p class="recovery-preserve-note">${escapeHtml(preserveNote)}</p>${actionsHtml(state)}<p class="recovery-status" data-recovery-status role="status" aria-live="polite"></p>${technicalHtml(state)}</div>`;
     return {view,summaries};
   }
   return Object.freeze({BUILD_VERSION,buildRecoveryExport,summarizeRecovery,presentation,sourceAvailable,createRecoveryPlan,render});

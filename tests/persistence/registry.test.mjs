@@ -68,6 +68,7 @@ test('every literal application persistence key is registered',()=>{
   keys.delete('rosterbot-encrypted-v1'); // Cloud envelope format identifier, not a storage key.
   keys.delete('rosterbot-recovery-evidence-v1'); // Recovery export format identifier, not a storage key.
   keys.delete('rosterbot-canonical-candidate-v1'); // In-memory candidate format identifier, not a storage key.
+  keys.delete('rosterbot-storage-guard'); // Downgrade-guard format identifier; the persisted key has a -v1 suffix.
   const missing=[...keys].filter(key=>!registry.get(key)).sort();
   assert.deepEqual(missing,[]);
 });

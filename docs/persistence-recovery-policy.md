@@ -1,4 +1,6 @@
-# v0.30 recovery and replacement policy (Phases 3–6)
+# v0.30 recovery and replacement policy (Phases 3–7B)
+
+Before the recovery decision below, Phase 7B performs the side-effect-free storage compatibility preflight documented in [`rollback-proof-bootstrap-guard.md`](rollback-proof-bootstrap-guard.md). Newer schema/minimum-reader evidence enters an update-required state before feature modules, defaults, mirroring, Cloud Sync, or calendar publishing can initialize. A schema-4 compatibility projection remains recovery-only and never becomes writable authority.
 
 Recovery is decided per registered IndexedDB key before normal feature modules load. The decision function is read-only: it receives the exact localStorage startup strings and the exact IndexedDB row values, validates both through the persistence registry, and returns a structured result. It does not read from or write to either store itself.
 

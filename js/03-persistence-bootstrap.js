@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  const registry=window.RosterBotPersistenceRegistry,safety=window.RosterBotPersistenceSafety,recoveryUi=window.RosterBotRecoveryUI;
+  const compatibility=window.RosterBotStorageCompatibility,registry=window.RosterBotPersistenceRegistry,safety=window.RosterBotPersistenceSafety,recoveryUi=window.RosterBotRecoveryUI;
   const personalKeys=registry.surfaceKeys('indexedDb');
   const moduleSources=[
     'data/rosters-fp64-fp68-20260908.js','js/10-roster-official.js','js/11-roster-engine.js','js/12-roster-effective-dates.js',
@@ -13,6 +13,7 @@
     getState:()=>state,
     isBlocked:()=>state?.startupAllowed===false||state?.userChoiceRequired===true,
     canMirror:()=>state?.mirrorAllowed!==false,
+    storagePolicy:()=>compatibility?.POLICY||null,
     getIndexedDbTarget:()=>indexedDbTarget,
     exportEvidence:()=>downloadEvidence(),
     resolve:choice=>resolveRecovery(choice),
@@ -34,6 +35,13 @@
     if(recoveryUi)recoveryUi.render({container:startup,state,registry});
     else{startup.dataset.recoveryState=state?.issueType||'unavailable';const text=startup.querySelector('span');if(text)text.textContent='Saved data needs recovery review. No stored copy has been changed.'}
     if(message)status(message,'error');
+  }
+  function blockForNewerSchema(result,{localValues={},rows=[]}={}){
+    state=compatibility.recoveryState(result,{localValues,indexedDbRows:rows});
+    showRecovery();
+    window.dispatchEvent(new CustomEvent('rosterbot:update-required',{detail:state}));
+    window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));
+    return state;
   }
   function readRows(){
     return new Promise((resolve,reject)=>{
@@ -124,7 +132,13 @@
   (async()=>{
     try{
       if(window.__rosterbotLocalStateAtStartup==null)throw new Error('localStorage could not be read safely');
-      const rows=await readRows(),localValues=window.__rosterbotLocalStateAtStartup;
+      if(!compatibility)throw new Error('Storage compatibility guard could not be loaded');
+      const localValues=window.__rosterbotLocalStateAtStartup,localCompatibility=compatibility.inspect({localValues});
+      // A local downgrade marker must stop startup before IndexedDB is even
+      // opened. This keeps future projections read-only and prevents a mirror.
+      if(localCompatibility.blocked){blockForNewerSchema(localCompatibility,{localValues});return}
+      const rows=await readRows(),combinedCompatibility=compatibility.inspect({localValues,indexedDbRows:rows});
+      if(combinedCompatibility.blocked){blockForNewerSchema(combinedCompatibility,{localValues,rows});return}
       state=await safety.reconcileCanonicalState({registry,localValues,rows,personalKeys});
       if(!state.startupAllowed||state.userChoiceRequired){showRecovery();window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));return}
       if(state.reconciliationPlan){

@@ -12,6 +12,8 @@ The Phase 3 decision table, Phase 4 recovery UI/evidence/restart durability, and
 
 The Phase 7A schema-5 envelope, pure 4 → 5 contract, crash journal, snapshot, downgrade boundary, and Cloud prerequisites are documented in [`docs/schema5-migration-design.md`](../../docs/schema5-migration-design.md). `schema5-migration-design.test.mjs` consumes complete deterministic outputs from `tests/fixtures/schema4-to-schema5-golden.json`. The generator and migration contract are test-only and never loaded by the application.
 
+The Phase 7B read-only bootstrap guard is documented in [`docs/rollback-proof-bootstrap-guard.md`](../../docs/rollback-proof-bootstrap-guard.md). `bootstrap-guard.test.mjs` uses `tests/fixtures/schema5-bootstrap-guard.json` plus the Phase 7A golden envelope to prove that future schema/minimum-reader evidence stops feature loading and all persistence side effects while current schema-4 startup remains available.
+
 `import-transaction.test.mjs` covers side-effect-free staging, wrapper/schema/value rejection, preview metadata, empty and partial full-replacement semantics, recovery-artifact recognition, v0.29.x compatibility, first/middle/final write failures, verification failure, exact local/cross-store rollback, rollback failure, and replacement-time side-effect suppression.
 
 `tests/fixtures/persistence-v029.json` contains synthetic input states for current v0.29.x behaviour. Objects and arrays in `localStorage` are serialized by `helpers.mjs`; `{ "$raw": "..." }` represents deliberately malformed raw storage text. IndexedDB rows use the current `RosterBotPersonalDB` / `kv` shape and are serialized the same way before recovery tests.

@@ -272,21 +272,18 @@ Before any schema-5 Cloud upload, all of these protections must be deployed and 
 
 The existing Cloud payload shape, `rosterbot-encrypted-v1`, `new_schema_version: 4`, database contracts, and revision behavior remain untouched in Phase 7A.
 
-## 9. Phase 7B change map
+## 9. Phase 7B guard-only implementation
 
-Expected implementation touch points are:
+Phase 7B was deliberately narrowed to the prerequisite rollback-proof client bootstrap guard. Its implementation touch points are:
 
-- new production migration/envelope validator and journal module (derived from the test-only contract);
-- `js/01-persistence-registry.js`: register schema-5 envelope/journal/snapshot as internal/recovery records without removing schema-4 entries;
-- `js/02-canonical-state.js`: schema-5 identity, envelope projection, generation ancestry, and schema-4 compatibility verification;
-- `js/02-persistence-safety.js`: dual-store journal orchestration, snapshot/rollback, exact read-back, and divergence handling;
-- `js/03-persistence-bootstrap.js` and `js/03-recovery-ui.js`: detect schema 5/journal before legacy startup, resume, and expose downgrade/recovery states;
-- `js/60-diary.js`: mirror the envelope/internal checkpoints while retaining compatibility projection behavior;
-- roster/session, effective-date, diary, employment, PayBot, manual-schedule, and calendar writers: route personal changes through one canonical transaction so envelope and projection cannot drift;
-- `js/50-data-backup.js`: deliberately export a verified schema-4 compatibility payload until a separate schema-5 backup format is approved; never leak marker 5 into a schema-4 payload;
-- `js/51-cloud-sync.js`: Phase 7B review hold only; later work adds schema-5 payload/generation handling after server prerequisites;
-- `index.html`: load the migration/bootstrap guard before feature modules;
-- persistence tests/fixtures/report and recovery documentation.
+- `js/01-storage-compatibility.js`: schema-4 client capabilities, future marker/minimum-reader detection, durable downgrade-guard validation, and a side-effect-free blocked-state model;
+- `js/01-persistence-registry.js`: detection-only registration of the guard and reserved envelope/journal/snapshot records as internal, non-surface metadata;
+- `js/03-persistence-bootstrap.js`: local preflight before IndexedDB access, then read-only IndexedDB preflight before recovery or feature modules;
+- `js/03-recovery-ui.js`: dedicated update-required/export-only presentation;
+- `index.html`: load the compatibility guard before recovery/bootstrap code;
+- tests, a future-schema fixture, persistence report, and [`rollback-proof-bootstrap-guard.md`](rollback-proof-bootstrap-guard.md).
+
+The migration/envelope writer, schema-5 canonical transactions, journal/snapshot writes, compatibility-projection writes, and schema-5 Cloud behavior were not implemented. Schema-4 readers, aliases, projection, import, backup, and Cloud contracts remain current.
 
 Schema-4 readers, aliases, projection, and import compatibility remain until a separately reviewed removal phase.
 
@@ -294,9 +291,9 @@ Schema-4 readers, aliases, projection, and import compatibility remain until a s
 
 Persisted schema 5 must not begin until these are resolved and tested:
 
-1. **Rollback boot guard:** choose and prove a deployment mechanism that cannot be lost when application assets roll back. Arbitrary old cached v0.29 code cannot be made safe by the new envelope alone.
+1. **Deployment retention:** Phase 7B proves the guard when this bootstrap runs, but deployment must ensure it cannot be lost when feature assets roll back. Arbitrary old cached v0.29 code cannot be made safe retroactively by the new envelope or guard record alone.
 2. **Physical transaction layout:** confirm the envelope/journal/snapshot keys, IndexedDB locations, quota behavior, and redundant-journal recovery algorithm under real browser interruption/quota tests.
-3. **Cloud hold versus server rollout:** decide whether Phase 7B ships with Cloud fully held or waits for monotonic server downgrade protection. No schema-5 Cloud write is allowed meanwhile.
+3. **Cloud/server protection:** deploy and prove monotonic server downgrade rejection before enabling any schema-5 Cloud write. The client guard alone cannot protect Cloud from an actually old client.
 4. **Build identity:** provide the immutable production version/build value passed to the pure migration; it must not be inferred from mutable UI text.
 
-These are implementation gates, not permission to change Cloud or storage in Phase 7A.
+These remain implementation gates, not permission to change Cloud contracts or persist schema 5.
