@@ -199,8 +199,9 @@ test('safe replacement detects failed verification and restores the exact prior 
 
 test('startup does not load feature modules or write defaults while authoritative state requires user choice',()=>{
   const source=readSource('js/03-persistence-bootstrap.js');
-  const gate=source.indexOf('if(!state.startupAllowed)'),load=source.indexOf('await loadApplication()'),replacement=source.indexOf('safety.replacePersistentState');
-  assert(gate>=0&&load>gate&&replacement>gate);
+  const gate=source.lastIndexOf('if(!state.startupAllowed||state.userChoiceRequired)'),replacement=source.lastIndexOf('safety.replacePersistentState'),load=source.lastIndexOf('await loadApplication()');
+  assert(gate>=0&&replacement>gate&&load>replacement);
   assert(source.slice(gate,replacement).includes('return'));
+  assert.match(source,/isBlocked:\(\)=>state\?\.startupAllowed===false\|\|state\?\.userChoiceRequired===true/);
   assert.doesNotMatch(source,/localStorage\.setItem|localStorage\.removeItem/);
 });

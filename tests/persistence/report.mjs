@@ -4,6 +4,7 @@ import {root} from './helpers.mjs';
 const require=createRequire(import.meta.url);
 const registry=require(`${root}/js/01-persistence-registry.js`);
 const safety=require(`${root}/js/02-persistence-safety.js`);
+const recoveryUi=require(`${root}/js/03-recovery-ui.js`);
 const report=registry.report();
 
 console.log(`Persistence registry: ${report.itemCount} items · schema ${registry.schemaVersion} · ${registry.mode}`);
@@ -26,3 +27,12 @@ for(const [label,localRaw,indexedDbRaw] of recoveryCases){
   const decision=safety.recoveryDecision({registry,key,localRaw,indexedDbRaw});
   console.log(`- ${label}: ${decision.issueType} · auto=${decision.automaticRecoveryAllowed} · choice=${decision.userChoiceRequired} · startup=${decision.startupAllowed}`);
 }
+
+console.log('\nPhase 4 recovery presentations');
+for(const type of ['conflict','malformed-local-recoverable','malformed-indexeddb-recoverable','unsupported','unrecoverable']){
+  const view=recoveryUi.presentation({issueType:type});
+  console.log(`- ${type}: ${view.kind} · ${view.title}`);
+}
+const redactionState={issueType:'unrecoverable',affectedKeys:['rosterbot-calendar-subscription-tokens-v2'],preservedRawCopies:{'rosterbot-calendar-subscription-tokens-v2':{local:'synthetic-secret',indexedDb:null}}};
+const artifact=recoveryUi.buildRecoveryExport({state:redactionState,registry,now:'2026-10-01T00:00:00.000Z'});
+console.log(`\nRecovery export: ${artifact.format} · schema ${artifact.personalDataSchema} · credential redacted=${artifact.preservedRawCopies['rosterbot-calendar-subscription-tokens-v2'].local.redacted}`);

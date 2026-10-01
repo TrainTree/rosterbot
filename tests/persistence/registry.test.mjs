@@ -66,6 +66,7 @@ test('every literal application persistence key is registered',()=>{
   const source=fs.readdirSync(`${root}/js`).filter(name=>name.endsWith('.js')).map(name=>readSource(`js/${name}`)).join('\n');
   const keys=new Set(quotedPersistenceKeys(source));
   keys.delete('rosterbot-encrypted-v1'); // Cloud envelope format identifier, not a storage key.
+  keys.delete('rosterbot-recovery-evidence-v1'); // Recovery export format identifier, not a storage key.
   const missing=[...keys].filter(key=>!registry.get(key)).sort();
   assert.deepEqual(missing,[]);
 });

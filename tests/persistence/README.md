@@ -8,7 +8,7 @@ npm run check:syntax
 npm run report:persistence
 ```
 
-The Phase 3 decision table, startup gate, raw-copy preservation contract, safe replacement protocol, and Phase 4 boundary are documented in [`docs/persistence-recovery-policy.md`](../../docs/persistence-recovery-policy.md).
+The Phase 3 decision table and Phase 4 recovery UI, redacted evidence export, restart durability, and cross-store replacement/rollback contract are documented in [`docs/persistence-recovery-policy.md`](../../docs/persistence-recovery-policy.md).
 
 `tests/fixtures/persistence-v029.json` contains synthetic input states for current v0.29.x behaviour. Objects and arrays in `localStorage` are serialized by `helpers.mjs`; `{ "$raw": "..." }` represents deliberately malformed raw storage text. IndexedDB rows use the current `RosterBotPersonalDB` / `kv` shape and are serialized the same way before recovery tests.
 

@@ -81,11 +81,12 @@
     const affectedKeys=retainedKeys,preservedRows=Object.fromEntries(retainedKeys.map(key=>[key,{local:Object.prototype.hasOwnProperty.call(localValues,key)?localValues[key]:null,indexedDb:rowMap.has(key)?rowMap.get(key).value:null}]));
     const localStates=Object.fromEntries(retainedKeys.map(key=>[key,localChecks[key].state])),indexedDbStates=Object.fromEntries(retainedKeys.map(key=>[key,indexedDbChecks[key].state]));
     const indexedStateSet=new Set(Object.values(indexedDbStates)),indexedDbValidationState=indexedStateSet.size===0?'missing':indexedStateSet.size===1?[...indexedStateSet][0]:'mixed';
+    const decisions=retainedKeys.filter(key=>key!==CLEAR_KEY).map(key=>{const row=rowMap.get(key);return recoveryDecision({registry,key,localRaw:Object.prototype.hasOwnProperty.call(localValues,key)?localValues[key]:null,indexedDbRaw:row?row.value:null,indexedDbUpdatedAt:row?.updatedAt??null,indexedDbPresent:!!row})});
     if(localProblems.length)return {
       issueType:localProblems.some(key=>localChecks[key].state==='unsupported')?'unsupported':'unrecoverable',affectedKeys:[CLEAR_KEY,...affectedKeys],localValidationState:'mixed',indexedDbValidationState,
       automaticRecoveryAllowed:false,userChoiceRequired:true,startupAllowed:false,mirrorAllowed:false,clearedAt:String(raw),
       preservedRawCopies:{[CLEAR_KEY]:{local:raw,indexedDb:null},...preservedRows},validationStates:{local:{[CLEAR_KEY]:checked.state,...localStates},indexedDb:indexedDbStates},
-      reason:'clear tombstone coexists with malformed or unsupported local data'
+      decisions,reason:'clear tombstone coexists with malformed or unsupported local data'
     };
     if(!localRecoverable&&newerThanRows)return {
       issueType:'cleared',affectedKeys,localValidationState:'missing',indexedDbValidationState,
@@ -96,7 +97,7 @@
       issueType:'conflict',affectedKeys:[CLEAR_KEY,...affectedKeys],localValidationState:localRecoverable?'valid':'missing',indexedDbValidationState:recoverableRows.length?'valid':'missing',
       automaticRecoveryAllowed:false,userChoiceRequired:true,startupAllowed:false,mirrorAllowed:false,clearedAt:String(raw),
       preservedRawCopies:{[CLEAR_KEY]:{local:raw,indexedDb:null},...preservedRows},validationStates:{local:{[CLEAR_KEY]:checked.state,...localStates},indexedDb:indexedDbStates},
-      reason:'clear tombstone is not demonstrably newer than every recoverable copy'
+      decisions,ambiguousTombstone:true,reason:'clear tombstone is not demonstrably newer than every recoverable copy'
     };
   }
   function aggregateType(decisions){
@@ -155,6 +156,46 @@
     }catch(error){return {ok:false,stage:'verification',before,error,...rollback()}}
   }
 
+  async function replacePersistenceCopies({storage,indexedDbTarget,localSet=[],localRemove=[],indexedDbSet=[],indexedDbRemove=[],registry}){
+    if(!storage||typeof storage.getItem!=='function'||typeof storage.setItem!=='function'||typeof storage.removeItem!=='function')throw new TypeError('A Storage-compatible target is required');
+    if(!indexedDbTarget||typeof indexedDbTarget.read!=='function'||typeof indexedDbTarget.apply!=='function')throw new TypeError('An IndexedDB recovery target is required');
+    if(!registry||typeof registry.validate!=='function')throw new TypeError('A persistence registry is required');
+    const localWrites=localSet instanceof Map?[...localSet.entries()]:Array.isArray(localSet)?localSet:Object.entries(localSet||{}),idbWrites=indexedDbSet instanceof Map?[...indexedDbSet.entries()]:Array.isArray(indexedDbSet)?indexedDbSet:Object.entries(indexedDbSet||{});
+    const localDeletes=[...new Set(localRemove||[])].filter(key=>!localWrites.some(([writeKey])=>writeKey===key)),idbDeletes=[...new Set(indexedDbRemove||[])].filter(key=>!idbWrites.some(([writeKey])=>writeKey===key));
+    const localKeys=[...new Set([...localWrites.map(([key])=>key),...localDeletes])],idbKeys=[...new Set([...idbWrites.map(([key])=>key),...idbDeletes])];
+    for(const [key,raw] of [...localWrites,...idbWrites]){
+      if(typeof raw!=='string')return {ok:false,stage:'validation',rolledBack:false,rollbackVerified:true,error:new Error(`Replacement for ${key} is not a raw string`)};
+      const checked=registry.validate(key,raw);
+      if(!recoverable(checked))return {ok:false,stage:'validation',rolledBack:false,rollbackVerified:true,error:new Error(`Replacement for ${key} is ${checked.state}`)};
+    }
+    const beforeLocal=Object.fromEntries(localKeys.map(key=>[key,storage.getItem(key)]));
+    let beforeIndexedDb;
+    try{beforeIndexedDb=await indexedDbTarget.read(idbKeys)}catch(error){return {ok:false,stage:'capture',rolledBack:false,rollbackVerified:false,beforeLocal,error}}
+    const beforeRows=beforeIndexedDb instanceof Map?beforeIndexedDb:new Map(Object.entries(beforeIndexedDb||{}));
+    const desiredRows=new Map(idbWrites.map(([key,value])=>[key,{key,value,updatedAt:new Date().toISOString()}]));
+    const desiredLocal=new Map(localWrites);
+    const rollback=async()=>{
+      let rollbackError=null;
+      for(const key of localKeys)try{if(beforeLocal[key]==null)storage.removeItem(key);else storage.setItem(key,beforeLocal[key])}catch(error){rollbackError=rollbackError||error}
+      try{await indexedDbTarget.apply({put:[...beforeRows.values()].filter(Boolean),remove:idbKeys.filter(key=>!beforeRows.get(key))})}catch(error){rollbackError=rollbackError||error}
+      let rollbackVerified=!rollbackError;
+      for(const key of localKeys)try{if(storage.getItem(key)!==beforeLocal[key])rollbackVerified=false}catch(_){rollbackVerified=false}
+      try{const rows=await indexedDbTarget.read(idbKeys);for(const key of idbKeys){const expected=beforeRows.get(key)||null,actual=rows.get(key)||null;if(canonical(expected)!==canonical(actual))rollbackVerified=false}}catch(_){rollbackVerified=false}
+      return {rolledBack:true,rollbackVerified,rollbackError};
+    };
+    try{
+      for(const [key,raw] of localWrites)storage.setItem(key,raw);
+      for(const key of localDeletes)storage.removeItem(key);
+      await indexedDbTarget.apply({put:[...desiredRows.values()],remove:idbDeletes});
+    }catch(error){return {ok:false,stage:'write',beforeLocal,beforeIndexedDb:beforeRows,error,...await rollback()}}
+    try{
+      for(const key of localKeys){const expected=desiredLocal.has(key)?desiredLocal.get(key):null,actual=storage.getItem(key);if(actual!==expected)throw new Error(`Verification failed for local ${key}`);if(expected!=null&&!recoverable(registry.validate(key,actual)))throw new Error(`Validation failed for local ${key}`)}
+      const rows=await indexedDbTarget.read(idbKeys);
+      for(const key of idbKeys){const expected=desiredRows.get(key)?.value??null,actual=rows.get(key)?.value??null;if(actual!==expected)throw new Error(`Verification failed for saved mirror ${key}`);if(expected!=null&&!recoverable(registry.validate(key,actual)))throw new Error(`Validation failed for saved mirror ${key}`)}
+      return {ok:true,stage:'verified',replacedLocalKeys:localWrites.map(([key])=>key),removedLocalKeys:localDeletes,replacedIndexedDbKeys:idbWrites.map(([key])=>key),removedIndexedDbKeys:idbDeletes,rolledBack:false,rollbackVerified:true};
+    }catch(error){return {ok:false,stage:'verification',beforeLocal,beforeIndexedDb:beforeRows,error,...await rollback()}}
+  }
+
   async function recoverRows({storage,rows,personalKeys,startupKeys,startupValues,registry}){
     const sourceRegistry=registry||(typeof globalThis!=='undefined'?globalThis.RosterBotPersistenceRegistry:null);
     const localValues=startupValues||Object.fromEntries((startupKeys||personalKeys||[]).map(key=>[key,storage.getItem(key)]).filter(([,value])=>value!=null));
@@ -163,5 +204,5 @@
     const result=await replacePersistentState({storage,replacements:decision.replacementEntries,registry:sourceRegistry});
     return {restored:result.ok,count:result.ok?decision.replacementEntries.length:0,reason:result.ok?'restored':`replacement-${result.stage}-failed`,decision,replacement:result};
   }
-  return Object.freeze({CLEAR_KEY,AUTO_HOLD_KEY,CLEAR_REASON,isExplicitlyCleared,autoHoldFor,markExplicitClear,shouldMirror,recoveryDecision,decideRecovery,replacePersistentState,recoverRows,semanticallyEqual});
+  return Object.freeze({CLEAR_KEY,AUTO_HOLD_KEY,CLEAR_REASON,isExplicitlyCleared,autoHoldFor,markExplicitClear,shouldMirror,recoveryDecision,decideRecovery,replacePersistentState,replacePersistenceCopies,recoverRows,semanticallyEqual});
 });
