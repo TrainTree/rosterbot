@@ -1,9 +1,10 @@
 (function(){
   'use strict';
   const E=window.RosterEngine,data=window.ROSTER_DATA;if(!E||!data)return;
+  const registry=window.RosterBotPersistenceRegistry;
   const K={timeline:'rosterbot-timeline-v1',leave:'rosterbot-diary-annual-leave-v1',weekLeave:'rosterbot-week-leave-v1',weeks:'rosterbot-week-overrides-v1',days:'rosterbot-day-overrides-v1',locks:'rosterbot-week-locks-v1',checks:'rosterbot-pay-checks-v1',employment:'rosterbot-employment-profile-v1',manualSchedule:'rosterbot-manual-schedule-v1',schema:'rosterbot-db-schema-v1',cleared:'rosterbot-cleared-v1'};
-  const PERSONAL_KEYS=[K.timeline,K.leave,K.weekLeave,K.weeks,K.days,K.locks,K.checks,K.employment,K.manualSchedule,'rosterbot-session-settings-v1','rosterbot-shared-settings-v1','rosterbot-theme-v1.9','rosterbot-view-mode-v1','paybot-editor-view-v1','paybot-auto-next-v1','paybot-v06-state','rosterbot-last-backup-v1','rosterbot-first-use-v1','rosterbot-experience-v1','rosterbot-fortnight-allowances-v1','rosterbot-fortnight-notes-v1',K.schema];
-  const $=id=>document.getElementById(id),json=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'')||fallback}catch(_){return fallback}},put=(key,v)=>{localStorage.setItem(key,JSON.stringify(v));scheduleMirror();window.RosterBotCloudSync?.notifyLocalChange?.(key);},wc=x=>E.weekCommencing(x),todayIso=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+  const PERSONAL_KEYS=registry.surfaceKeys('indexedDb');
+  const $=id=>document.getElementById(id),json=(key,fallback)=>{const read=registry.read(localStorage,key,{aliases:false});return read.valid?read.value:fallback},put=(key,v)=>{localStorage.setItem(key,JSON.stringify(v));scheduleMirror();window.RosterBotCloudSync?.notifyLocalChange?.(key);},wc=x=>E.weekCommencing(x),todayIso=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
   let mirrorTimer=null,dbPromise=null;
   function openDb(){if(dbPromise)return dbPromise;dbPromise=new Promise((resolve,reject)=>{if(!('indexedDB'in window)){resolve(null);return}const req=indexedDB.open('RosterBotPersonalDB',1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains('kv'))db.createObjectStore('kv',{keyPath:'key'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});return dbPromise;}
   async function mirrorNow(){

@@ -96,7 +96,7 @@
   function daysBetween(a,b){return Math.floor((isoUtc(b)-isoUtc(a))/86400000)}
   function snapPayPeriodIso(iso){const diff=daysBetween(PAY_VIEW_ANCHOR,iso);const blocks=Math.floor(diff/14);return E.addDays(PAY_VIEW_ANCHOR,blocks*14)}
   function moneyAud(v){return new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD'}).format(Number(v)||0)}
-  function readJson(key,fallback){try{return JSON.parse(localStorage.getItem(key)||'')||fallback}catch(_){return fallback}}
+  function readJson(key,fallback){const checked=window.RosterBotPersistenceRegistry?.read?.(localStorage,key,{aliases:false});if(checked)return checked.valid?checked.value:fallback;try{return JSON.parse(localStorage.getItem(key)||'')||fallback}catch(_){return fallback}}
   function writeJson(key,value){try{localStorage.setItem(key,JSON.stringify(value));window.RosterBotCloudSync?.notifyLocalChange?.(key)}catch(_){}}
   function hasSavedTimeline(){return Array.isArray(readJson('rosterbot-timeline-v1',[]))&&readJson('rosterbot-timeline-v1',[]).length>0}
   let experienceMode = (()=>{try{const saved=localStorage.getItem('rosterbot-experience-v1');if(saved==='quick'||saved==='diary')return saved}catch(_){}return hasSavedTimeline()?'diary':'quick';})();
@@ -197,15 +197,10 @@
   function initialiseTheme() {
     let saved = '1';
     try {
-      saved = localStorage.getItem('rosterbot-theme-v1.9');
-      if (!saved) {
-        const old = localStorage.getItem('rosterbot-theme-v1.8') || localStorage.getItem('rosterbot-theme-v1.7');
-        saved = ({ '1':'1', '2':'2', '3':'6', '4':'4' })[old] || '';
-      }
-      if (!saved) {
-        const legacy = localStorage.getItem('rosterbot-theme');
-        saved = ({ '1':'2', '2':'1', '3':'6' })[legacy] || '1';
-      }
+      const checked=window.RosterBotPersistenceRegistry?.read?.(localStorage,'rosterbot-theme-v1.9');
+      if(checked?.sourceKey==='rosterbot-theme-v1.8'||checked?.sourceKey==='rosterbot-theme-v1.7')saved=({ '1':'1', '2':'2', '3':'6', '4':'4' })[checked.raw]||'';
+      else if(checked?.sourceKey==='rosterbot-theme')saved=({ '1':'2', '2':'1', '3':'6' })[checked.raw]||'1';
+      else saved=checked?.valid?checked.value:(localStorage.getItem('rosterbot-theme-v1.9')||'1');
     } catch (_) { saved = '1'; }
     applyTheme(saved);
   }
@@ -279,8 +274,7 @@
   }
 
   function restoreRosterSession() {
-    let saved=null;
-    try { saved=JSON.parse(localStorage.getItem('rosterbot-session-settings-v1') || localStorage.getItem('rosterbot-shared-settings-v1') || 'null'); } catch (_) {}
+    let saved=readJson('rosterbot-session-settings-v1',null)||readJson('rosterbot-shared-settings-v1',null);
     saved=saved?{...saved,roleStartDate:saved.roleStartDate||saved.startDate,scheduleMode:saved.scheduleMode||'official',manualPattern:saved.manualPattern||window.RosterBotEmployment?.manualPattern?.()||null}:saved;
     if(!saved || !validRosterSettings({...saved,startDepot:saved.startDepot||'SCS',swapDepot:saved.swapDepot||saved.startDepot||'SCS'})) return false;
     startDate.value=saved.startDate;if(startRole)startRole.value=saved.startRole||'PB205:none';if(startRoleDate)startRoleDate.value=saved.roleStartDate||saved.startDate;if(startScheduleMode)startScheduleMode.value=saved.scheduleMode||'official';if(saved.manualPattern)applyStartManualPattern(saved.manualPattern);updateScheduleModeUi(); populateDepotSelect(startDepot,saved.startDepot||'SCS',saved.startDate); populateRosterSelect(startRoster,saved.startRoster,startDepot.value,saved.startDate); populateLineSelect(startLine,startRoster.value,saved.startLine||1,startDepot.value,saved.startDate);

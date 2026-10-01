@@ -5,6 +5,7 @@ import {root,fixtures,MemoryStorage,idbRows} from './helpers.mjs';
 
 const require=createRequire(import.meta.url);
 const safety=require(`${root}/js/02-persistence-safety.js`);
+const registry=require(`${root}/js/01-persistence-registry.js`);
 const personalKeys=['rosterbot-timeline-v1','rosterbot-db-schema-v1','paybot-v06-state'];
 
 test('IndexedDB-only state is recovered over defaults created after startup',()=>{
@@ -54,4 +55,18 @@ test('malformed localStorage still blocks mirror replacement under preserved v0.
   const result=safety.recoverRows({storage,rows:idbRows(scenario),personalKeys,startupKeys:storage.keys()});
   assert.equal(result.restored,false);
   assert.equal(storage.getItem('rosterbot-timeline-v1'),raw);
+});
+
+test('IndexedDB recovery restores calendar preferences but never private calendar tokens',()=>{
+  const storage=new MemoryStorage(),settings=JSON.stringify({fullDuration:true,includeOr:true,includeDetails:false,rosteredFallback:true,timesInTitle:false,range:'90_12'});
+  const rows=[
+    {key:'rosterbot-calendar-subscription-settings-v1',value:settings},
+    {key:'rosterbot-calendar-subscription-tokens-v2',value:JSON.stringify({synthetic:'private-token'})},
+    {key:'rosterbot-calendar-subscription-token-v1',value:'private-legacy-token'}
+  ];
+  const result=safety.recoverRows({storage,rows,personalKeys:registry.surfaceKeys('indexedDb'),startupKeys:[]});
+  assert.equal(result.restored,true);
+  assert.equal(storage.getItem('rosterbot-calendar-subscription-settings-v1'),settings);
+  assert.equal(storage.getItem('rosterbot-calendar-subscription-tokens-v2'),null);
+  assert.equal(storage.getItem('rosterbot-calendar-subscription-token-v1'),null);
 });

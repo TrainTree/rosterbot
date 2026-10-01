@@ -13,7 +13,7 @@
   };
   const $=id=>document.getElementById(id);
   const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const read=(key,fallback)=>{try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback}catch(_){return fallback}};
+  const read=(key,fallback)=>{const checked=root.RosterBotPersistenceRegistry?.read?.(localStorage,key,{aliases:false});if(checked)return checked.valid?checked.value:fallback;try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback}catch(_){return fallback}};
   const write=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));root.RosterBotCloudSync?.notifyLocalChange?.(key);root.RosterBotDiary?.mirrorNow?.();root.dispatchEvent?.(new CustomEvent('rosterbot:employment-change',{detail:{key}}));return true}catch(_){return false}};
   const todayIso=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
   const fmt=iso=>{if(!iso)return '—';const [y,m,d]=String(iso).split('-').map(Number);return new Intl.DateTimeFormat('en-AU',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,d)))};

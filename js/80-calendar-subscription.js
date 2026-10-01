@@ -7,7 +7,7 @@
   const SAFE_SYNC_STATES=new Set(['up-to-date','unlinked-same']);
   let lastBuild=null,autoTimer=0,publishing=false,currentFlow='',lastFeedRow=null;
   const enc=new TextEncoder();
-  const readJson=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'')??fallback}catch(_){return fallback}};
+  const readJson=(key,fallback)=>{const checked=window.RosterBotPersistenceRegistry?.read?.(localStorage,key,{aliases:false});if(checked)return checked.valid?checked.value:fallback;try{return JSON.parse(localStorage.getItem(key)||'')??fallback}catch(_){return fallback}};
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pad=n=>String(n).padStart(2,'0');
   function localToday(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}

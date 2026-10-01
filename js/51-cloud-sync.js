@@ -2,9 +2,9 @@
   'use strict';
   const $=id=>document.getElementById(id);
   const CONFIG_KEY='rosterbot-cloud-config-v1',META_KEY='rosterbot-cloud-sync-meta-v1',CLIENT_KEY='rosterbot-cloud-client-id-v1',SAFETY_KEY='rosterbot-cloud-restore-safety-v1',SESSION_KEY='rosterbot-cloud-session-v1',SESSION_PERSIST_KEY='rosterbot-cloud-session-persistent-v1',AUTO_KEY='rosterbot-cloud-auto-v1',AUTO_HOLD_KEY='rosterbot-cloud-auto-hold-v1',ENC_PROFILE_KEY='rosterbot-cloud-crypto-profile-v1',ENC_DEVICE_KEY='rosterbot-cloud-device-key-v1',ENC_FORMAT='rosterbot-encrypted-v1';
+  const registry=window.RosterBotPersistenceRegistry;
   const HOSTED_CONFIG={url:'https://rithmbggiiusrmdcqrif.supabase.co',key:'sb_publishable_TnrRQNNVqPbLq_JkNgu9Zg_--0mqp4B'};
   const IS_HOSTED_ROSTERBOT=/^(?:www\.)?rosterbot\.work$/i.test(location.hostname);
-  const DEVICE_ONLY=new Set(['rosterbot-last-backup-v1','rosterbot-first-use-v1','rosterbot-theme-v1.9','rosterbot-view-mode-v1','rosterbot-experience-v1','rosterbot-shared-settings-v1','paybot-editor-view-v1','paybot-auto-next-v1','paybot-v05-state','paybot-v04-state','paybot-v03-state','paybot-v02-state']);
   const SESSION_VOLATILE=new Set(['displayWeeks','lastViewedFrom','lastViewedTo','experienceMode']);
   const AUTO_TRIGGER_KEYS=new Set(['rosterbot-timeline-v1','rosterbot-diary-annual-leave-v1','rosterbot-week-leave-v1','rosterbot-week-overrides-v1','rosterbot-day-overrides-v1','rosterbot-week-locks-v1','rosterbot-pay-checks-v1','rosterbot-fortnight-allowances-v1','rosterbot-fortnight-notes-v1','paybot-v06-state','rosterbot-calendar-subscription-settings-v1','rosterbot-employment-profile-v1','rosterbot-manual-schedule-v1']);
   const AUTO_DEBOUNCE_MS=1800,AUTO_POLL_MS=60000,AUTO_LOCAL_PROBE_MS=1200;
@@ -14,7 +14,7 @@
   function fmt(iso){if(!iso)return '—';const d=new Date(iso);return Number.isNaN(d.getTime())?'—':d.toLocaleString('en-AU')}
   function since(iso){if(!iso)return 'Never';const ms=Date.now()-Date.parse(iso);if(!Number.isFinite(ms)||ms<0)return fmt(iso);if(ms<60000)return 'Just now';if(ms<3600000)return `${Math.floor(ms/60000)} min ago`;if(ms<86400000)return `${Math.floor(ms/3600000)} h ago`;return fmt(iso)}
   function clientId(){let v=localStorage.getItem(CLIENT_KEY);if(!v){v=crypto.randomUUID?.()||`rb-${Date.now()}-${Math.random().toString(16).slice(2)}`;localStorage.setItem(CLIENT_KEY,v)}return v}
-  function syncKeys(){return (window.RosterBotDataUI?.keys||[]).filter(k=>!DEVICE_ONLY.has(k))}
+  function syncKeys(){return registry.surfaceKeys('cloud')}
   function normalizeSessionValue(raw){try{const o=JSON.parse(String(raw));if(!o||typeof o!=='object'||Array.isArray(o))return String(raw);for(const k of SESSION_VOLATILE)delete o[k];return JSON.stringify(o)}catch(_){return String(raw)}}
   function normalizedStorage(storage){const src=storage&&typeof storage==='object'?storage:{},out={};for(const key of syncKeys()){if(!Object.prototype.hasOwnProperty.call(src,key))continue;let value=String(src[key]);if(key==='rosterbot-session-settings-v1')value=normalizeSessionValue(value);out[key]=value}return out}
   function localPayload(){const raw={};for(const key of syncKeys()){const value=localStorage.getItem(key);if(value!=null)raw[key]=value}return {app:'RosterBotPayBot',version:'0.26.1-mobile-ui-hotfix',schemaVersion:4,exportedAt:nowIso(),privacy:'Local-first RosterBot state copied to optional user-controlled cloud sync.',storage:normalizedStorage(raw)}}

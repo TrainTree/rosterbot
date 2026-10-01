@@ -611,8 +611,8 @@ function updatePdtUI(){
 function saveState(){if(!dayState.length)return;const obj={logicVersion:'0.20.6',period:$('#periodDate').value,grade:$('#grade').value,baseGrade:baseGradeBeforePdt,entryMode:loadedEntryMode||$('#entryMode').value,r1:$('#r1').value,l1:$('#l1').value,r2:$('#r2').value,l2:$('#l2').value,pdt:$('#pdtMode').value,days:dayState};localStorage.setItem('paybot-v06-state',JSON.stringify(obj))}
 function restore(){
   try{
-    let raw=localStorage.getItem('paybot-v06-state')||localStorage.getItem('paybot-v05-state')||localStorage.getItem('paybot-v04-state')||localStorage.getItem('paybot-v03-state')||localStorage.getItem('paybot-v02-state');
-    let saved=JSON.parse(raw);if(!saved)return false;
+    const checked=window.RosterBotPersistenceRegistry?.read?.(localStorage,'paybot-v06-state');
+    let saved=checked?.valid?checked.value:null;if(!saved)return false;
     $('#periodDate').value=saved.period;$('#grade').value=saved.grade||'PB205';baseGradeBeforePdt=saved.baseGrade||(saved.pdt==='legacy'?'PB205':(saved.grade||'PB205'));
     loadedEntryMode=saved.entryMode||(sharedForecastAvailable()?'forecast':'roster');$('#entryMode').value=loadedEntryMode;
     $('#r1').value=saved.r1||'A';lineOptions($('#l1'),$('#r1').value,+saved.l1||1);$('#r2').value=saved.r2||'A';lineOptions($('#l2'),$('#r2').value,+saved.l2||2);
@@ -654,7 +654,7 @@ $('#loadBtn').addEventListener('click',buildFortnight);$('#grade').addEventListe
 $('#prevPeriod').addEventListener('click',()=>{$('#periodDate').value=dateKey(addDays(snapPeriod(parseDate($('#periodDate').value)),-14));buildFortnight()});$('#nextPeriod').addEventListener('click',()=>{$('#periodDate').value=dateKey(addDays(snapPeriod(parseDate($('#periodDate').value)),14));buildFortnight()});
 $('#thisPeriod').addEventListener('click',()=>{const now=new Date(),today=new Date(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()));$('#periodDate').value=dateKey(snapPeriod(today));buildFortnight()});
 $('#periodDate').addEventListener('change',()=>{$('#periodDate').value=dateKey(snapPeriod(parseDate($('#periodDate').value)));buildFortnight()});
-$('#resetBtn').addEventListener('click',()=>{if(confirm('Reset the current PayBot fortnight and remove saved edits?')){localStorage.removeItem('paybot-v06-state');localStorage.removeItem('paybot-v05-state');localStorage.removeItem('paybot-v04-state');localStorage.removeItem('paybot-v03-state');localStorage.removeItem('paybot-v02-state');location.reload()}});
+$('#resetBtn').addEventListener('click',()=>{if(confirm('Reset the current PayBot fortnight and remove saved edits?')){for(const key of (window.RosterBotPersistenceRegistry?.compatibilityKeys?.('paybot-v06-state')||['paybot-v06-state']))localStorage.removeItem(key);location.reload()}});
 $$('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
 document.getElementById('pbFullEditorBtn')?.addEventListener('click',()=>setPaybotEditorMode('full'));
 document.getElementById('pbCompactEditorBtn')?.addEventListener('click',()=>setPaybotEditorMode('compact'));
@@ -669,7 +669,7 @@ function previewFortnight(anyDate){
     if(!d)return {available:false,start:dateKey(start),reason:'Roster diary is not configured for this date.'};
     days.push(d);
   }
-  let saved={};try{saved=JSON.parse(localStorage.getItem('paybot-v06-state')||'{}')||{}}catch(_){}
+  const checked=window.RosterBotPersistenceRegistry?.read?.(localStorage,'paybot-v06-state',{aliases:false});let saved=checked?.valid?checked.value:{};
   const gradeCode=saved.grade||$('#grade')?.value||'PB205';let pdtMode=saved.pdt||$('#pdtMode')?.value||'none';if(pdtMode==='none'&&days.some(d=>d.pdtCurrent))pdtMode='current';
   const result=computePayCalculation(days,gradeCode,pdtMode);
   const resolvedGrade=result?.grade||gradeCode;

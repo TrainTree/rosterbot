@@ -84,6 +84,8 @@
   }
 
   function safeJsonStorage(key, fallback) {
+    const checked = root.RosterBotPersistenceRegistry?.read?.(typeof localStorage === 'undefined' ? null : localStorage, key, {aliases:false});
+    if (checked) return checked.valid ? checked.value : fallback;
     try {
       if (typeof localStorage === 'undefined') return fallback;
       const raw = localStorage.getItem(key);
