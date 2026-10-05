@@ -1,0 +1,134 @@
+[
+  {
+    "record_type": "role",
+    "identity": "anon",
+    "owner": null,
+    "role_name": "anon",
+    "detail": null,
+    "is_grantable": null,
+    "can_login": false,
+    "bypass_rls": false,
+    "superuser": false
+  },
+  {
+    "record_type": "role",
+    "identity": "authenticated",
+    "owner": null,
+    "role_name": "authenticated",
+    "detail": null,
+    "is_grantable": null,
+    "can_login": false,
+    "bypass_rls": false,
+    "superuser": false
+  },
+  {
+    "record_type": "role",
+    "identity": "postgres",
+    "owner": null,
+    "role_name": "postgres",
+    "detail": null,
+    "is_grantable": null,
+    "can_login": true,
+    "bypass_rls": true,
+    "superuser": false
+  },
+  {
+    "record_type": "role",
+    "identity": "service_role",
+    "owner": null,
+    "role_name": "service_role",
+    "detail": null,
+    "is_grantable": null,
+    "can_login": false,
+    "bypass_rls": true,
+    "superuser": false
+  },
+  {
+    "record_type": "role",
+    "identity": "supabase_admin",
+    "owner": null,
+    "role_name": "supabase_admin",
+    "detail": null,
+    "is_grantable": null,
+    "can_login": true,
+    "bypass_rls": true,
+    "superuser": true
+  },
+  {
+    "record_type": "schema_acl",
+    "identity": "public",
+    "owner": "pg_database_owner",
+    "role_name": "PUBLIC",
+    "detail": "USAGE",
+    "is_grantable": false,
+    "can_login": null,
+    "bypass_rls": null,
+    "superuser": null
+  },
+  {
+    "record_type": "schema_acl",
+    "identity": "public",
+    "owner": "pg_database_owner",
+    "role_name": "anon",
+    "detail": "USAGE",
+    "is_grantable": false,
+    "can_login": null,
+    "bypass_rls": null,
+    "superuser": null
+  },
+  {
+    "record_type": "schema_acl",
+    "identity": "public",
+    "owner": "pg_database_owner",
+    "role_name": "authenticated",
+    "detail": "USAGE",
+    "is_grantable": false,
+    "can_login": null,
+    "bypass_rls": null,
+    "superuser": null
+  },
+  {
+    "record_type": "schema_acl",
+    "identity": "public",
+    "owner": "pg_database_owner",
+    "role_name": "pg_database_owner",
+    "detail": "CREATE",
+    "is_grantable": false,
+    "can_login": null,
+    "bypass_rls": null,
+    "superuser": null
+  },
+  {
+    "record_type": "schema_acl",
+    "identity": "public",
+    "owner": "pg_database_owner",
+    "role_name": "pg_database_owner",
+    "detail": "USAGE",
+    "is_grantable": false,
+    "can_login": null,
+    "bypass_rls": null,
+    "superuser": null
+  },
+  {
+    "record_type": "schema_acl",
+    "identity": "public",
+    "owner": "pg_database_owner",
+    "role_name": "postgres",
+    "detail": "USAGE",
+    "is_grantable": false,
+    "can_login": null,
+    "bypass_rls": null,
+    "superuser": null
+  },
+  {
+    "record_type": "schema_acl",
+    "identity": "public",
+    "owner": "pg_database_owner",
+    "role_name": "service_role",
+    "detail": "USAGE",
+    "is_grantable": false,
+    "can_login": null,
+    "bypass_rls": null,
+    "superuser": null
+  }
+]

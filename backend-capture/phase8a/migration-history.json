@@ -1,0 +1,7 @@
+{
+  "command": "npx --yes supabase@latest migration list --linked",
+  "project_ref": "rithmbggiiusrmdcqrif",
+  "migrations": [],
+  "message": "Migrations listed",
+  "note": "The linked remote migration table returned no migration versions. Historical SQL is therefore unavailable through the ordinary CLI, and this checkout started with no matching migration files."
+}

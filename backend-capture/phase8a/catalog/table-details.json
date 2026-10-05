@@ -1,0 +1,855 @@
+[
+  {
+    "schema_name": "public",
+    "table_name": "calendar_feeds",
+    "owner": "postgres",
+    "persistence": "p",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "replica_identity": "d",
+    "reloptions": null,
+    "explicit_acl": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "columns": [
+      {
+        "name": "user_id",
+        "type": "uuid",
+        "comment": null,
+        "default": null,
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 1,
+        "statistics_target": null
+      },
+      {
+        "name": "token_hash",
+        "type": "text",
+        "comment": null,
+        "default": null,
+        "storage": "x",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 2,
+        "statistics_target": null
+      },
+      {
+        "name": "ics_text",
+        "type": "text",
+        "comment": null,
+        "default": "''::text",
+        "storage": "x",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 3,
+        "statistics_target": null
+      },
+      {
+        "name": "event_count",
+        "type": "integer",
+        "comment": null,
+        "default": "0",
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 4,
+        "statistics_target": null
+      },
+      {
+        "name": "enabled",
+        "type": "boolean",
+        "comment": null,
+        "default": "true",
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 5,
+        "statistics_target": null
+      },
+      {
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "comment": null,
+        "default": "now()",
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 6,
+        "statistics_target": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "calendar_feeds_event_count_check",
+        "type": "c",
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (event_count >= 0)",
+        "initially_deferred": false
+      },
+      {
+        "name": "calendar_feeds_pkey",
+        "type": "p",
+        "validated": true,
+        "deferrable": false,
+        "definition": "PRIMARY KEY (user_id)",
+        "initially_deferred": false
+      },
+      {
+        "name": "calendar_feeds_token_hash_check",
+        "type": "c",
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (token_hash ~ '^[0-9a-f]{64}$'::text)",
+        "initially_deferred": false
+      },
+      {
+        "name": "calendar_feeds_token_hash_key",
+        "type": "u",
+        "validated": true,
+        "deferrable": false,
+        "definition": "UNIQUE (token_hash)",
+        "initially_deferred": false
+      },
+      {
+        "name": "calendar_feeds_user_id_fkey",
+        "type": "f",
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+        "initially_deferred": false
+      }
+    ],
+    "indexes": [
+      {
+        "name": "calendar_feeds_pkey",
+        "ready": true,
+        "valid": true,
+        "unique": true,
+        "primary": true,
+        "definition": "CREATE UNIQUE INDEX calendar_feeds_pkey ON public.calendar_feeds USING btree (user_id)",
+        "replica_identity": false
+      },
+      {
+        "name": "calendar_feeds_token_hash_key",
+        "ready": true,
+        "valid": true,
+        "unique": true,
+        "primary": false,
+        "definition": "CREATE UNIQUE INDEX calendar_feeds_token_hash_key ON public.calendar_feeds USING btree (token_hash)",
+        "replica_identity": false
+      }
+    ],
+    "triggers": [
+      {
+        "name": "calendar_feeds_updated_at",
+        "enabled": "O",
+        "function": "set_calendar_feed_updated_at()",
+        "internal": false,
+        "definition": "CREATE TRIGGER calendar_feeds_updated_at BEFORE UPDATE ON calendar_feeds FOR EACH ROW EXECUTE FUNCTION set_calendar_feed_updated_at()"
+      }
+    ],
+    "policies": [
+      {
+        "name": "calendar_feeds_delete_own",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "auth.uid() = user_id",
+        "command": "d",
+        "permissive": true,
+        "with_check": null
+      },
+      {
+        "name": "calendar_feeds_insert_own",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "a",
+        "permissive": true,
+        "with_check": "auth.uid() = user_id"
+      },
+      {
+        "name": "calendar_feeds_select_own",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "auth.uid() = user_id",
+        "command": "r",
+        "permissive": true,
+        "with_check": null
+      },
+      {
+        "name": "calendar_feeds_update_own",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "auth.uid() = user_id",
+        "command": "w",
+        "permissive": true,
+        "with_check": "auth.uid() = user_id"
+      }
+    ],
+    "effective_acl": [
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      }
+    ],
+    "comment": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "roster_revisions",
+    "owner": "postgres",
+    "persistence": "p",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "replica_identity": "d",
+    "reloptions": null,
+    "explicit_acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+    "columns": [
+      {
+        "name": "user_id",
+        "type": "uuid",
+        "comment": null,
+        "default": null,
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 1,
+        "statistics_target": null
+      },
+      {
+        "name": "revision",
+        "type": "bigint",
+        "comment": null,
+        "default": null,
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 2,
+        "statistics_target": null
+      },
+      {
+        "name": "schema_version",
+        "type": "integer",
+        "comment": null,
+        "default": null,
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 3,
+        "statistics_target": null
+      },
+      {
+        "name": "payload",
+        "type": "jsonb",
+        "comment": null,
+        "default": null,
+        "storage": "x",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 4,
+        "statistics_target": null
+      },
+      {
+        "name": "client_id",
+        "type": "text",
+        "comment": null,
+        "default": null,
+        "storage": "x",
+        "identity": null,
+        "not_null": false,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 5,
+        "statistics_target": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "comment": null,
+        "default": "now()",
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 6,
+        "statistics_target": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "roster_revisions_pkey",
+        "type": "p",
+        "validated": true,
+        "deferrable": false,
+        "definition": "PRIMARY KEY (user_id, revision)",
+        "initially_deferred": false
+      },
+      {
+        "name": "roster_revisions_user_id_fkey",
+        "type": "f",
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+        "initially_deferred": false
+      }
+    ],
+    "indexes": [
+      {
+        "name": "roster_revisions_pkey",
+        "ready": true,
+        "valid": true,
+        "unique": true,
+        "primary": true,
+        "definition": "CREATE UNIQUE INDEX roster_revisions_pkey ON public.roster_revisions USING btree (user_id, revision)",
+        "replica_identity": false
+      }
+    ],
+    "triggers": [],
+    "policies": [
+      {
+        "name": "Users can read their own roster history",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "(( SELECT auth.uid() AS uid)) = user_id",
+        "command": "r",
+        "permissive": true,
+        "with_check": null
+      }
+    ],
+    "effective_acl": [
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      }
+    ],
+    "comment": null
+  },
+  {
+    "schema_name": "public",
+    "table_name": "roster_state",
+    "owner": "postgres",
+    "persistence": "p",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "replica_identity": "d",
+    "reloptions": null,
+    "explicit_acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+    "columns": [
+      {
+        "name": "user_id",
+        "type": "uuid",
+        "comment": null,
+        "default": null,
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 1,
+        "statistics_target": null
+      },
+      {
+        "name": "revision",
+        "type": "bigint",
+        "comment": null,
+        "default": "0",
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 2,
+        "statistics_target": null
+      },
+      {
+        "name": "schema_version",
+        "type": "integer",
+        "comment": null,
+        "default": null,
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 3,
+        "statistics_target": null
+      },
+      {
+        "name": "payload",
+        "type": "jsonb",
+        "comment": null,
+        "default": null,
+        "storage": "x",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 4,
+        "statistics_target": null
+      },
+      {
+        "name": "client_id",
+        "type": "text",
+        "comment": null,
+        "default": null,
+        "storage": "x",
+        "identity": null,
+        "not_null": false,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 5,
+        "statistics_target": null
+      },
+      {
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "comment": null,
+        "default": "now()",
+        "storage": "p",
+        "identity": null,
+        "not_null": true,
+        "collation": null,
+        "generated": null,
+        "compression": null,
+        "ordinal_position": 6,
+        "statistics_target": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "roster_state_pkey",
+        "type": "p",
+        "validated": true,
+        "deferrable": false,
+        "definition": "PRIMARY KEY (user_id)",
+        "initially_deferred": false
+      },
+      {
+        "name": "roster_state_revision_check",
+        "type": "c",
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (revision >= 0)",
+        "initially_deferred": false
+      },
+      {
+        "name": "roster_state_user_id_fkey",
+        "type": "f",
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+        "initially_deferred": false
+      }
+    ],
+    "indexes": [
+      {
+        "name": "roster_state_pkey",
+        "ready": true,
+        "valid": true,
+        "unique": true,
+        "primary": true,
+        "definition": "CREATE UNIQUE INDEX roster_state_pkey ON public.roster_state USING btree (user_id)",
+        "replica_identity": false
+      }
+    ],
+    "triggers": [],
+    "policies": [
+      {
+        "name": "Users can read their own roster",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "(( SELECT auth.uid() AS uid)) = user_id",
+        "command": "r",
+        "permissive": true,
+        "with_check": null
+      }
+    ],
+    "effective_acl": [
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "postgres",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "INSERT"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "DELETE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRUNCATE"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "REFERENCES"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "TRIGGER"
+      },
+      {
+        "grantee": "service_role",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "MAINTAIN"
+      },
+      {
+        "grantee": "authenticated",
+        "grantor": "postgres",
+        "grantable": false,
+        "privilege": "SELECT"
+      }
+    ],
+    "comment": null
+  }
+]

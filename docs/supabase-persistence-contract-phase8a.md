@@ -1,8 +1,15 @@
 # Phase 8A — Supabase persistence contract capture and downgrade-protection design
 
-Status: backend discovery and design only, captured 2026-10-02 from commit
-`73da601` on `experiment/v0.30-data-safety`. No production Supabase object was
-read or changed. No schema-5 value is written or enabled by this phase.
+Status: backend discovery and design only. The client-derived analysis was
+captured 2026-10-02 from commit `73da601` on
+`experiment/v0.30-data-safety`; the deployed backend was then captured
+read-only on 2026-10-05. No production Supabase object was changed and no
+schema-5 value is written or enabled by this phase.
+
+The resolved deployed inventory and exact capture artifacts are in
+[`../backend-capture/phase8a/backend-inventory.md`](../backend-capture/phase8a/backend-inventory.md).
+Where this document says “unknown deployed definition,” that describes the
+pre-capture design state and is superseded by that inventory.
 
 This document separates three kinds of statement:
 
@@ -12,8 +19,9 @@ This document separates three kinds of statement:
 - **Unknown deployed definition** — cannot be established from this repository
   and must be exported from the deployed Supabase project before Phase 8B.
 
-It deliberately does not reconstruct missing SQL, policies, triggers, grants, or
-Edge Function source.
+The original client-derived body deliberately did not reconstruct missing SQL,
+policies, triggers, grants, or Edge Function source. The linked deployed
+capture now supplies those definitions verbatim or from catalog reconstruction.
 
 ## 1. Current client/backend dependency inventory
 
@@ -304,9 +312,10 @@ it is a separate direct-write persistence surface. Phase 8A proposes no change
 to it. Its table definition, RLS, grants, and Edge Function implementation are
 unknown.
 
-## 2. Backend definitions available in this repository
+## 2. Backend definitions available before deployed capture
 
-There are no backend definitions in the working tree or reachable Git history:
+At commit `73da601` there were no backend definitions in the working tree or
+reachable Git history:
 
 - no `supabase/` directory or `config.toml`;
 - no SQL migrations, schema dumps, policies, grants, or database tests;
@@ -326,54 +335,62 @@ Available evidence is limited to:
 
 The README's reference to a previously supplied calendar backend pack is not a
 backend definition: that pack is absent from this repository and Git history.
-No Supabase CLI or privileged database/project credential was available in this
-environment, so even a read-only deployed-definition capture was not possible.
+That original limitation is now resolved by the uncommitted read-only capture
+under `backend-capture/phase8a/` and the downloaded production Edge Function
+under `supabase/functions/calendar-feed/`. See the capture README for the
+Docker-dependent `pg_dump` limitation and catalog-introspection fallback.
 
-## 3. Missing deployed definitions — required export checklist
+## 3. Deployed-definition export checklist
 
-Before Phase 8B implementation, obtain authoritative, schema-only artifacts
-from the production project (no user rows or payload data are needed):
+The deployed capture now provides these authoritative, schema-only artifacts
+without user rows or payload data:
 
-- [ ] exact `CREATE TABLE` definitions for `public.roster_state`,
+- [x] exact `CREATE TABLE` definitions for `public.roster_state`,
   `public.roster_revisions`, and `public.calendar_feeds`, including column
   types, nullability, defaults, identity/sequences, ownership, comments, and
   storage/security options;
-- [ ] all primary keys, unique/check/exclusion/foreign-key constraints and all
+- [x] all primary keys, unique/check/exclusion/foreign-key constraints and all
   indexes for those tables (especially per-user state uniqueness,
   per-user/revision uniqueness, `calendar_feeds(user_id)`, and token hash);
-- [ ] every trigger on those tables and the complete definition of every
+- [x] every trigger on those tables and the complete definition of every
   trigger function;
-- [ ] whether RLS is enabled and forced, plus complete policy definitions for
+- [x] whether RLS is enabled and forced, plus complete policy definitions for
   every command and role;
-- [ ] table, sequence, schema, and function grants/default privileges for
+- [x] table, sequence, schema, and function grants/default privileges for
   `anon`, `authenticated`, `service_role`, owners, and any custom roles;
-- [ ] complete definitions (`pg_get_functiondef`) plus owner, language,
+- [x] complete definitions (`pg_get_functiondef`) plus owner, language,
   volatility, parallel/security/leakproof settings, configuration/search path,
   argument names/types/defaults, return type, ACL, and comments for
   `save_roster_state`, `rotate_roster_encryption_wrappers`,
   `purge_unencrypted_roster_history`, and every overload;
-- [ ] any other function, trigger, webhook, cron task, or Edge Function that can
+- [x] any other function, trigger, webhook, cron task, or Edge Function that can
   insert/update/delete either roster table or its history;
-- [ ] current schema-version/payload constraints and any database setting/table
+- [x] current schema-version/payload constraints and any database setting/table
   used as a supported-schema capability gate;
 - [ ] PostgREST/Supabase API exposure configuration relevant to the `public`
-  schema and the deployed PostgREST error behavior/version;
-- [ ] full deployed `calendar-feed` Edge Function source, dependency/import
+  schema and the deployed PostgREST error behavior/version. Public exposure,
+  grants, and PostgREST v14.5 are captured; exact error envelopes still require
+  non-production integration tests in local/staging;
+- [x] full deployed `calendar-feed` Edge Function source, dependency/import
   lock information, environment-variable names (values redacted), JWT
   verification setting, routing/config, and deployment version/hash;
-- [ ] any database objects used by `calendar-feed`, including service-role
+- [x] any database objects used by `calendar-feed`, including service-role
   grants or RPCs not apparent to the browser;
-- [ ] migration history/version list establishing which definition is actually
+- [x] migration history/version list establishing which definition is actually
   deployed.
 
-Preferred handoff: a schema-only database dump plus separate function/policy/
-grant inspection output and the downloaded `calendar-feed` source directory.
+Handoff: a catalog-reconstructed schema-only SQL file plus separate
+function/policy/grant inspection output and the downloaded `calendar-feed`
+source directory. The ordinary linked migration list is empty, so historical
+SQL is unavailable; the linked CLI schema dump was blocked locally by its
+Docker/Podman requirement and is documented in the capture README.
 Do not include `roster_state.payload`, history payloads, calendar ICS content,
 auth users, raw tokens, secrets, or production user data. Capture object names
 and definitions verbatim; do not summarize them by hand.
 
-Phase 8B is blocked at the point of producing a real migration or claiming the
-current server behavior until these artifacts are supplied and reviewed.
+The missing-definition blocker is resolved. Phase 8B may now produce a
+reviewable local/staging migration, but must not deploy it until the remaining
+handoff blockers and integration tests in sections 9–11 are resolved.
 
 ## 4. Required server invariant
 
@@ -689,19 +706,22 @@ server invariant is live and every production state is schema 4.
 
 ## 11. Phase 8B blockers and handoff
 
-Phase 8B must not implement or deploy production SQL until:
+The 2026-10-05 capture resolves the former uncertainty about deployed table,
+function, trigger, RLS, grant, Edge Function, first-write, history, and
+alternative-write-path behavior. Phase 8B must still not deploy production SQL
+until:
 
-1. the exact deployed table/function/trigger/RLS/grant definitions and
-   `calendar-feed` source/configuration are supplied;
-2. all alternative roster/history write paths are known;
-3. current first-write and history semantics are confirmed rather than inferred
-   from the UI;
-4. the schema-5 Cloud plaintext/wrapped wire shape is finalized;
-5. the stable database error convention and actual PostgREST mapping are
-   selected against the deployed version;
-6. the local/staging environment exists and reproduces current schema-4 calls;
-7. wrapper rotation and purge semantics are reconciled with immutable history
-   and schema monotonicity.
+1. the schema-5 Cloud plaintext/wrapped wire shape is finalized;
+2. the stable database error convention and actual PostgREST v14.5 mapping are
+   selected and tested;
+3. a local/staging environment reproduces the captured schema-4 definitions
+   and current client calls;
+4. wrapper rotation and purge changes are reconciled with immutable history,
+   schema monotonicity, and concurrency tests;
+5. the per-user first-write serialization mechanism, supported-schema gate,
+   payload validators, and privilege reductions in the deployed inventory are
+   reviewed;
+6. the complete test matrix in section 9 passes without production data.
 
-Until then, the safe stopping point is this client-derived inventory and design.
+The safe stopping point remains design plus uncommitted capture artifacts.
 Production storage, backup, Cloud payloads, and `new_schema_version` remain 4.

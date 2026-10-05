@@ -1,0 +1,15 @@
+[
+  {
+    "created_at": 1790080762287,
+    "entrypoint_path": "file:///tmp/user_fn_rithmbggiiusrmdcqrif_7be2f7ea-7eb4-45dd-b8eb-c80ce9ee074c_2/source/supabase/functions/calendar-feed/index.ts",
+    "ezbr_sha256": "0fc2fd4f9dafa0ed582b49121636c7a350e90cbeded6b5d7c2d3f6f0ae5f043d",
+    "id": "7be2f7ea-7eb4-45dd-b8eb-c80ce9ee074c",
+    "import_map": false,
+    "name": "calendar-feed",
+    "slug": "calendar-feed",
+    "status": "ACTIVE",
+    "updated_at": 1790080893203,
+    "verify_jwt": false,
+    "version": 2
+  }
+]
