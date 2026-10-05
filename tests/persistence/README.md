@@ -22,6 +22,13 @@ The Phase 7B read-only bootstrap guard is documented in [`docs/rollback-proof-bo
 
 `schema5-migration-design.test.mjs` covers exact golden schema-5 envelopes and fingerprints, malformed/unsupported classifications, schema-marker interpretation, semantic invariants, unknown tolerated data, secret/device exclusions, pure repeatability/idempotence, pre-migration evidence, compatibility projection, ancestry, journal completeness, and the design-only production boundary.
 
+`phase8b-server-protection.test.mjs` statically verifies the Phase 8B delta
+migration, atomic-lock and table-trigger design, stable server errors, grant
+changes, staging-harness safety guard/matrix, and the v0.30 deterministic
+no-retry mapping. Live PostgreSQL concurrency and PostgREST behavior are
+covered by the isolated-staging harness under `supabase/tests/`; they are never
+run by the ordinary repository test command.
+
 The registry is authoritative for backup, Cloud Sync, and IndexedDB inclusion metadata. It also owns classifications, sensitivity labels, compatibility aliases, and side-effect-free validators. Readers receive `missing`, `valid`, `legacy`, `malformed`, or `unsupported` state while retaining the original raw string; validation never writes to storage.
 
 Calendar subscription preferences are included in all three personal-state recovery surfaces. Calendar token keys remain credential-classified and excluded from backup, Cloud Sync, and IndexedDB recovery.

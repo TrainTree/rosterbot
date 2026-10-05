@@ -1,5 +1,9 @@
 # Phase 8A — Supabase persistence contract capture and downgrade-protection design
 
+Phase 8B offline implementation now lives in
+[`phase8b-server-downgrade-protection.md`](phase8b-server-downgrade-protection.md).
+It remains un-deployed and preserves this capture as its authoritative input.
+
 Status: backend discovery and design only. The client-derived analysis was
 captured 2026-10-02 from commit `73da601` on
 `experiment/v0.30-data-safety`; the deployed backend was then captured
