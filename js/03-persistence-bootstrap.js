@@ -8,7 +8,9 @@
     'js/41-pay-rate-official.js','js/42-paybot.js','js/50-data-backup.js','js/04-cloud-error-contract.js','js/51-cloud-sync.js','js/60-diary.js','js/61-page-bridge.js',
     'js/75-sources.js','js/70-navigation.js','js/80-calendar-subscription.js'
   ];
-  let state=null,applicationLoaded=false,recoveryBusy=false,schema5Ready=false,featureLoading=false,featureWritePending=false,projectionSync=Promise.resolve();
+  let state=null,applicationLoaded=false,recoveryBusy=false,schema5Ready=false,featureLoading=false,featureWritePending=false,projectionSync=Promise.resolve(),personalWriteRevision=0;
+  const pendingPersonalValues=new Map();
+  function reapplyPendingPersonalValues(){const storage=localStorage;for(const [key,raw] of pendingPersonalValues){if(raw==null)storage.removeItem(key);else storage.setItem(key,raw)}}
   const recoveryApi={
     getState:()=>state,
     isBlocked:()=>state?.startupAllowed===false||state?.userChoiceRequired===true,
@@ -20,14 +22,21 @@
     enterReplacementFailure:failure=>enterReplacementFailure(failure)
   };
   window.RosterBotRecovery=Object.freeze(recoveryApi);
-  async function syncProjectionNow(reason='feature-write'){
+  async function syncProjectionNow(reason='feature-write',{preserveExplicitClear=false}={}){
     if(!schema5Ready||!migration?.syncProjection)return {ok:true,stage:'not-ready',changed:false};
-    const result=await migration.syncProjection({storage:localStorage,indexedDbTarget,now:new Date().toISOString()});
+    const revision=personalWriteRevision;
+    reapplyPendingPersonalValues();
+    const result=await migration.syncProjection({storage:localStorage,indexedDbTarget,now:new Date().toISOString(),preserveExplicitClear});
+    // A feature can write again while the dual-copy commit is awaiting
+    // IndexedDB. Keep that newest user value authoritative; a queued sync will
+    // then commit it as the next schema-5 generation.
+    if(personalWriteRevision!==revision)reapplyPendingPersonalValues();else pendingPersonalValues.clear();
     if(!result.ok){state=migrationFailureState({...result,reason:result.reason||`Schema-5 projection update failed after ${reason}.`});showRecovery();window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));throw result.error||new Error(state.reason)}
     if(result.changed)window.dispatchEvent(new CustomEvent('rosterbot:schema5-generation',{detail:{reason,result}}));return result;
   }
   function notifyPersonalChange(key){
-    if(registry.get(key)?.category!=='personal')return projectionSync;
+    if(!registry.get(key))return projectionSync;
+    personalWriteRevision++;pendingPersonalValues.set(key,localStorage.getItem(key));
     if(featureLoading){featureWritePending=true;return projectionSync}
     projectionSync=projectionSync.catch(()=>{}).then(()=>new Promise(resolve=>setTimeout(resolve,40))).then(()=>syncProjectionNow(`write:${key}`));return projectionSync;
   }
@@ -74,7 +83,7 @@
   function loadScript(src){
     return new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error(`Could not load ${src}`));document.body.appendChild(script)});
   }
-  async function loadApplication(){if(applicationLoaded)return;applicationLoaded=true;featureLoading=true;try{for(const src of moduleSources)await loadScript(src)}finally{featureLoading=false}await projectionSync;await syncProjectionNow(featureWritePending?'feature-initialisation-writes':'feature-initialisation');featureWritePending=false}
+  async function loadApplication(){if(applicationLoaded)return;applicationLoaded=true;featureLoading=true;try{for(const src of moduleSources)await loadScript(src)}finally{featureLoading=false}await projectionSync;await syncProjectionNow(featureWritePending?'feature-initialisation-writes':'feature-initialisation',{preserveExplicitClear:true});featureWritePending=false}
   function applyRows({put=[],remove=[]}={}){
     if(!put.length&&!remove.length)return Promise.resolve();
     return new Promise((resolve,reject)=>{

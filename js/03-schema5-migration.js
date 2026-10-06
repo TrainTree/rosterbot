@@ -129,7 +129,7 @@
     const copies=await readBoth(indexedDbTarget,storage,KEYS.envelope);if(copies.local==null&&copies.indexed==null)return {present:false};
     if(copies.local==null||copies.indexed==null||copies.local!==copies.indexed)return {present:true,ok:false,reason:'Schema-5 state is missing or differs in one store.'};
     const verified=await verifyEnvelopeCopies({storage,indexedDbTarget,raw:copies.local,registry,canonical,cryptoImpl});if(!verified.ok)return {present:true,ok:false,...verified};
-    return {present:true,ok:true,raw:copies.local,envelope:verified.envelope};
+    return {present:true,ok:true,raw:copies.local,envelope:verified.envelope,checked:verified.checked};
   }
   async function run(options={}){
     const {storage,indexedDbTarget}=options,registry=options.registry||defaultRegistry,canonical=options.canonical||defaultCanonical,cryptoImpl=options.cryptoImpl||globalThis.crypto,interruptAt=options.interruptAt||null;
@@ -254,10 +254,18 @@
       return {ok:true,stage:'verified',envelope:built.envelope,fingerprint:built.fingerprint,sourceFingerprint:built.sourceFingerprint,compatibilityProjection:revalidated.projection};
     }catch(error){return {ok:false,stage:error.phase||'backup-commit',error,...await rollback()}}
   }
-  async function syncProjection({storage,indexedDbTarget,registry=defaultRegistry,canonical=defaultCanonical,cryptoImpl=globalThis.crypto,now=new Date().toISOString(),writer=WRITER}={}){
+  async function syncProjection({storage,indexedDbTarget,registry=defaultRegistry,canonical=defaultCanonical,cryptoImpl=globalThis.crypto,now=new Date().toISOString(),writer=WRITER,preserveExplicitClear=false}={}){
     const current=await existingSchema5({storage,indexedDbTarget,registry,canonical,cryptoImpl});if(!current.ok)return {ok:false,stage:'current-schema5-validation',reason:current.reason};
     const candidate=canonical.fromLocalStorage(storage,{registry}),fingerprint=await canonical.fingerprint(candidate,{cryptoImpl});if(!fingerprint.ok)return {ok:false,stage:'projection-source-validation',reason:fingerprint.reason};
     if(fingerprint.value===current.envelope.compatibility.projectionFingerprint)return {ok:true,stage:'unchanged',changed:false,envelope:current.envelope};
+    // Feature modules may materialise harmless defaults while the application is
+    // starting. They must never turn a verified user clear into ordinary state.
+    // Restore the committed empty projection here; a later user-triggered write
+    // uses the normal path and intentionally starts a new state generation.
+    if(preserveExplicitClear&&current.envelope.personalState.kind==='clear'){
+      const restored=await dualProjectionWrite({storage,indexedDbTarget,projection:current.checked.projection,registry});
+      return restored.ok?{ok:true,stage:'explicit-clear-preserved',changed:false,envelope:current.envelope,restored:true}:{ok:false,stage:'explicit-clear-projection-restore',...restored};
+    }
     const values={};for(const key of registry.surfaceKeys('backup')){const raw=storage.getItem(key);if(raw!=null)values[key]=raw}
     return replaceFromSchema4Storage({storage,indexedDbTarget,schema4Storage:values,source:'local-schema5-projection-update',registry,canonical,cryptoImpl,now,writer}).then(result=>({...result,changed:result.ok}));
   }

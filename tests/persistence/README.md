@@ -8,6 +8,26 @@ npm run check:syntax
 npm run report:persistence
 ```
 
+Phase 10A adds a synthetic long-lived browser corpus, a deterministic torture
+suite, and a persistent-profile Chromium journey. Run the local contract and
+failure cases with `node --test tests/persistence/phase10a-torture.test.mjs`.
+The browser journey deliberately has no package dependency: point
+`PHASE10A_V29_DIR` at an extracted copy of the commit immediately before Phase
+9 and provide Playwright Core/Chromium through `PHASE10A_PLAYWRIGHT_ROOT` and
+`PHASE10A_CHROMIUM` when the documented defaults are unavailable, then run:
+
+```sh
+PHASE10A_V29_DIR=/path/to/pre-phase9 node tests/browser/phase10a-real-browser.mjs
+```
+
+It serves both clients on one isolated local origin, creates a fresh persistent
+profile for every scenario, blocks non-test network traffic, and never writes
+schema 5 to production Cloud. The public-host upgrade check loads the hosted
+client read-only, injects synthetic state on an intercepted blank same-origin
+page, and then fulfills the next navigation from worktree files. Results and
+manual Safari gaps are recorded in
+[`docs/phase10a-real-device-torture.md`](../../docs/phase10a-real-device-torture.md).
+
 The Phase 3 decision table, Phase 4 recovery UI/evidence/restart durability, and Phase 5 staged backup/Cloud replacement contract are documented in [`docs/persistence-recovery-policy.md`](../../docs/persistence-recovery-policy.md).
 
 The Phase 7A schema-5 envelope, pure 4 → 5 contract, crash journal, snapshot, downgrade boundary, and Cloud prerequisites are documented in [`docs/schema5-migration-design.md`](../../docs/schema5-migration-design.md). `schema5-migration-design.test.mjs` consumes complete deterministic outputs from `tests/fixtures/schema4-to-schema5-golden.json`. The generator and migration contract are test-only and never loaded by the application.

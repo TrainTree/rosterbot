@@ -123,12 +123,13 @@
     if(display){if(isDiaryMode()){if(hasSavedTimeline())setCurrentPayCycle(true);else{setupPanel.hidden=true;window.RosterBotDiary?.showAdvanced?.();}}else{if(!viewFromDate.value){const w=E.weekCommencing(startDate.value||localTodayIso());viewFromDate.value=w;viewToDate.value=E.addDays(w,13)}generateDisplay(false);}}
   }
   const MANUAL_DAY_KEYS=['sun','mon','tue','wed','thu','fri','sat'];
+  let startManualPatternUpdatedAt='';
   function normalizeClock(v){return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||''))?String(v):''}
   function collectStartManualPattern(){
     const days={};for(const key of MANUAL_DAY_KEYS){const cap=key[0].toUpperCase()+key.slice(1),on=!!$(`startPattern${cap}On`)?.checked,start=normalizeClock($(`startPattern${cap}Start`)?.value),end=normalizeClock($(`startPattern${cap}End`)?.value);days[key]={on,start:on?start:'',end:on?end:''};}
-    return {version:1,label:'Regular work pattern',days,updatedAt:new Date().toISOString()};
+    return {version:1,label:'Regular work pattern',days,updatedAt:startManualPatternUpdatedAt||new Date().toISOString()};
   }
-  function applyStartManualPattern(pattern){const p=pattern||window.RosterBotEmployment?.defaultManualPattern?.();if(!p)return;for(const key of MANUAL_DAY_KEYS){const cap=key[0].toUpperCase()+key.slice(1),d=p.days?.[key]||{},on=$(`startPattern${cap}On`),st=$(`startPattern${cap}Start`),en=$(`startPattern${cap}End`);if(on)on.checked=!!d.on;if(st){st.value=d.start||'08:00';st.disabled=!d.on}if(en){en.value=d.end||'16:00';en.disabled=!d.on}}}
+  function applyStartManualPattern(pattern){const p=pattern||window.RosterBotEmployment?.defaultManualPattern?.();if(!p)return;startManualPatternUpdatedAt=typeof p.updatedAt==='string'?p.updatedAt:'';for(const key of MANUAL_DAY_KEYS){const cap=key[0].toUpperCase()+key.slice(1),d=p.days?.[key]||{},on=$(`startPattern${cap}On`),st=$(`startPattern${cap}Start`),en=$(`startPattern${cap}End`);if(on)on.checked=!!d.on;if(st){st.value=d.start||'08:00';st.disabled=!d.on}if(en){en.value=d.end||'16:00';en.disabled=!d.on}}}
   function updateScheduleModeUi(){const mode=startScheduleMode?.value||'official',manual=mode!=='official',pattern=mode==='pattern';['startDepotField','startRosterField','startLineField'].forEach(id=>{const el=$(id);if(el)el.hidden=manual});if(officialSwapBox)officialSwapBox.hidden=manual;if(startManualPatternBox)startManualPatternBox.hidden=!pattern;if(startAdhocNote)startAdhocNote.hidden=mode!=='adhoc';if(manual){hasSwap.checked=false;swapFields.hidden=true}const btn=generateBtn;if(btn&&document.documentElement.classList.contains('v28-onboarding-active'))btn.textContent=manual?'Preview my work pattern':'Show my roster';const accept=$('v28UseRosterBtn');if(accept)accept.textContent=manual?'Use this as my schedule':'Use this as my roster'}
   function manualPatternValid(pattern){const rows=Object.values(pattern?.days||{}).filter(d=>d?.on);return rows.every(d=>normalizeClock(d.start)&&normalizeClock(d.end))}
 
@@ -191,7 +192,7 @@
     styleSelect.value = chosen;
     const themeColours = { '1':'#0b5364', '2':'#111315', '3':'#0b3a70', '4':'#e6531d', '5':'#c7353c', '6':'#6f3489', '7':'#202020' };
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColours[chosen] || '#0b5364');
-    try { localStorage.setItem('rosterbot-theme-v1.9', chosen); } catch (_) {}
+    try { localStorage.setItem('rosterbot-theme-v1.9', chosen);window.RosterBotSchema5Persistence?.notifyPersonalChange?.('rosterbot-theme-v1.9'); } catch (_) {}
   }
 
   function initialiseTheme() {
@@ -244,7 +245,7 @@
   function setRosterViewMode(mode, persist = true) {
     rosterViewMode = mode === 'compact' ? 'compact' : 'calendar';
     if (persist) {
-      try { localStorage.setItem('rosterbot-view-mode-v1', rosterViewMode); } catch (_) {}
+      try { localStorage.setItem('rosterbot-view-mode-v1', rosterViewMode);window.RosterBotSchema5Persistence?.notifyPersonalChange?.('rosterbot-view-mode-v1'); } catch (_) {}
     }
     updateRosterViewButtons();
     if (!outputSection.hidden) generateDisplay(false);
@@ -1044,7 +1045,7 @@
   swapLine.addEventListener('change', () => { updateSequencePreview(); clearPreparedCalendarFiles(); });
   startScheduleMode?.addEventListener('change',()=>{updateScheduleModeUi();clearPreparedCalendarFiles();saveRosterSession()});startRole?.addEventListener('change',saveRosterSession);
   $('startManualWeekdays')?.addEventListener('click',()=>{applyStartManualPattern(window.RosterBotEmployment?.defaultManualPattern?.());saveRosterSession()});
-  for(const key of MANUAL_DAY_KEYS){const cap=key[0].toUpperCase()+key.slice(1),on=$(`startPattern${cap}On`),st=$(`startPattern${cap}Start`),en=$(`startPattern${cap}End`);on?.addEventListener('change',()=>{if(st)st.disabled=!on.checked;if(en)en.disabled=!on.checked;saveRosterSession()});st?.addEventListener('change',saveRosterSession);en?.addEventListener('change',saveRosterSession);}
+  for(const key of MANUAL_DAY_KEYS){const cap=key[0].toUpperCase()+key.slice(1),on=$(`startPattern${cap}On`),st=$(`startPattern${cap}Start`),en=$(`startPattern${cap}End`),saveManualChange=()=>{startManualPatternUpdatedAt=new Date().toISOString();saveRosterSession()};on?.addEventListener('change',()=>{if(st)st.disabled=!on.checked;if(en)en.disabled=!on.checked;saveManualChange()});st?.addEventListener('change',saveManualChange);en?.addEventListener('change',saveManualChange);}
 
   hasAnnualLeave.addEventListener('change', () => {
     annualLeaveFields.hidden = !hasAnnualLeave.checked;
