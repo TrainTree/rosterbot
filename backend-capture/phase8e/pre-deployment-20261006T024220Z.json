@@ -1,0 +1,65 @@
+{
+  "captured_at": "2026-10-06T02:42:20.335Z",
+  "mode": "read-only production pre-deployment evidence; no payloads or user identifiers",
+  "production_identity": {
+    "id": "rithmbggiiusrmdcqrif",
+    "ref": "rithmbggiiusrmdcqrif",
+    "name": "rosterBot-sync-dev",
+    "status": "ACTIVE_HEALTHY",
+    "region": "ap-southeast-2",
+    "database_version": "17.6.1.166"
+  },
+  "phase8a_catalog_comparison": [
+    { "query_file": "object-inventory.sql", "rows": 7, "sha256": "a5d53cd7517e1cccb480835f69e3ca94e7bd18feae365cd0b0881485f3a7e019", "matches": true },
+    { "query_file": "table-details.sql", "rows": 3, "sha256": "cb1c899aa205cc27b0bcf2f58af895e0aca618005d8c63a6fd2ec6a0147a7f4d", "matches": true },
+    { "query_file": "function-details.sql", "rows": 4, "sha256": "fccdb9da6718097f03449b52ad46e4cf2c6e23e40170c00e663f986cae6188c9", "matches": true },
+    { "query_file": "privilege-details.sql", "rows": 70, "sha256": "9ddf4e0e1ef9466a436fd57cc71c368a59f8619bf4a8caf32589d8f13d9d27ef", "matches": true },
+    { "query_file": "column-privileges.sql", "rows": 0, "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570", "matches": true },
+    { "query_file": "default-privileges.sql", "rows": 96, "sha256": "de312959e3629fae1fd27e89c8f900824dedbd937f2c6151fdfcf2bed63523a1", "matches": true },
+    { "query_file": "write-path-search.sql", "rows": 3, "sha256": "ae7f9b48672749669c377043fd560fb1e176afbadd927c01e7182aef50ef35fc", "matches": true },
+    { "query_file": "schema-role-details.sql", "rows": 12, "sha256": "258fe938247d348bce629ae998089dad0e9e61cfe32de17902673c5cdb552145", "matches": true },
+    { "query_file": "automation-inventory.sql", "rows": 5, "sha256": "0883c87703a3fd7d5dfc0754ee737cf4b68bd4909d9918cb8e10ac14c2a991c6", "matches": true }
+  ],
+  "all_catalog_captures_match_phase8a": true,
+  "safe_aggregate_evidence": {
+    "object_counts": [
+      { "object_name": "calendar_feeds", "row_count": 1 },
+      { "object_name": "roster_revisions", "row_count": 94 },
+      { "object_name": "roster_state", "row_count": 3 }
+    ],
+    "schema_version_counts": [
+      { "object_name": "roster_revisions", "schema_version": 4, "row_count": 94 },
+      { "object_name": "roster_state", "schema_version": 4, "row_count": 3 }
+    ]
+  },
+  "pre_phase8b_presence": {
+    "capability_table": null,
+    "validator_function": null,
+    "state_guard_installed": false,
+    "migration_history_table": null
+  },
+  "approved_files": {
+    "migration": {
+      "path": "supabase/migrations/20261005000100_phase8b_roster_downgrade_protection.sql",
+      "sha256": "5121623b8a18569d4af2da3eb6f1cb00253495ad8338e6c711c999d08896478e"
+    },
+    "rollback": {
+      "path": "supabase/rollback/20261005000100_phase8b_roster_downgrade_protection.rollback.sql",
+      "sha256": "c0d946dd90f71167d3d3d46c7bbfb814a72fee6d1a1b1dbf25f6d3f8b7652d95",
+      "corresponds_to_observed_phase8a_definitions": true
+    }
+  },
+  "production_client": {
+    "url": "https://rosterbot.work/js/51-cloud-sync.js",
+    "sha256": "2130dfc537370578af0c265376b2dcfc7ce2c0943b49e7140fe5e2052066370f",
+    "new_schema_version_expression": 4,
+    "contains_schema5_wire": false
+  },
+  "calendar_feed": {
+    "status": "ACTIVE",
+    "version": 2,
+    "verify_jwt": false,
+    "ezbr_sha256": "0fc2fd4f9dafa0ed582b49121636c7a350e90cbeded6b5d7c2d3f6f0ae5f043d",
+    "service_role_select": true
+  }
+}
