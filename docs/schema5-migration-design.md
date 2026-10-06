@@ -2,6 +2,8 @@
 
 Status: design and deterministic test fixtures only. Nothing in this phase is loaded by `index.html`, registered as a live persistence key, or written to browser storage. The production registry, backup payload, Cloud payload, encryption envelope, and Supabase RPC remain schema 4.
 
+> Phase 9 implementation note (2026-10-06): the contract below is now implemented for local/synthetic testing in this worktree. See [`phase9-schema5-implementation.md`](phase9-schema5-implementation.md). The statements in this document describing Phase 7A/7B as design-only are retained as historical phase boundaries; production Cloud capability and wire formats remain schema 4.
+
 ## 1. Canonical schema-5 envelope
 
 Schema 5 is primarily a new envelope around the Phase 6 semantic personal state. It does not reinterpret roster, diary, employment, PayBot, manual-schedule, or calendar data.

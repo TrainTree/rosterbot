@@ -69,6 +69,10 @@ test('every literal application persistence key is registered',()=>{
   keys.delete('rosterbot-recovery-evidence-v1'); // Recovery export format identifier, not a storage key.
   keys.delete('rosterbot-canonical-candidate-v1'); // In-memory candidate format identifier, not a storage key.
   keys.delete('rosterbot-storage-guard'); // Downgrade-guard format identifier; the persisted key has a -v1 suffix.
+  keys.delete('rosterbot-personal-state'); // Schema-5 envelope format identifier; the persisted key has a -v1 suffix.
+  keys.delete('rosterbot-schema5-migration-journal'); // Journal format identifier; the persisted key has a -v1 suffix.
+  keys.delete('rosterbot-schema5-content-v1'); // Schema-5 checksum scope identifier.
+  keys.delete('rosterbot-canonical-json-v1'); // Canonicalisation algorithm identifier.
   const missing=[...keys].filter(key=>!registry.get(key)).sort();
   assert.deepEqual(missing,[]);
 });

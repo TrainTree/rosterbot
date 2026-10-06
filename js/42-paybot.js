@@ -608,7 +608,7 @@ function updatePdtUI(){
   if(profileHint){if(events.length){profileHint.innerHTML=`<strong>Employment profile active.</strong> ${events.map(e=>`${e.classification}${e.pdtScheme==='current'?' + current PDT':''}`).join(' → ')}. PayBot resolves the applicable role separately by date.`}else profileHint.textContent='No dated profile applies to this fortnight; the Grade/PDT selectors below are used as the fallback.'}
   if(profileAtStart&&profileAtStart.pdtScheme==='legacy'){grade.disabled=false;}
 }
-function saveState(){if(!dayState.length)return;const obj={logicVersion:'0.20.6',period:$('#periodDate').value,grade:$('#grade').value,baseGrade:baseGradeBeforePdt,entryMode:loadedEntryMode||$('#entryMode').value,r1:$('#r1').value,l1:$('#l1').value,r2:$('#r2').value,l2:$('#l2').value,pdt:$('#pdtMode').value,days:dayState};localStorage.setItem('paybot-v06-state',JSON.stringify(obj))}
+function saveState(){if(!dayState.length)return;const obj={logicVersion:'0.20.6',period:$('#periodDate').value,grade:$('#grade').value,baseGrade:baseGradeBeforePdt,entryMode:loadedEntryMode||$('#entryMode').value,r1:$('#r1').value,l1:$('#l1').value,r2:$('#r2').value,l2:$('#l2').value,pdt:$('#pdtMode').value,days:dayState};localStorage.setItem('paybot-v06-state',JSON.stringify(obj));window.RosterBotSchema5Persistence?.notifyPersonalChange?.('paybot-v06-state')}
 function restore(){
   try{
     const checked=window.RosterBotPersistenceRegistry?.read?.(localStorage,'paybot-v06-state');
@@ -654,7 +654,7 @@ $('#loadBtn').addEventListener('click',buildFortnight);$('#grade').addEventListe
 $('#prevPeriod').addEventListener('click',()=>{$('#periodDate').value=dateKey(addDays(snapPeriod(parseDate($('#periodDate').value)),-14));buildFortnight()});$('#nextPeriod').addEventListener('click',()=>{$('#periodDate').value=dateKey(addDays(snapPeriod(parseDate($('#periodDate').value)),14));buildFortnight()});
 $('#thisPeriod').addEventListener('click',()=>{const now=new Date(),today=new Date(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()));$('#periodDate').value=dateKey(snapPeriod(today));buildFortnight()});
 $('#periodDate').addEventListener('change',()=>{$('#periodDate').value=dateKey(snapPeriod(parseDate($('#periodDate').value)));buildFortnight()});
-$('#resetBtn').addEventListener('click',()=>{if(confirm('Reset the current PayBot fortnight and remove saved edits?')){for(const key of (window.RosterBotPersistenceRegistry?.compatibilityKeys?.('paybot-v06-state')||['paybot-v06-state']))localStorage.removeItem(key);location.reload()}});
+$('#resetBtn').addEventListener('click',()=>{if(confirm('Reset the current PayBot fortnight and remove saved edits?')){for(const key of (window.RosterBotPersistenceRegistry?.compatibilityKeys?.('paybot-v06-state')||['paybot-v06-state']))localStorage.removeItem(key);window.RosterBotSchema5Persistence?.notifyPersonalChange?.('paybot-v06-state').finally(()=>location.reload())}});
 $$('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
 document.getElementById('pbFullEditorBtn')?.addEventListener('click',()=>setPaybotEditorMode('full'));
 document.getElementById('pbCompactEditorBtn')?.addEventListener('click',()=>setPaybotEditorMode('compact'));

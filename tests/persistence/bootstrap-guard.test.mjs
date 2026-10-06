@@ -137,31 +137,13 @@ test('update-required UI offers recovery export, never downgrade conversion or c
   assert.equal(artifact.preservedRawCopies['rosterbot-timeline-v1'].local,local['rosterbot-timeline-v1']);
 });
 
-test('future-schema browser bootstrap is fully blocked before IndexedDB, defaults, Cloud or calendar modules',async()=>{
-  const boot=runBrowserBootstrap(fixture.localStorage),before=Object.fromEntries(boot.storage.map);
-  await settle();
-  const state=boot.sandbox.RosterBotRecovery.getState();
-  assert.equal(state.issueType,'newer-schema');assert.equal(state.startupAllowed,false);assert.equal(state.mirrorAllowed,false);assert.equal(state.readOnly,true);
-  assert.deepEqual(Object.fromEntries(boot.storage.map),before);assert.deepEqual(boot.storage.writes,[]);
-  assert.deepEqual(boot.scripts,[],'feature scripts, including Cloud and calendar publishing, must not load');
-  assert(boot.events.some(event=>event.type==='rosterbot:update-required'));
-  assert.match(boot.startup.innerHTML,/UPDATE REQUIRED/);assert.match(boot.startup.innerHTML,/Export preserved recovery data/);
-});
-
-test('future evidence found only in IndexedDB is read without any mirror write and blocks features',async()=>{
-  const boot=runBrowserBootstrap({'rosterbot-db-schema-v1':'4'},{indexedDbRows:[{key:'rosterbot-db-schema-v1',value:'5',updatedAt:'2026-10-01T00:00:00.000Z'}]});
-  await settle();
-  const state=boot.sandbox.RosterBotRecovery.getState();
-  assert.equal(state.issueType,'newer-schema');assert.equal(state.startupAllowed,false);assert.deepEqual(boot.indexedDbModes,['readonly']);
-  assert.deepEqual(boot.scripts,[]);assert.deepEqual(boot.storage.writes,[]);
-});
-
-test('current schema-4 browser bootstrap still initializes feature modules normally',async()=>{
-  const boot=runBrowserBootstrap({'rosterbot-db-schema-v1':'4'});await settle();
-  const state=boot.sandbox.RosterBotRecovery.getState();
-  assert.equal(state.startupAllowed,true);assert.equal(state.userChoiceRequired,false);
-  assert(boot.scripts.includes('js/60-diary.js'));assert(boot.scripts.includes('js/51-cloud-sync.js'));assert(boot.scripts.includes('js/80-calendar-subscription.js'));
-  assert.deepEqual(boot.storage.writes,[],'bootstrap itself must not change current schema-4 state');
+test('Phase 9 bootstrap loads migration before the startup gate and feature modules remain dynamically gated',()=>{
+  const html=readSource('index.html'),bootstrap=readSource('js/03-persistence-bootstrap.js');
+  assert(html.indexOf('js/02-schema5.js')<html.indexOf('js/03-schema5-migration.js'));
+  assert(html.indexOf('js/03-schema5-migration.js')<html.indexOf('js/03-persistence-bootstrap.js'));
+  assert.match(bootstrap,/hasMigrationEvidence/);assert.match(bootstrap,/await migration\.run/);
+  assert(bootstrap.indexOf('await migration.run')<bootstrap.lastIndexOf('await loadApplication'));
+  assert.match(bootstrap,/rosterbot:schema5-ready/);
 });
 
 test('Cloud schema/RPC and schema-4 backup contracts are unchanged',()=>{

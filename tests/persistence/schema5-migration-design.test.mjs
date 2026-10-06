@@ -178,9 +178,10 @@ test('journal state machine is total and never advances the marker before both v
   assert.equal(JOURNAL_CONTRACT.failed.ui,true);
 });
 
-test('Phase 7B only recognises reserved future records while production schema/backup/Cloud contracts stay at schema 4',()=>{
+test('Phase 9 loads local schema-5 migration while backup and Cloud wire contracts stay schema 4',()=>{
   assert.equal(registry.schemaVersion,4);
-  assert.doesNotMatch(readSource('index.html'),/schema5-design|schema5-migration/);
+  assert.match(readSource('index.html'),/02-schema5\.js/);
+  assert.match(readSource('index.html'),/03-schema5-migration\.js/);
   assert.equal(registry.get('rosterbot-personal-state-v1').category,'internal');
   assert(['backup','cloud','indexedDb'].every(surface=>!registry.surfaceKeys(surface).includes('rosterbot-personal-state-v1')));
   assert.match(readSource('js/50-data-backup.js'),/schemaVersion:4/);

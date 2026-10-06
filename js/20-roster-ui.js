@@ -97,7 +97,7 @@
   function snapPayPeriodIso(iso){const diff=daysBetween(PAY_VIEW_ANCHOR,iso);const blocks=Math.floor(diff/14);return E.addDays(PAY_VIEW_ANCHOR,blocks*14)}
   function moneyAud(v){return new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD'}).format(Number(v)||0)}
   function readJson(key,fallback){const checked=window.RosterBotPersistenceRegistry?.read?.(localStorage,key,{aliases:false});if(checked)return checked.valid?checked.value:fallback;try{return JSON.parse(localStorage.getItem(key)||'')||fallback}catch(_){return fallback}}
-  function writeJson(key,value){try{localStorage.setItem(key,JSON.stringify(value));window.RosterBotCloudSync?.notifyLocalChange?.(key)}catch(_){}}
+  function writeJson(key,value){try{localStorage.setItem(key,JSON.stringify(value));window.RosterBotSchema5Persistence?.notifyPersonalChange?.(key);window.RosterBotCloudSync?.notifyLocalChange?.(key)}catch(_){}}
   function hasSavedTimeline(){return Array.isArray(readJson('rosterbot-timeline-v1',[]))&&readJson('rosterbot-timeline-v1',[]).length>0}
   let experienceMode = (()=>{try{const saved=localStorage.getItem('rosterbot-experience-v1');if(saved==='quick'||saved==='diary')return saved}catch(_){}return hasSavedTimeline()?'diary':'quick';})();
   function isDiaryMode(){return experienceMode==='diary'}
@@ -155,7 +155,7 @@
     const manual=st.scheduleMode&&st.scheduleMode!=='official';
     if(manual){window.RosterBotEmployment?.saveManualPattern?.(st.scheduleMode==='pattern'?st.manualPattern:{version:1,label:'No default pattern',days:Object.fromEntries(MANUAL_DAY_KEYS.map(k=>[k,{on:false,start:'',end:''}]))});}
     const base=manual?{id:'base-'+Date.now(),startWC:E.weekCommencing(st.startDate),mode:'manual',manualType:st.scheduleMode==='pattern'?'pattern':'adhoc',manualPattern:st.scheduleMode==='pattern'?st.manualPattern:null,trackA:{depot:'PERSONAL',roster:'MANUAL',line:1},trackB:null,createdAt:new Date().toISOString(),source:st.scheduleMode==='pattern'?'initial manual work pattern':'initial manual fortnight entry'}:{id:'base-'+Date.now(),startWC:E.weekCommencing(st.startDate),mode:st.hasSwap?'swap':'single',trackA:{depot:st.startDepot||'SCS',roster:st.startRoster,line:+st.startLine||1},trackB:st.hasSwap?{depot:st.swapDepot||st.startDepot||'SCS',roster:st.swapRoster,line:+st.swapLine||1}:null,createdAt:new Date().toISOString(),source:'basic setup migration'};
-    writeJson('rosterbot-timeline-v1',[base]);try{localStorage.setItem('rosterbot-db-schema-v1','4')}catch(_){};return [base];
+    writeJson('rosterbot-timeline-v1',[base]);try{localStorage.setItem('rosterbot-db-schema-v1',String(window.RosterBotSchema5?.SCHEMA5_STORAGE_SCHEMA||4))}catch(_){};return [base];
   }
   function saveCurrentAsMyRoster(){
     const clearPreviewConfirmation=()=>{document.documentElement.classList.remove('v28-onboarding-preview');const confirm=$('v28PreviewConfirm');if(confirm)confirm.hidden=true};
@@ -270,7 +270,7 @@
 
   function saveRosterSession() {
     if(document.documentElement.classList.contains('v28-lookup-active')) return;
-    try { localStorage.setItem('rosterbot-session-settings-v1', JSON.stringify({ ...currentSettings(), experienceMode, displayWeeks:Math.min(5200,Math.max(1,Number.parseInt(displayWeeks.value,10)||1)), lastViewedFrom:viewFromDate?.value||'', lastViewedTo:viewToDate?.value||'' })); } catch (_) {}
+    try { localStorage.setItem('rosterbot-session-settings-v1', JSON.stringify({ ...currentSettings(), experienceMode, displayWeeks:Math.min(5200,Math.max(1,Number.parseInt(displayWeeks.value,10)||1)), lastViewedFrom:viewFromDate?.value||'', lastViewedTo:viewToDate?.value||'' }));window.RosterBotSchema5Persistence?.notifyPersonalChange?.('rosterbot-session-settings-v1'); } catch (_) {}
   }
 
   function restoreRosterSession() {

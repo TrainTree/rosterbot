@@ -15,6 +15,15 @@
     writerSchema:4,
     highestSafeWriteSchema:4
   });
+  // Phase 9 is a local schema-5-capable build. The default POLICY intentionally
+  // remains the schema-4 rollback-client capability so guard regression tests
+  // can continue proving that an older writer is stopped.
+  const SCHEMA5_POLICY=Object.freeze({
+    currentSupportedStorageSchema:5,
+    readerSchema:5,
+    writerSchema:5,
+    highestSafeWriteSchema:5
+  });
   const KEYS=Object.freeze({
     schemaMarker:'rosterbot-db-schema-v1',
     downgradeGuard:'rosterbot-storage-guard-v1',
@@ -51,12 +60,12 @@
     if(Array.isArray(values))return values.filter(row=>row&&typeof row.key==='string').map(row=>[row.key,row.value]);
     return Object.entries(values||{});
   }
-  function inspectSource(values,source){
+  function inspectSource(values,source,policy=POLICY){
     const entries=new Map(sourceEntries(values)),evidence=[];
     const markerRaw=entries.get(KEYS.schemaMarker);
     if(markerRaw!=null){
       const schema=positiveInteger(markerRaw);
-      if(schema&&schema>POLICY.currentSupportedStorageSchema)evidence.push({source,key:KEYS.schemaMarker,kind:'newer-schema-marker',storageSchema:schema});
+      if(schema&&schema>policy.currentSupportedStorageSchema)evidence.push({source,key:KEYS.schemaMarker,kind:'newer-schema-marker',storageSchema:schema});
     }
     const guardRaw=entries.get(KEYS.downgradeGuard);
     if(guardRaw!=null){
@@ -64,7 +73,7 @@
       if(!checked.ok)evidence.push({source,key:KEYS.downgradeGuard,kind:'invalid-downgrade-guard',reason:checked.reason});
       else{
         const guard=checked.value;
-        if(guard.migratedSchema>POLICY.currentSupportedStorageSchema||guard.minimumReaderSchema>POLICY.readerSchema||guard.minimumWriterSchema>POLICY.writerSchema){
+        if(guard.migratedSchema>policy.currentSupportedStorageSchema||guard.minimumReaderSchema>policy.readerSchema||guard.minimumWriterSchema>policy.writerSchema){
           evidence.push({source,key:KEYS.downgradeGuard,kind:'downgrade-guard',storageSchema:guard.migratedSchema,minimumReaderSchema:guard.minimumReaderSchema,minimumWriterSchema:guard.minimumWriterSchema,compatibilityProjection:guard.compatibilityProjection,migrationEvidence:true});
         }
       }
@@ -72,32 +81,33 @@
     for(const key of FUTURE_RECORD_KEYS){
       const raw=entries.get(key);if(raw==null)continue;
       const parsed=parseJson(raw),value=parsed.ok&&isObject(parsed.value)?parsed.value:null;
-      evidence.push({
+      const item={
         source,key,kind:key===KEYS.schema5State?'future-schema-state':'migration-evidence',
         storageSchema:positiveInteger(value?.storageSchemaVersion)||(key===KEYS.schema5State?5:null),
         minimumReaderSchema:positiveInteger(value?.minimumReaderSchema),
         minimumWriterSchema:positiveInteger(value?.minimumWriterSchema),
         compatibilityProjection:isObject(value?.compatibility)?{schemaVersion:positiveInteger(value.compatibility.schemaVersion),status:String(value.compatibility.status||'unknown'),fingerprint:typeof value.compatibility.projectionFingerprint==='string'?value.compatibility.projectionFingerprint:null}:null,
         validJson:parsed.ok
-      });
+      };
+      if(policy.currentSupportedStorageSchema<5||!parsed.ok||(item.storageSchema&&item.storageSchema>policy.currentSupportedStorageSchema)||(item.minimumReaderSchema&&item.minimumReaderSchema>policy.readerSchema)||(item.minimumWriterSchema&&item.minimumWriterSchema>policy.writerSchema))evidence.push(item);
     }
     return evidence;
   }
 
-  function reasonFor(evidence){
+  function reasonFor(evidence,policy=POLICY){
     if(evidence.some(item=>item.kind==='invalid-downgrade-guard'))return 'Migration/downgrade evidence exists but this client cannot validate it.';
     const minimum=Math.max(0,...evidence.flatMap(item=>[item.minimumReaderSchema||0,item.minimumWriterSchema||0]));
-    if(minimum>POLICY.readerSchema)return `This data requires RosterBot storage reader/writer schema ${minimum}; this client supports schema ${POLICY.readerSchema}.`;
+    if(minimum>policy.readerSchema)return `This data requires RosterBot storage reader/writer schema ${minimum}; this client supports schema ${policy.readerSchema}.`;
     const schema=Math.max(0,...evidence.map(item=>item.storageSchema||0));
-    if(schema>POLICY.currentSupportedStorageSchema)return `Persisted storage schema ${schema} is newer than this client's supported schema ${POLICY.currentSupportedStorageSchema}.`;
+    if(schema>policy.currentSupportedStorageSchema)return `Persisted storage schema ${schema} is newer than this client's supported schema ${policy.currentSupportedStorageSchema}.`;
     return 'Migration evidence from a newer RosterBot storage format is present.';
   }
-  function inspect({localValues={},indexedDbRows=[]}={}){
-    const evidence=[...inspectSource(localValues,'localStorage'),...inspectSource(indexedDbRows,'indexedDB')];
-    if(!evidence.length)return {allowed:true,blocked:false,policy:POLICY,evidence:[]};
+  function inspect({localValues={},indexedDbRows=[],policy=POLICY}={}){
+    const evidence=[...inspectSource(localValues,'localStorage',policy),...inspectSource(indexedDbRows,'indexedDB',policy)];
+    if(!evidence.length)return {allowed:true,blocked:false,policy,evidence:[]};
     const projections=evidence.map(item=>item.compatibilityProjection).filter(Boolean);
     return {
-      allowed:false,blocked:true,issueType:'newer-schema',reason:reasonFor(evidence),policy:POLICY,evidence,
+      allowed:false,blocked:true,issueType:'newer-schema',reason:reasonFor(evidence,policy),policy,evidence,
       detected:{
         highestStorageSchema:Math.max(0,...evidence.map(item=>item.storageSchema||0))||null,
         minimumReaderSchema:Math.max(0,...evidence.map(item=>item.minimumReaderSchema||0))||null,
@@ -120,9 +130,9 @@
       issueType:'newer-schema',readOnly:true,updateRequired:true,affectedKeys:[...new Set(result.evidence.map(item=>item.key))],
       localValidationState:'newer',indexedDbValidationState:'not-written',automaticRecoveryAllowed:false,userChoiceRequired:false,
       startupAllowed:false,mirrorAllowed:false,decisions:[],replacementEntries:[],validationStates:{local:{},indexedDb:{}},
-      preservedRawCopies,reason:result.reason,storageCompatibility:{policy:{...POLICY},detected:{...result.detected},evidence:result.evidence.map(item=>({...item}))}
+      preservedRawCopies,reason:result.reason,storageCompatibility:{policy:{...(result.policy||POLICY)},detected:{...result.detected},evidence:result.evidence.map(item=>({...item}))}
     };
   }
 
-  return Object.freeze({POLICY,KEYS,GUARD_FORMAT,GUARD_FORMAT_VERSION,validateDowngradeGuard,inspect,recoveryState});
+  return Object.freeze({POLICY,SCHEMA5_POLICY,KEYS,GUARD_FORMAT,GUARD_FORMAT_VERSION,validateDowngradeGuard,inspect,recoveryState});
 });
