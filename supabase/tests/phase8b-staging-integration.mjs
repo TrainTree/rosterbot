@@ -17,18 +17,27 @@
 
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import {createRequire} from 'node:module';
+
+const require=createRequire(import.meta.url);
+const errorContract=require('../../js/04-cloud-error-contract.js');
 
 const PRODUCTION_REF='rithmbggiiusrmdcqrif';
+const projectRef=String(process.env.PHASE8B_STAGING_PROJECT_REF||'');
 const url=String(process.env.PHASE8B_STAGING_URL||'').replace(/\/$/,'');
 const anonKey=String(process.env.PHASE8B_STAGING_ANON_KEY||'');
 const serviceKey=String(process.env.PHASE8B_STAGING_SERVICE_ROLE_KEY||'');
+const testGroup=String(process.env.PHASE8B_TEST_GROUP||'all');
 
 if(process.env.PHASE8B_ALLOW_ISOLATED_STAGING!=='yes')throw new Error('Refusing to run: set PHASE8B_ALLOW_ISOLATED_STAGING=yes for an isolated staging project.');
 if(!url||!anonKey||!serviceKey)throw new Error('Missing Phase 8B staging URL/anon/service-role environment variables.');
-if(new URL(url).hostname.includes(PRODUCTION_REF))throw new Error(`Refusing to run against linked project ${PRODUCTION_REF}.`);
+if(!/^[a-z]{20}$/.test(projectRef))throw new Error('Missing or invalid PHASE8B_STAGING_PROJECT_REF.');
+if(projectRef===PRODUCTION_REF)throw new Error(`Refusing to run against linked project ${PRODUCTION_REF}.`);
+if(new URL(url).hostname!==`${projectRef}.supabase.co`)throw new Error('Staging URL/project ref mismatch.');
 
 const createdUsers=[];
 let assertions=0;
+const evidence={errors:[],concurrent_first_writes:[],concurrent_schema_writers:[],stale_downgrade:null,calendar:null};
 const check=(value,message)=>{assert(value,message);assertions++};
 const equal=(actual,expected,message)=>{assert.deepEqual(actual,expected,message);assertions++};
 const canonical=value=>JSON.stringify(value,Object.keys(value||{}).sort());
@@ -105,6 +114,13 @@ function expectError(result,code,message){
   equal(result.ok,false,`expected ${code}/${message}, got success`);
   equal(result.data?.code,code,JSON.stringify(result.data));
   if(message)equal(result.data?.message,message,JSON.stringify(result.data));
+  const envelope={status:result.status,code:result.data?.code,message:result.data?.message,details:result.data?.details??null,hint:result.data?.hint??null};
+  evidence.errors.push(envelope);
+  if(/^RB00[1-7]$/.test(code)){
+    const classified=errorContract.classify(result.data);
+    check(classified,`client did not classify ${JSON.stringify(envelope)}`);
+    equal(classified.retry,false,`${code} unexpectedly classified as retryable`);
+  }
 }
 
 async function snapshot(user){
@@ -141,36 +157,61 @@ async function testFirstWriteAndDowngrade(){
 }
 
 async function testConcurrentFirstWrites(){
-  const user=await createUser('concurrent-first');
-  const results=await Promise.all([
-    save(user,0,4,plain4('concurrent-a'),'client-a'),
-    save(user,0,4,plain4('concurrent-b'),'client-b')
-  ]);
-  equal(results.filter(result=>result.ok).length,1,'exactly one first writer must succeed');
-  const rejected=results.find(result=>!result.ok);expectError(rejected,'RB003','revision_conflict');
-  const [s,h]=await Promise.all([state(user),history(user)]);
-  equal(s.data.length,1);equal(Number(s.data[0].revision),1);
-  equal(h.data.length,1);equal(Number(h.data[0].revision),1);
+  for(let attempt=0;attempt<4;attempt++){
+    const user=await createUser(`concurrent-first-${attempt}`);
+    const results=await Promise.all([
+      save(user,0,4,plain4(`concurrent-a-${attempt}`),'client-a'),
+      save(user,0,4,plain4(`concurrent-b-${attempt}`),'client-b')
+    ]);
+    equal(results.filter(result=>result.ok).length,1,'exactly one first writer must succeed');
+    const rejected=results.find(result=>!result.ok);expectError(rejected,'RB003','revision_conflict');
+    const [s,h]=await Promise.all([state(user),history(user)]);
+    equal(s.data.length,1);equal(Number(s.data[0].revision),1);
+    equal(h.data.length,1);equal(Number(h.data[0].revision),1);
+    evidence.concurrent_first_writes.push({attempt,winner:s.data[0].client_id,rejected:{status:rejected.status,code:rejected.data?.code,message:rejected.data?.message},state_revision:Number(s.data[0].revision),history_revisions:h.data.map(row=>Number(row.revision))});
+  }
 }
 
 async function testConcurrentSchemaWriters(){
-  const user=await createUser('concurrent-schema');
-  check((await save(user,0,4,plain4('base'),'base')).ok);
-  const [four,five]=await Promise.all([
-    save(user,1,4,plain4('concurrent-four'),'client-four'),
-    save(user,1,5,plain5('concurrent-five'),'client-five')
-  ]);
-  equal([four,five].filter(result=>result.ok).length,1,'exactly one same-revision writer must commit');
-  if(five.ok)expectError(four,'RB001','schema_too_old');
-  else{
-    expectError(five,'RB003','revision_conflict');
-    const current=one(await state(user));
-    check((await save(user,Number(current.revision),5,plain5('retry-five'),'client-five')).ok);
+  const observed=new Set();
+  for(let attempt=0;attempt<8&&observed.size<2;attempt++){
+    const user=await createUser(`concurrent-schema-${attempt}`);
+    check((await save(user,0,4,plain4(`base-${attempt}`),'base')).ok);
+    const startFour=()=>save(user,1,4,plain4(`concurrent-four-${attempt}`),'client-four');
+    const startFive=()=>save(user,1,5,plain5(`concurrent-five-${attempt}`),'client-five');
+    const started=attempt%2===0?[startFour(),startFive()]:[startFive(),startFour()];
+    const finished=await Promise.all(started);
+    const [four,five]=attempt%2===0?finished:[finished[1],finished[0]];
+    equal([four,five].filter(result=>result.ok).length,1,'exactly one same-revision writer must commit');
+    let winner;
+    if(five.ok){winner='schema5';expectError(four,'RB001','schema_too_old');}
+    else{
+      winner='schema4';expectError(five,'RB003','revision_conflict');
+      const current=one(await state(user));
+      check((await save(user,Number(current.revision),5,plain5(`retry-five-${attempt}`),'client-five')).ok);
+    }
+    observed.add(winner);
+    const current=one(await state(user));equal(current.schema_version,5);
+    const before=await snapshot(user);
+    expectError(await save(user,Number(current.revision),4,plain4(`post-race-old-${attempt}`),'client-four'),'RB001','schema_too_old');
+    equal(await snapshot(user),before);
+    evidence.concurrent_schema_writers.push({attempt,initial_winner:winner,schema4_result:{status:four.status,code:four.data?.code??null},schema5_result:{status:five.status,code:five.data?.code??null},final_revision:Number(current.revision),final_schema:current.schema_version});
   }
-  const current=one(await state(user));equal(current.schema_version,5);
-  const before=await snapshot(user);
-  expectError(await save(user,Number(current.revision),4,plain4('post-race-old'),'client-four'),'RB001','schema_too_old');
-  equal(await snapshot(user),before);
+  equal([...observed].sort(),['schema4','schema5'],'did not observe both legal concurrent schema-writer orderings');
+}
+
+async function testStaleDowngradeSequence(){
+  const user=await createUser('stale-downgrade-sequence');
+  check((await save(user,0,4,plain4('stale-base'),'schema4-reader')).ok);
+  const read=one(await state(user));
+  const staleRevision=Number(read.revision);
+  check((await save(user,staleRevision,5,plain5('stale-upgrade'),'schema5-writer')).ok);
+  const protectedSnapshot=await snapshot(user);
+  const rejected=await save(user,staleRevision,4,plain4('stale-submit'),'schema4-stale-writer');
+  expectError(rejected,'RB001','schema_too_old');
+  equal(await snapshot(user),protectedSnapshot,'stale downgrade changed state/history');
+  const current=one(await state(user)),rows=(await history(user)).data;
+  evidence.stale_downgrade={read_revision:staleRevision,upgrade_revision:Number(current.revision),result:{status:rejected.status,code:rejected.data?.code,message:rejected.data?.message,details:rejected.data?.details},state_schema:current.schema_version,state_revision:Number(current.revision),history_revisions:rows.map(row=>Number(row.revision))};
 }
 
 async function testPayloadAgreement(){
@@ -183,7 +224,9 @@ async function testPayloadAgreement(){
     [4,[],'RB005','payload_malformed'],
     [4,{format:'unknown',schemaVersion:4},'RB005','payload_malformed'],
     [4,{...encrypted(4,'malformed'),crypto:{...encrypted(4,'malformed').crypto,passphraseWrap:{}}},'RB005','payload_malformed'],
-    [6,plain5('unsupported-six'),'RB002','schema_too_new']
+    [6,plain5('unsupported-six'),'RB002','schema_too_new'],
+    [3,plain4('unsupported-three'),'RB002','schema_unsupported'],
+    [null,plain4('unsupported-null'),'RB002','schema_unsupported']
   ];
   for(let index=0;index<cases.length;index++){
     const [schema,payload,code,message]=cases[index],user=await createUser(`payload-${index}`);
@@ -194,6 +237,10 @@ async function testPayloadAgreement(){
   const result=await save(encryptedUser,0,4,encrypted(4,'firstencrypted'),'encrypted-client');
   check(result.ok,JSON.stringify(result.data));
   equal(one(await state(encryptedUser)).schema_version,4);
+  const encryptedFiveUser=await createUser('encrypted-five-first');
+  const encryptedFive=await save(encryptedFiveUser,0,5,encrypted(5,'firstencryptedfive'),'encrypted-schema5-client');
+  check(encryptedFive.ok,JSON.stringify(encryptedFive.data));
+  equal(one(await state(encryptedFiveUser)).schema_version,5);
 }
 
 async function testEncryptedMaintenance(){
@@ -223,6 +270,7 @@ async function testRlsAnonAndServiceRole(){
   check(cross.ok);equal(cross.data,[],'RLS disclosed another user row');
   const directInsert=await request('/rest/v1/roster_state',{method:'POST',token:a.token,body:{user_id:b.id,revision:1,schema_version:4,payload:plain4('forged')}});
   check(!directInsert.ok,'authenticated direct insert unexpectedly succeeded');
+  equal(directInsert.data?.code,'42501',JSON.stringify(directInsert.data));
 
   const anonCalls=[
     ['save_roster_state',{expected_revision:0,new_schema_version:4,new_payload:plain4('anon'),new_client_id:'anon'}],
@@ -233,15 +281,31 @@ async function testRlsAnonAndServiceRole(){
     const result=await request(`/rest/v1/rpc/${name}`,{method:'POST',body});
     check(!result.ok,`${name} remained anonymously executable`);
     check(result.data?.code==='42501'||String(result.data?.code||'').startsWith('PGRST'),JSON.stringify(result.data));
+    evidence.errors.push({status:result.status,code:result.data?.code,message:result.data?.message,details:result.data?.details??null,hint:result.data?.hint??null,case:`anonymous ${name}`});
   }
 
   const serviceRead=await request(`/rest/v1/roster_state?select=user_id&user_id=in.(${a.id},${b.id})`,{key:serviceKey});
   check(serviceRead.ok);equal(serviceRead.data.length,2,'service role should retain audited read capability');
   const servicePatch=await request(`/rest/v1/roster_state?user_id=eq.${a.id}`,{method:'PATCH',key:serviceKey,body:{revision:2,schema_version:4,payload:plain4('service-write')}});
   check(!servicePatch.ok,'service role direct roster DML should be revoked');
+  equal(servicePatch.data?.code,'42501',JSON.stringify(servicePatch.data));
+  evidence.errors.push({status:servicePatch.status,code:servicePatch.data?.code,message:servicePatch.data?.message,details:servicePatch.data?.details??null,hint:servicePatch.data?.hint??null,case:'service-role direct roster DML'});
   const serviceRpc=await request('/rest/v1/rpc/save_roster_state',{method:'POST',key:serviceKey,body:{expected_revision:1,new_schema_version:4,new_payload:plain4('service-rpc'),new_client_id:'service'}});
   expectError(serviceRpc,'RB006','not_authenticated');
   equal(Number(one(await state(a)).revision),1,'service-role checks changed state');
+
+  const tokenHash=crypto.createHash('sha256').update('phase8c-synthetic-calendar-token').digest('hex');
+  const calendarInsert=await request('/rest/v1/calendar_feeds',{method:'POST',token:a.token,body:{user_id:a.id,token_hash:tokenHash,ics_text:'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR\r\n',event_count:0,enabled:true}});
+  check(calendarInsert.ok,`calendar insert failed: ${JSON.stringify(calendarInsert.data)}`);
+  const calendarCross=await request(`/rest/v1/calendar_feeds?select=user_id&user_id=eq.${a.id}`,{token:b.token});
+  check(calendarCross.ok);equal(calendarCross.data,[],'calendar RLS disclosed another user row');
+  const edgeRead=await request(`/rest/v1/calendar_feeds?select=ics_text,enabled,updated_at&token_hash=eq.${tokenHash}`,{key:serviceKey});
+  check(edgeRead.ok,JSON.stringify(edgeRead.data));equal(edgeRead.data.length,1);equal(edgeRead.data[0].enabled,true);
+  const calendarPatch=await request(`/rest/v1/calendar_feeds?user_id=eq.${a.id}`,{method:'PATCH',token:a.token,body:{event_count:1,ics_text:'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nX-PHASE8C:SYNTHETIC\r\nEND:VCALENDAR\r\n'}});
+  check(calendarPatch.ok,`calendar update failed: ${JSON.stringify(calendarPatch.data)}`);
+  const calendarDelete=await request(`/rest/v1/calendar_feeds?user_id=eq.${a.id}`,{method:'DELETE',token:a.token});
+  check(calendarDelete.ok,`calendar delete failed: ${JSON.stringify(calendarDelete.data)}`);
+  evidence.calendar={authenticated_crud:'pass',rls_isolation:'pass',service_role_edge_select:{columns:Object.keys(edgeRead.data[0]).sort(),rows:edgeRead.data.length},function_deployed:false,synthetic_only:true};
 }
 
 async function cleanup(){
@@ -254,13 +318,18 @@ async function cleanup(){
 }
 
 try{
-  await testFirstWriteAndDowngrade();
-  await testConcurrentFirstWrites();
-  await testConcurrentSchemaWriters();
-  await testPayloadAgreement();
-  await testEncryptedMaintenance();
-  await testRlsAnonAndServiceRole();
-  console.log(`Phase 8B staging integration passed (${assertions} assertions, ${createdUsers.length} synthetic users).`);
+  if(testGroup==='all'||testGroup==='core'){
+    await testFirstWriteAndDowngrade();
+    await testConcurrentFirstWrites();
+    await testStaleDowngradeSequence();
+  }
+  if(testGroup==='all'||testGroup==='races')await testConcurrentSchemaWriters();
+  if(testGroup==='all'||testGroup==='payload'){
+    await testPayloadAgreement();
+    await testEncryptedMaintenance();
+  }
+  if(testGroup==='all'||testGroup==='security')await testRlsAnonAndServiceRole();
+  console.log(JSON.stringify({phase:'Phase 8B staging integration',group:testGroup,target_ref:projectRef,result:'pass',assertions,synthetic_users:createdUsers.length,evidence},null,2));
 }finally{
   await cleanup();
 }

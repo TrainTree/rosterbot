@@ -49,7 +49,7 @@ test('payload agreement covers plaintext schema 4, plaintext schema 5 and encryp
 });
 
 test('stable database errors and least-privilege grants are explicit',()=>{
-  const expected={RB001:'schema_too_old',RB002:'schema_too_new',RB003:'revision_conflict',RB004:'payload_schema_mismatch',RB005:'payload_malformed',RB006:'not_authenticated'};
+  const expected={RB001:'schema_too_old',RB002:'schema_too_new',RB003:'revision_conflict',RB004:'payload_schema_mismatch',RB005:'payload_malformed',RB006:'not_authenticated',RB007:'state_invariant_violation'};
   for(const [code,message] of Object.entries(expected)){
     assert.match(migration,new RegExp(`errcode = '${code}'`));
     assert.match(migration,new RegExp(`message = '${message}'`));
@@ -66,7 +66,8 @@ test('v0.30 maps deterministic server errors to no-retry safe states',()=>{
     [{code:'RB003',message:'revision_conflict'},'revision_conflict','refresh-conflict','revision-race'],
     [{code:'RB004',message:'payload_schema_mismatch'},'payload_schema_mismatch','recovery-safe','payload-schema-mismatch'],
     [{code:'RB005',message:'payload_malformed'},'payload_malformed','recovery-safe','payload-malformed'],
-    [{code:'RB006',message:'not_authenticated'},'not_authenticated','reauthenticate','cloud-authentication-required']
+    [{code:'RB006',message:'not_authenticated'},'not_authenticated','reauthenticate','cloud-authentication-required'],
+    [{code:'RB007',message:'state_invariant_violation'},'state_invariant_violation','operational-fault','server-state-invariant']
   ];
   for(const [error,identity,action,holdReason] of cases){
     const result=errors.classify(error);
