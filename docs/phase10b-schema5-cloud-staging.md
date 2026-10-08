@@ -1,8 +1,9 @@
 # v0.30 Phase 10B — schema-5 Cloud staging architecture
 
-Status: architecture approved; remote execution steps 1–3 passed on 8 October
-2026 (Australia/Melbourne). The isolated staging contract is installed while
-the advertised capability remains 4. Steps 4 onward have not begun.
+Status: architecture approved; remote execution steps 1–4 passed on 8 October
+2026 (Australia/Melbourne). The isolated staging contract and beta Auth origin
+configuration are installed while the advertised capability remains 4. Steps
+5 onward have not begun.
 
 ## Scope and immutable boundaries
 
@@ -267,15 +268,39 @@ Executed 8 October 2026 against only `wuzyurvrztskljpxpeaq`:
   regressions and all seven were deleted. The final state/history/calendar/Auth
   counts were zero.
 
-Step 4 has not begun. Its exact proposed staging Auth delta is:
+## Step 4 execution record
+
+Executed 8 October 2026 against only `wuzyurvrztskljpxpeaq`, using the new
+hard-guarded
+`supabase/deploy/phase10b-staging-auth-executor.mjs`:
+
+- the executor rechecked the exact staging ref, project name and
+  `ACTIVE_HEALTHY` status immediately before its only write;
+- the only mutation was `PATCH /v1/projects/wuzyurvrztskljpxpeaq/config/auth`
+  with exactly `site_url` and `uri_allow_list` in the request body;
+- `site_url` read back as exactly `https://beta.rosterbot.work`;
+- `uri_allow_list` read back as exactly
+  `https://beta.rosterbot.work/`, parsed as one redirect destination;
+- all non-URL Auth configuration fields were identical before and after
+  (canonical SHA-256
+  `3e9d157226478aba3c97eeab2c8f9279b1d3532ceb31e71efc2510bb5ac8eede`),
+  including signup, providers, SMTP, JWT/session and captcha settings;
+- the before and after database audits both reported the singleton capability
+  `4..4` and zero roster state, revision history, calendar, Auth-user and
+  Auth-identity rows; and
+- the executor made no request to production, no browser Supabase credential
+  was configured, no site bundle was generated or deployed, and capability 5
+  was not enabled.
+
+The applied staging Auth delta was:
 
 - set `site_url` to `https://beta.rosterbot.work`;
 - set the redirect allowlist to only `https://beta.rosterbot.work/`, matching
   the current client callback generated at the beta root;
 - make no signup, provider, SMTP, JWT, session, captcha, CORS, production Auth,
   browser credential or capability change; and
-- apply through a new exact-ref guarded staging executor, then read back and
-  assert those two values and the unchanged capability 4 before browser work.
+- preserve all database/RPC state and server schema capability 4 before browser
+  work.
 
 ## Rollback and stop conditions
 

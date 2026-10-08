@@ -4,6 +4,7 @@ import {readSource} from './helpers.mjs';
 
 const sql=readSource('supabase/staging/phase10b-capability-attestation-schema5-contract.sql');
 const executor=readSource('supabase/deploy/phase10b-staging-executor.mjs');
+const authExecutor=readSource('supabase/deploy/phase10b-staging-auth-executor.mjs');
 const integration=readSource('supabase/tests/phase10b-staging-contract.mjs');
 const preflight=readSource('backend-capture/phase10b/preflight-readonly.mjs');
 
@@ -47,6 +48,19 @@ test('read-only preflight is staging-only and checks accepted Phase 8B/8C hashes
   assert.match(preflight,/STAGING_REF='wuzyurvrztskljpxpeaq'/);
   assert.match(preflight,/path\.includes\(PRODUCTION_REF\)/);
   for(const file of ['object-inventory.sql','table-details.sql','function-details.sql','privilege-details.sql','column-privileges.sql','write-path-search.sql'])assert.match(preflight,new RegExp(file.replace('.','\\.')));
+});
+
+test('Step 4 Auth executor is exact-ref guarded and can patch only the approved beta origins',()=>{
+  for(const token of ['wuzyurvrztskljpxpeaq','rithmbggiiusrmdcqrif','PHASE10B_AUTH_STAGING_PROJECT_REF','PHASE10B_AUTH_CONFIRM','CONFIGURE_PHASE10B_AUTH_ON_'])assert.match(authExecutor,new RegExp(token));
+  assert.match(authExecutor,/requestedRef!==STAGING_REF/);
+  assert.match(authExecutor,/path!==`\/v1\/projects\/\$\{STAGING_REF\}\/config\/auth`/);
+  assert.match(authExecutor,/Object\.freeze\(\{site_url:SITE_URL,uri_allow_list:REDIRECT_ALLOW_LIST\}\)/);
+  assert.match(authExecutor,/SITE_URL='https:\/\/beta\.rosterbot\.work'/);
+  assert.match(authExecutor,/REDIRECT_ALLOW_LIST='https:\/\/beta\.rosterbot\.work\/'/);
+  assert.match(authExecutor,/stableJson\(afterUntouched\)!==stableJson\(beforeUntouched\)/);
+  assert.match(authExecutor,/Number\(audit\?\.capability\?\.min\)!==4/);
+  for(const table of ['state','history','calendar','auth_users','auth_identities'])assert.match(authExecutor,new RegExp(`'${table}'`));
+  assert.doesNotMatch(authExecutor,/api-keys|publishable|service_role.*api_key|localhost:3000|\/index\.html/);
 });
 
 test('the production client remains in the unconditional schema-5 capability-4 hold',()=>{
