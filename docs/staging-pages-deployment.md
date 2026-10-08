@@ -23,13 +23,24 @@ From the v0.30 worktree:
 
 ```sh
 staging_dir="$(mktemp -d)/rosterbot-beta"
-node scripts/prepare-staging-pages.mjs "$staging_dir"
+PHASE10B_BETA_PUBLISHABLE_KEY="<isolated staging sb_publishable_ key>" \
+  node scripts/prepare-staging-pages.mjs "$staging_dir"
 ```
 
 The command refuses to overwrite a non-empty directory. It copies only
 `index.html`, `.nojekyll`, and the `css`, `data`, and `js` runtime directories;
-writes a staging-only `CNAME`; verifies local asset references and the schema-5
-Cloud hold; and creates fresh SHA-256 checksums.
+writes a staging-only `CNAME`; replaces the ordinary production deployment
+profile with an exact `https://beta.rosterbot.work` / isolated-staging profile;
+verifies local asset references and the schema-5 Cloud hold; scans the entire
+output for production Supabase identifiers and privileged/JWT credentials; and
+creates fresh SHA-256 checksums. The key is required through the environment so
+the staging credential is not hard-coded into ordinary production source.
+
+The generator accepts only a modern `sb_publishable_` browser credential. It
+rejects missing, malformed, legacy-JWT, secret and service-role inputs before
+creating the output directory. The beta runtime ignores saved Cloud connection
+configuration and fails closed unless its origin is exactly
+`https://beta.rosterbot.work` and its profile URL/ref/origin contract validates.
 
 Review before any Git operation:
 

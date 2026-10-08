@@ -7,7 +7,7 @@ try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03
   const moduleSources=[
     'data/rosters-fp64-fp68-20260908.js','js/10-roster-official.js','js/11-roster-engine.js','js/12-roster-effective-dates.js',
     'js/40-employment-profile.js','js/20-roster-ui.js','js/30-feedback.js','js/31-changelog.js','data/pay-reference-20260923.js',
-    'js/41-pay-rate-official.js','js/42-paybot.js','js/50-data-backup.js','js/04-cloud-error-contract.js','js/51-cloud-sync.js','js/60-diary.js','js/61-page-bridge.js',
+    'js/41-pay-rate-official.js','js/42-paybot.js','js/50-data-backup.js','js/04-cloud-error-contract.js','js/05-cloud-deployment-profile.js','js/06-cloud-config.js','js/51-cloud-sync.js','js/60-diary.js','js/61-page-bridge.js',
     'js/75-sources.js','js/70-navigation.js','js/80-calendar-subscription.js'
   ];
   let state=null,applicationLoaded=false,applicationStarting=false,applicationReady=false,recoveryBusy=false,schema5Ready=false,featureLoading=false,featureWritePending=false,projectionSync=Promise.resolve(),personalWriteRevision=0;

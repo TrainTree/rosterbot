@@ -1,9 +1,10 @@
 # v0.30 Phase 10B — schema-5 Cloud staging architecture
 
-Status: architecture approved; remote execution steps 1–4 passed on 8 October
+Status: architecture approved; remote execution steps 1–4 and local Step 5 passed on 8 October
 2026 (Australia/Melbourne). The isolated staging contract and beta Auth origin
-configuration are installed while the advertised capability remains 4. Steps
-5 onward have not begun.
+configuration are installed while the advertised capability remains 4. A
+candidate beta-only bundle has been generated and reviewed locally but not
+deployed. Step 6 onward has not begun.
 
 ## Scope and immutable boundaries
 
@@ -301,6 +302,73 @@ The applied staging Auth delta was:
   browser credential or capability change; and
 - preserve all database/RPC state and server schema capability 4 before browser
   work.
+
+## Step 5 execution record
+
+Completed locally on 8 October 2026. Nothing was pushed or deployed, no remote
+configuration was changed, and staging capability remained 4.
+
+- `scripts/prepare-staging-pages.mjs` now requires the staging browser-safe
+  `sb_publishable_` key through `PHASE10B_BETA_PUBLISHABLE_KEY`; it rejects the
+  input before creating output unless it has the publishable-key form.
+- Ordinary builds load `js/05-cloud-deployment-profile.js`, which preserves the
+  existing production URL, publishable key, hosted origins, development saved
+  configuration and fallback behavior. The beta generator replaces only that
+  file in the deploy-only output with the exact isolated-staging profile.
+- Shared `js/06-cloud-config.js` validates the profile, project-ref/URL
+  relationship, browser-safe credential, and exact origin. Beta permits only
+  `https://beta.rosterbot.work`, ignores saved configuration, has no fallback,
+  and rechecks the binding before every Cloud request.
+- The candidate contains the staging ref `wuzyurvrztskljpxpeaq`, staging URL
+  `https://wuzyurvrztskljpxpeaq.supabase.co`, exact beta origin and one modern
+  staging publishable key (SHA-256
+  `7bec63f6836ca1b5405b7604096a6e026a8a8d71a3b1dc72e7a88017d26310cf`).
+  The key itself remains an injected deploy-time public value, not a source
+  constant.
+- An independent full-bundle scan found zero occurrences of the production
+  ref, production URL and production publishable key; zero `sb_secret_`
+  credentials; zero management/personal-access token patterns; zero database
+  connection strings; zero JWT credentials; and exactly one distinct
+  `sb_publishable_` credential, the staging key.
+- The candidate has 35 files, all 34 entries in `SHA256SUMS.txt` verify, and a
+  review-only concatenated-file SHA-256 is
+  `3e94a6a2020d7a0559e93a5c3a730803b93ce094dea1e5686cacd0975501671f`.
+- The full local persistence suite passed 195/195. The six focused Step 5 tests
+  cover staging-only output, production-identifier absence, saved-production
+  override resistance, exact-origin enforcement, missing/malformed/mismatched
+  fail-closed behavior, privileged-input refusal, unchanged production
+  behavior, and the capability-4 hold.
+- The generated profile requests schema 5 but grants no authority. The client
+  still has the unconditional local-schema-5 transfer hold, contains no
+  capability-5 write path, and cannot release the hold from a client claim.
+  A future release can rely only on a fresh authenticated server attestation.
+
+The final candidate exists only under `/tmp/rosterbot-phase10b-step5-final.zAuyAm/rosterbot-beta`.
+It has not been initialized as a Git repository, pushed, published or opened
+against a Cloud account.
+
+## Exact proposed Step 6 procedure
+
+Step 6 requires a separate approval and must change only the singleton staging
+capability row. Before the one update, a hard-guarded executor must:
+
+1. require the literal target ref `wuzyurvrztskljpxpeaq` and an exact opt-in
+   phrase tied to that ref, while explicitly denying `rithmbggiiusrmdcqrif`;
+2. read back project name `rosterbot-phase8c-staging` and status
+   `ACTIVE_HEALTHY` from the exact Management API path;
+3. confirm Auth still has only the approved beta site/redirect URLs, the Phase
+   10B functions and grants still match, the capability table has exactly one
+   `4..4` row, and roster/history/calendar/Auth-user/Auth-identity counts remain
+   zero;
+4. re-read target identity immediately before mutation, then execute one
+   transaction which locks the singleton capability row, asserts it is still
+   exactly `min=4,max=4`, updates only `max_writable_schema` to 5 plus
+   `updated_at`, and asserts exactly one affected row;
+5. read back singleton capability `4..5`, unchanged catalog/Auth settings and
+   unchanged zero row counts, recording privacy-safe evidence; and
+6. stop without generating users, writing roster data, deploying the beta
+   bundle, or contacting production. Fresh authenticated attestation and all
+   schema-5 mutation tests remain Step 7.
 
 ## Rollback and stop conditions
 
