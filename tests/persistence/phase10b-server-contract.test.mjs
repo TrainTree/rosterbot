@@ -5,6 +5,7 @@ import {readSource} from './helpers.mjs';
 const sql=readSource('supabase/staging/phase10b-capability-attestation-schema5-contract.sql');
 const executor=readSource('supabase/deploy/phase10b-staging-executor.mjs');
 const authExecutor=readSource('supabase/deploy/phase10b-staging-auth-executor.mjs');
+const capabilityExecutor=readSource('supabase/deploy/phase10b-enable-schema5-executor.mjs');
 const integration=readSource('supabase/tests/phase10b-staging-contract.mjs');
 const preflight=readSource('backend-capture/phase10b/preflight-readonly.mjs');
 
@@ -61,6 +62,20 @@ test('Step 4 Auth executor is exact-ref guarded and can patch only the approved 
   assert.match(authExecutor,/Number\(audit\?\.capability\?\.min\)!==4/);
   for(const table of ['state','history','calendar','auth_users','auth_identities'])assert.match(authExecutor,new RegExp(`'${table}'`));
   assert.doesNotMatch(authExecutor,/api-keys|publishable|service_role.*api_key|localhost:3000|\/index\.html/);
+});
+
+test('Step 6 capability executor is exact-ref guarded and permits one 4 to 5 row update only',()=>{
+  for(const token of ['wuzyurvrztskljpxpeaq','rithmbggiiusrmdcqrif','PHASE10B_STAGING_PROJECT_REF','PHASE10B_ENABLE_SCHEMA5_CONFIRM','ENABLE_PHASE10B_SCHEMA5_ON_'])assert.match(capabilityExecutor,new RegExp(token));
+  assert.match(capabilityExecutor,/requestedRef===PRODUCTION_REF/);
+  assert.match(capabilityExecutor,/for update/);
+  assert.match(capabilityExecutor,/minimum_schema <> 4/);
+  assert.match(capabilityExecutor,/maximum_schema <> 4/);
+  assert.match(capabilityExecutor,/set max_writable_schema = 5,\s*updated_at = now\(\)/s);
+  assert.match(capabilityExecutor,/changed_rows <> 1/);
+  assert.match(capabilityExecutor,/mutationRequests!==1/);
+  assert.match(capabilityExecutor,/get_roster_schema_capability\(\) as attestation/);
+  for(const table of ['auth_users','auth_identities','roster_state','roster_revisions','calendar_feeds'])assert.match(capabilityExecutor,new RegExp(`'${table}'`));
+  assert.doesNotMatch(capabilityExecutor,/PATCH|admin\/users|save_roster_state\s*\(/);
 });
 
 test('the production client remains in the unconditional schema-5 capability-4 hold',()=>{
