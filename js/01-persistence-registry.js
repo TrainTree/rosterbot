@@ -1,3 +1,4 @@
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('01-persistence-registry','RosterBotPersistenceRegistry',document.currentScript?.src||'js/01-persistence-registry.js')}catch(_){}
 (function(root,factory){
   'use strict';
   const api=factory();
@@ -272,3 +273,4 @@
 
   return Object.freeze({schemaVersion:4,mode:'authoritative-metadata',items:Object.freeze(items),get:key=>byKey.get(key)||null,validate,read,surfaceKeys,compatibilityKeys,report});
 });
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.complete('01-persistence-registry','RosterBotPersistenceRegistry',document.currentScript?.src||'js/01-persistence-registry.js')}catch(_){}

@@ -152,16 +152,17 @@
   $('universalSearchResults')?.addEventListener('click',e=>{if(e.target.closest?.('[data-search-date]'))showWorkbench('#outputSection','fortnight')});
   document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('settingsModal')?.hidden)closeModal('settingsModal');else if(!$('rosterViewerModal')?.hidden)closeModal('rosterViewerModal')});
   let v27YearSwipeX=null,v27YearSwipeY=null;const v27YearStrip=$('historyMonths')?.closest?.('.v27-history-strip')||$('historyMonths');v27YearStrip?.addEventListener('touchstart',e=>{const t=e.touches?.[0];if(!t)return;v27YearSwipeX=t.clientX;v27YearSwipeY=t.clientY},{passive:true});v27YearStrip?.addEventListener('touchend',e=>{if(v27YearSwipeX==null)return;const t=e.changedTouches?.[0];if(!t)return;const dx=t.clientX-v27YearSwipeX,dy=t.clientY-v27YearSwipeY;v27YearSwipeX=v27YearSwipeY=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25){if(dx<0)$('historyNextYear')?.click();else $('historyPrevYear')?.click();}} ,{passive:true});
-  let startupRendered=false;
+  let startupPrepared=false,startupRendered=false;
+  function prepareStartup(){if(startupPrepared)return;startupPrepared=true;showDashboard()}
   function finishStartup(){
     if(startupRendered)return;startupRendered=true;
-    try{showDashboard()}finally{document.documentElement.classList.remove('rb-booting')}
+    try{prepareStartup()}finally{document.documentElement.classList.remove('rb-booting')}
     setTimeout(renderDashboard,250);
   }
-  window.addEventListener('storage',()=>setTimeout(()=>{if(timeline().length)renderDashboard()},60));window.addEventListener('rosterbot:local-ready',finishStartup);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&startupRendered){if(timeline().length)renderDashboard();else if(!document.documentElement.classList.contains('v28-onboarding-active'))showOnboarding()}});
+  window.addEventListener('storage',()=>setTimeout(()=>{if(timeline().length)renderDashboard()},60));window.addEventListener('rosterbot:application-starting',prepareStartup);window.addEventListener('rosterbot:application-ready',finishStartup);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&startupRendered){if(timeline().length)renderDashboard();else if(!document.documentElement.classList.contains('v28-onboarding-active'))showOnboarding()}});
   const statusObserver=new MutationObserver(renderSyncStatus);['cloudSyncHeadline','cloudAutoState','cloudStatePill'].forEach(id=>{const el=$(id);if(el)statusObserver.observe(el,{childList:true,subtree:true,characterData:true,attributes:true})});
   setInterval(()=>{if(document.documentElement.classList.contains('v27-dashboard-active'))renderDashboard()},12000);
 
-  document.documentElement.dataset.colorMode='dark';if(window.__rosterbotLocalReady)finishStartup();
+  document.documentElement.dataset.colorMode='dark';if(window.__rosterbotApplicationStarting)prepareStartup();if(window.__rosterbotApplicationReady)finishStartup();
   window.RosterBotDashboard={show:showDashboard,showRoster:showRosterHub,showLookup:showRosterLookup,showMore:showMoreHub,openCalendar,openPay,refresh:renderDashboard,openViewer};
 })();

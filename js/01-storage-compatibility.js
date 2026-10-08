@@ -1,3 +1,4 @@
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('01-storage-compatibility','RosterBotStorageCompatibility',document.currentScript?.src||'js/01-storage-compatibility.js')}catch(_){}
 (function(root,factory){
   'use strict';
   const api=factory();
@@ -136,3 +137,4 @@
 
   return Object.freeze({POLICY,SCHEMA5_POLICY,KEYS,GUARD_FORMAT,GUARD_FORMAT_VERSION,validateDowngradeGuard,inspect,recoveryState});
 });
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.complete('01-storage-compatibility','RosterBotStorageCompatibility',document.currentScript?.src||'js/01-storage-compatibility.js')}catch(_){}

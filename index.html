@@ -5,6 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#111214">
   <title>RosterBot 🤖 beta v0.29.1-recursion-hotfix</title>
+  <script id="rosterbotBootDiagnostics">
+  (function(){
+    'use strict';
+    var foundational={
+      '01-storage-compatibility':true,'01-persistence-registry':true,'02-canonical-state':true,'02-persistence-safety':true,
+      '02-schema5':true,'03-recovery-ui':true,'03-schema5-migration':true,'03-persistence-bootstrap':true
+    },records=[],firstError=null,order=0,active={};
+    function safeValue(read){try{return read()}catch(error){return 'throws: '+String(error&&error.message||error)}}
+    function environment(){
+      return {
+        documentReadyState:safeValue(function(){return document.readyState}),
+        isSecureContext:safeValue(function(){return window.isSecureContext===true}),
+        cryptoType:safeValue(function(){return typeof window.crypto}),
+        cryptoSubtleType:safeValue(function(){return typeof (window.crypto&&window.crypto.subtle)}),
+        userAgent:safeValue(function(){return navigator.userAgent})
+      };
+    }
+    function marker(module,phase,expectedGlobal,url){
+      var item={order:++order,timestamp:new Date().toISOString(),module:module,scriptUrl:url||'',phase:phase,expectedGlobal:expectedGlobal||'',expectedGlobalExists:expectedGlobal?safeValue(function(){return typeof window[expectedGlobal]!=='undefined'&&window[expectedGlobal]!==null}):null};
+      var env=environment(),key;for(key in env)item[key]=env[key];records.push(item);return item;
+    }
+    function start(module,expectedGlobal,url){active[module]=true;return marker(module,'start',expectedGlobal,url)}
+    function complete(module,expectedGlobal,url){active[module]=false;return marker(module,'complete',expectedGlobal,url)}
+    function moduleFrom(filename){
+      var text=String(filename||''),name;for(name in foundational)if(text.indexOf('/'+name+'.js')>=0||text.indexOf(name+'.js')>=0)return name;
+      for(name in active)if(active[name])return name;return '';
+    }
+    function diagnosticText(){return JSON.stringify({firstStartupError:firstError,moduleMarkers:records},null,2)}
+    function show(){
+      if(!firstError||!firstError.foundational)return;
+      var startup=document.getElementById('appStartup');if(!startup)return;
+      document.documentElement.classList.add('rb-booting');startup.setAttribute('data-startup-failure','module');startup.setAttribute('role','alert');
+      while(startup.firstChild)startup.removeChild(startup.firstChild);
+      var card=document.createElement('div'),title=document.createElement('h1'),message=document.createElement('span'),detail=document.createElement('textarea'),copy=document.createElement('button');
+      card.className='app-startup-card boot-diagnostic-card';title.textContent='RosterBot could not start correctly';message.textContent='A required application module failed before saved data could be checked. Your saved data has not been changed.';
+      detail.readOnly=true;detail.rows=10;detail.setAttribute('aria-label','Technical startup diagnostic');detail.value=diagnosticText();copy.type='button';copy.textContent='Copy technical diagnostic';
+      copy.addEventListener('click',function(){var done=function(){copy.textContent='Diagnostic copied'};try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(detail.value).then(done,function(){detail.select()});return}}catch(_){}detail.focus();detail.select();try{if(document.execCommand('copy'))done()}catch(_){}});
+      card.appendChild(title);card.appendChild(message);card.appendChild(detail);card.appendChild(copy);startup.appendChild(card);
+      var fatal=document.getElementById('fatalError');if(fatal)fatal.hidden=true;
+    }
+    function scheduleShow(){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show,{once:true});else setTimeout(show,0)}
+    function capture(kind,error,detail){
+      detail=detail||{};var filename=detail.filename||'',module=detail.module||moduleFrom(filename),message=String(error&&error.message||detail.message||error||'Unknown startup error'),entry={order:++order,timestamp:new Date().toISOString(),kind:kind,module:module,filename:filename,line:detail.line||0,column:detail.column||0,message:message,stack:String(error&&error.stack||''),foundational:!!foundational[module]};
+      records.push(entry);if(!firstError){firstError=entry;if(entry.foundational)scheduleShow()}return firstError;
+    }
+    function dependency(module,expected,value){if(value!==undefined&&value!==null)return value;var error=new Error('RosterBot startup dependency missing:\n'+module+' expected '+expected);capture('dependency',error,{module:module});throw error}
+    var previousOnError=window.onerror;
+    window.onerror=function(message,filename,line,column,error){capture('window.onerror',error||message,{message:message,filename:filename,line:line,column:column});if(typeof previousOnError==='function')return previousOnError.apply(this,arguments);return false};
+    window.addEventListener('error',function(event){
+      var target=event&&event.target,resourceUrl=target&&target.src||target&&target.href||'',message=event&&event.message;
+      if(!message&&resourceUrl)message=(target&&target.tagName==='SCRIPT'?'Script':'Resource')+' failed to load: '+resourceUrl;
+      capture('error-event',event&&event.error||message,{message:message,filename:event&&event.filename||resourceUrl,line:event&&event.lineno,column:event&&event.colno});
+    },true);
+    window.addEventListener('unhandledrejection',function(event){capture('unhandledrejection',event&&event.reason,{message:'Unhandled promise rejection'})},true);
+    window.RosterBotBootDiagnostics={start:start,complete:complete,capture:capture,dependency:dependency,show:show,text:diagnosticText,getFirstError:function(){return firstError},getRecords:function(){return records.slice()}};
+    marker('boot-diagnostics','complete','RosterBotBootDiagnostics','inline:index.html');
+  })();
+  </script>
   <link rel="stylesheet" href="css/rosterbot.css">
 </head>
 <body>

@@ -1,6 +1,8 @@
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('02-canonical-state','RosterBotCanonicalPersistence',document.currentScript?.src||'js/02-canonical-state.js')}catch(_){}
 (function(root,factory){
   'use strict';
   const registry=root?.RosterBotPersistenceRegistry||(typeof module!=='undefined'&&module.exports?require('./01-persistence-registry.js'):null);
+  if(!registry){const message='RosterBot startup dependency missing:\n02-canonical-state expected persistence registry';if(root&&root.RosterBotBootDiagnostics)root.RosterBotBootDiagnostics.dependency('02-canonical-state','persistence registry',registry);throw new Error(message)}
   const api=factory(registry);
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(root)root.RosterBotCanonicalPersistence=api;
@@ -172,3 +174,4 @@
     parseGeneration,parsePrevious,makeGeneration,makePrevious,verifyPrevious
   });
 });
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.complete('02-canonical-state','RosterBotCanonicalPersistence',document.currentScript?.src||'js/02-canonical-state.js')}catch(_){}

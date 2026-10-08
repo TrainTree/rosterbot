@@ -146,6 +146,21 @@ test('Phase 9 bootstrap loads migration before the startup gate and feature modu
   assert.match(bootstrap,/rosterbot:schema5-ready/);
 });
 
+test('the visible startup gate waits for verified feature initialisation, not Diary one-shot readiness',()=>{
+  const bootstrap=readSource('js/03-persistence-bootstrap.js'),navigation=readSource('js/70-navigation.js'),loader=bootstrap.slice(bootstrap.indexOf('async function loadApplication'),bootstrap.indexOf('function applyRows'));
+  assert(loader.indexOf('for(const src of moduleSources)await loadScript(src)')<loader.indexOf('await syncProjectionNow'));
+  assert(loader.indexOf("syncProjectionNow(featureWritePending?'feature-initialisation-writes':'feature-initialisation'")<loader.indexOf('signalApplicationStarting()'));
+  assert(loader.indexOf('signalApplicationStarting()')<loader.indexOf("featureWritePending?'initial-route-writes':'initial-route-render'"));
+  assert(loader.indexOf('await syncProjectionNow')<loader.indexOf('signalApplicationReady()'));
+  assert.match(bootstrap,/__rosterbotApplicationReady=true/);
+  assert.match(bootstrap,/rosterbot:application-starting/);
+  assert.match(bootstrap,/rosterbot:application-ready/);
+  assert.match(navigation,/addEventListener\('rosterbot:application-starting',prepareStartup\)/);
+  assert.match(navigation,/addEventListener\('rosterbot:application-ready',finishStartup\)/);
+  assert.match(navigation,/if\(window\.__rosterbotApplicationReady\)finishStartup\(\)/);
+  assert.doesNotMatch(navigation,/addEventListener\('rosterbot:local-ready',finishStartup\)/);
+});
+
 test('Cloud schema/RPC and schema-4 backup contracts are unchanged',()=>{
   const cloud=readSource('js/51-cloud-sync.js'),backup=readSource('js/50-data-backup.js');
   assert.match(cloud,/new_schema_version:4/);assert.doesNotMatch(cloud,/new_schema_version:5/);

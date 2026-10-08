@@ -1,8 +1,12 @@
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03-schema5-migration','RosterBotSchema5Migration',document.currentScript?.src||'js/03-schema5-migration.js')}catch(_){}
 (function(root,factory){
   'use strict';
   const registry=root?.RosterBotPersistenceRegistry||(typeof module!=='undefined'&&module.exports?require('./01-persistence-registry.js'):null);
   const canonical=root?.RosterBotCanonicalPersistence||(typeof module!=='undefined'&&module.exports?require('./02-canonical-state.js'):null);
   const schema5=root?.RosterBotSchema5||(typeof module!=='undefined'&&module.exports?require('./02-schema5.js'):null);
+  if(!registry){const message='RosterBot startup dependency missing:\n03-schema5-migration expected persistence registry';if(root&&root.RosterBotBootDiagnostics)root.RosterBotBootDiagnostics.dependency('03-schema5-migration','persistence registry',registry);throw new Error(message)}
+  if(!canonical){const message='RosterBot startup dependency missing:\n03-schema5-migration expected canonical persistence';if(root&&root.RosterBotBootDiagnostics)root.RosterBotBootDiagnostics.dependency('03-schema5-migration','canonical persistence',canonical);throw new Error(message)}
+  if(!schema5){const message='RosterBot startup dependency missing:\n03-schema5-migration expected schema-5 contract';if(root&&root.RosterBotBootDiagnostics)root.RosterBotBootDiagnostics.dependency('03-schema5-migration','schema-5 contract',schema5);throw new Error(message)}
   const api=factory(registry,canonical,schema5);
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(root)root.RosterBotSchema5Migration=api;
@@ -272,3 +276,4 @@
   function unknownAppKeys(values,{registry=defaultRegistry}={}){return Object.keys(values||{}).filter(key=>appOwned(key)&&!registry.get(key)).sort()}
   return Object.freeze({KEYS,JOURNAL_FORMAT,JOURNAL_VERSION,WRITER,CHECKPOINT,run,replaceFromSchema4Storage,syncProjection,existingSchema5,verifyProjection,snapshotCheck,readJournalPair,rollbackFromSnapshot,unknownAppKeys,dualWriteRaw,dualProjectionWrite});
 });
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.complete('03-schema5-migration','RosterBotSchema5Migration',document.currentScript?.src||'js/03-schema5-migration.js')}catch(_){}

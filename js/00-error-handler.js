@@ -8,15 +8,19 @@ try {
   }
   window.__rosterbotLocalStateAtStartup = Object.freeze(rosterbotStartupStorage);
   window.__rosterbotLocalKeysAtStartup = Object.freeze(Object.keys(rosterbotStartupStorage));
-} catch (_) {
+} catch (error) {
   window.__rosterbotLocalStateAtStartup = null;
   window.__rosterbotLocalKeysAtStartup = null;
+  try { if (window.RosterBotBootDiagnostics) window.RosterBotBootDiagnostics.capture('capability', error, { module: 'startup-storage-probe' }); } catch (_) {}
 }
 
 window.addEventListener('error', function (event) {
   // Browsers/extensions can emit an opaque cross-origin "Script error." with no
   // useful filename/line information. Do not present that as a RosterBot failure.
   if (event && event.message === 'Script error.' && !event.filename && !event.lineno) return;
+  var diagnostics = window.RosterBotBootDiagnostics;
+  var first = diagnostics && diagnostics.getFirstError ? diagnostics.getFirstError() : null;
+  if (first && first.foundational) { diagnostics.show(); return; }
   var box = document.getElementById('fatalError');
   if (!box) return;
   box.hidden = false;

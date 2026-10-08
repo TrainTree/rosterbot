@@ -1,3 +1,4 @@
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03-recovery-ui','RosterBotRecoveryUI',document.currentScript?.src||'js/03-recovery-ui.js')}catch(_){}
 (function(root,factory){
   'use strict';
   const api=factory();
@@ -180,3 +181,4 @@
   }
   return Object.freeze({BUILD_VERSION,buildRecoveryExport,summarizeRecovery,presentation,sourceAvailable,createRecoveryPlan,render});
 });
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.complete('03-recovery-ui','RosterBotRecoveryUI',document.currentScript?.src||'js/03-recovery-ui.js')}catch(_){}

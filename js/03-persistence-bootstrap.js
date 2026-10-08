@@ -1,6 +1,8 @@
+try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03-persistence-bootstrap','RosterBotRecovery',document.currentScript?.src||'js/03-persistence-bootstrap.js')}catch(_){}
 (function(){
   'use strict';
-  const compatibility=window.RosterBotStorageCompatibility,registry=window.RosterBotPersistenceRegistry,safety=window.RosterBotPersistenceSafety,recoveryUi=window.RosterBotRecoveryUI,migration=window.RosterBotSchema5Migration;
+  const requireDependency=(expected,value)=>{if(value!==undefined&&value!==null)return value;const message=`RosterBot startup dependency missing:\n03-persistence-bootstrap expected ${expected}`;if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.dependency('03-persistence-bootstrap',expected,value);throw new Error(message)};
+  const compatibility=requireDependency('storage compatibility',window.RosterBotStorageCompatibility),registry=requireDependency('persistence registry',window.RosterBotPersistenceRegistry),safety=requireDependency('persistence safety',window.RosterBotPersistenceSafety),recoveryUi=requireDependency('recovery UI',window.RosterBotRecoveryUI),migration=requireDependency('schema-5 migration',window.RosterBotSchema5Migration);
   const personalKeys=registry.surfaceKeys('indexedDb');
   const moduleSources=[
     'data/rosters-fp64-fp68-20260908.js','js/10-roster-official.js','js/11-roster-engine.js','js/12-roster-effective-dates.js',
@@ -8,7 +10,7 @@
     'js/41-pay-rate-official.js','js/42-paybot.js','js/50-data-backup.js','js/04-cloud-error-contract.js','js/51-cloud-sync.js','js/60-diary.js','js/61-page-bridge.js',
     'js/75-sources.js','js/70-navigation.js','js/80-calendar-subscription.js'
   ];
-  let state=null,applicationLoaded=false,recoveryBusy=false,schema5Ready=false,featureLoading=false,featureWritePending=false,projectionSync=Promise.resolve(),personalWriteRevision=0;
+  let state=null,applicationLoaded=false,applicationStarting=false,applicationReady=false,recoveryBusy=false,schema5Ready=false,featureLoading=false,featureWritePending=false,projectionSync=Promise.resolve(),personalWriteRevision=0;
   const pendingPersonalValues=new Map();
   function reapplyPendingPersonalValues(){const storage=localStorage;for(const [key,raw] of pendingPersonalValues){if(raw==null)storage.removeItem(key);else storage.setItem(key,raw)}}
   const recoveryApi={
@@ -83,7 +85,9 @@
   function loadScript(src){
     return new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error(`Could not load ${src}`));document.body.appendChild(script)});
   }
-  async function loadApplication(){if(applicationLoaded)return;applicationLoaded=true;featureLoading=true;try{for(const src of moduleSources)await loadScript(src)}finally{featureLoading=false}await projectionSync;await syncProjectionNow(featureWritePending?'feature-initialisation-writes':'feature-initialisation',{preserveExplicitClear:true});featureWritePending=false}
+  function signalApplicationStarting(){if(applicationStarting)return;applicationStarting=true;window.__rosterbotApplicationStarting=true;window.dispatchEvent(new CustomEvent('rosterbot:application-starting',{detail:{schema:5,moduleCount:moduleSources.length}}))}
+  function signalApplicationReady(){if(applicationReady)return;applicationReady=true;window.__rosterbotApplicationReady=true;window.dispatchEvent(new CustomEvent('rosterbot:application-ready',{detail:{schema:5,moduleCount:moduleSources.length,projectionVerified:true}}))}
+  async function loadApplication(){if(applicationLoaded)return;applicationLoaded=true;featureLoading=true;try{for(const src of moduleSources)await loadScript(src);await projectionSync;await syncProjectionNow(featureWritePending?'feature-initialisation-writes':'feature-initialisation',{preserveExplicitClear:true});featureWritePending=false;signalApplicationStarting();await projectionSync;await syncProjectionNow(featureWritePending?'initial-route-writes':'initial-route-render',{preserveExplicitClear:true});featureWritePending=false;signalApplicationReady()}finally{featureLoading=false}}
   function applyRows({put=[],remove=[]}={}){
     if(!put.length&&!remove.length)return Promise.resolve();
     return new Promise((resolve,reject)=>{
@@ -207,3 +211,4 @@
     }catch(error){state=readFailureState(error);showRecovery('RosterBot could not safely inspect saved data. No stored copy has been changed.');window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}))}
   })();
 })();
+try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.complete('03-persistence-bootstrap','RosterBotRecovery',document.currentScript?.src||'js/03-persistence-bootstrap.js')}catch(_){}

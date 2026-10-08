@@ -1,6 +1,8 @@
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('02-persistence-safety','RosterBotPersistenceSafety',document.currentScript?.src||'js/02-persistence-safety.js')}catch(_){}
 (function(root,factory){
   'use strict';
   const canonical=root?.RosterBotCanonicalPersistence||(typeof module!=='undefined'&&module.exports?require('./02-canonical-state.js'):null);
+  if(!canonical){const message='RosterBot startup dependency missing:\n02-persistence-safety expected canonical persistence';if(root&&root.RosterBotBootDiagnostics)root.RosterBotBootDiagnostics.dependency('02-persistence-safety','canonical persistence',canonical);throw new Error(message)}
   const api=factory(canonical);
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(root)root.RosterBotPersistenceSafety=api;
@@ -392,3 +394,4 @@
   }
   return Object.freeze({CLEAR_KEY,AUTO_HOLD_KEY,CLEAR_REASON,BACKUP_APP,RECOVERY_FORMAT,isExplicitlyCleared,autoHoldFor,markExplicitClear,beginReplacement,endReplacement,isReplacementInProgress,shouldMirror,stageReplacementPayload,replacementPlan,recoveryDecision,decideRecovery,reconcileCanonicalState,replacePersistentState,replacePersistenceCopies,replaceCanonicalPersistenceCopies,recoverRows,semanticallyEqual});
 });
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.complete('02-persistence-safety','RosterBotPersistenceSafety',document.currentScript?.src||'js/02-persistence-safety.js')}catch(_){}

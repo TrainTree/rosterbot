@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import {root,MemoryStorage,readSource} from './helpers.mjs';
 
@@ -12,6 +13,21 @@ const manual=JSON.stringify({version:1,label:'Personal',days:{mon:{on:true}}});
 const paybot=JSON.stringify({period:'2026-09-27',logicVersion:'0.20.6',days:Array.from({length:14},()=>({}))});
 const calendar=JSON.stringify({fullDuration:true,includeOr:true,includeDetails:false,rosteredFallback:true,timesInTitle:false,range:'90_12'});
 const payload=(storage={},extra={})=>({app:'RosterBotPayBot',version:'0.29.1',schemaVersion:4,exportedAt:'2026-09-30T00:00:00.000Z',storage,...extra});
+
+test('an exact-shape synthetic v0.21.1 export stages as a legacy schema-4 replacement',()=>{
+  const legacy=JSON.parse(fs.readFileSync(`${root}/tests/fixtures/backup-v0211.rosterbot`,'utf8'));
+  const candidate=safety.stageReplacementPayload({payload:legacy,registry,surface:'backup'});
+  assert.equal(legacy.version,'0.21.1');
+  assert.equal(candidate.ok,true,candidate.errors?.join(' '));
+  assert.equal(candidate.schemaVersion,4);
+  assert.equal(candidate.summary.rosterHistoryCount,2);
+  assert.equal(candidate.summary.diaryChangesFound,true);
+  assert.equal(candidate.summary.paybotStatePresent,true);
+  assert.equal(candidate.summary.calendarSettingsPresent,false);
+  assert.equal(candidate.validations['rosterbot-timeline-v1'].state,'valid');
+  assert.equal(candidate.validations['paybot-v06-state'].state,'valid');
+  assert.deepEqual(candidate.summary.unknownKeys,[]);
+});
 
 test('schema-4 backup is staged without touching live state and produces a privacy-safe preview summary',()=>{
   const live=new MemoryStorage({'rosterbot-timeline-v1':timeline,'unrelated-device-secret':'keep'}),before=[...live.map];

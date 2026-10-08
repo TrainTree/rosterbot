@@ -1,7 +1,10 @@
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('02-schema5','RosterBotSchema5',document.currentScript?.src||'js/02-schema5.js')}catch(_){}
 (function(root,factory){
   'use strict';
   const registry=root?.RosterBotPersistenceRegistry||(typeof module!=='undefined'&&module.exports?require('./01-persistence-registry.js'):null);
   const canonical=root?.RosterBotCanonicalPersistence||(typeof module!=='undefined'&&module.exports?require('./02-canonical-state.js'):null);
+  if(!registry){const message='RosterBot startup dependency missing:\n02-schema5 expected persistence registry';if(root&&root.RosterBotBootDiagnostics)root.RosterBotBootDiagnostics.dependency('02-schema5','persistence registry',registry);throw new Error(message)}
+  if(!canonical){const message='RosterBot startup dependency missing:\n02-schema5 expected canonical persistence';if(root&&root.RosterBotBootDiagnostics)root.RosterBotBootDiagnostics.dependency('02-schema5','canonical persistence',canonical);throw new Error(message)}
   const api=factory(registry,canonical);
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(root)root.RosterBotSchema5=api;
@@ -158,3 +161,4 @@
   });
   return Object.freeze({SCHEMA5_FORMAT,SCHEMA5_FORMAT_VERSION,SCHEMA5_STORAGE_SCHEMA,SCHEMA5_MINIMUM_READER_SCHEMA,SCHEMA5_CHECKSUM_SCOPE,SCHEMA5_CANONICALISATION,SNAPSHOT_FORMAT,JOURNAL_STATES,JOURNAL_CONTRACT,schema5Identity,validateSchema5Envelope,migrateSchema4To5,classifySchema4Installation,makePreMigrationSnapshot,candidateFromEnvelope,copyJson,sha256});
 });
+try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.complete('02-schema5','RosterBotSchema5',document.currentScript?.src||'js/02-schema5.js')}catch(_){}
