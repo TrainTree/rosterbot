@@ -1,7 +1,8 @@
 # v0.30 Phase 10B — schema-5 Cloud staging architecture
 
-Status: proposed architecture and local preparation only, 8 October 2026
-(Australia/Melbourne). No Phase 10B remote mutation has been performed.
+Status: architecture approved; remote execution steps 1–3 passed on 8 October
+2026 (Australia/Melbourne). The isolated staging contract is installed while
+the advertised capability remains 4. Steps 4 onward have not begun.
 
 ## Scope and immutable boundaries
 
@@ -243,6 +244,38 @@ tokens, passwords or payload contents.
 10. Delete synthetic users/data and perform a final audit. Keep or lower the
     staging gate according to the reviewed rollback exercise; production stays
     at 4 in either case.
+
+## Steps 1–3 execution record
+
+Executed 8 October 2026 against only `wuzyurvrztskljpxpeaq`:
+
+- the read-only preflight matched all six accepted Phase 8B/8C catalog hashes;
+- staging was `ACTIVE_HEALTHY`, capability was the singleton `4..4`, and
+  roster state, revision history, calendar data, Auth users and Auth identities
+  were all empty;
+- the preflight Auth configuration remained `site_url=http://localhost:3000`
+  with an empty redirect allowlist;
+- `supabase/staging/phase10b-capability-attestation-schema5-contract.sql`
+  (SHA-256
+  `1a0ccf96462375c898d36f129f53213493eebb1856c628d28c5f935dd837536e`)
+  installed the staging-bound attestation and dormant schema-5 plaintext
+  validator without changing capability 4;
+- the full local persistence suite passed 189/189, the Phase 10B staging suite
+  passed 92 assertions, the Phase 8B security group passed 34 assertions, and
+  the capability-4, catalog, syntax and final-audit checks passed; and
+- seven synthetic `@example.invalid` Auth users were created across the remote
+  regressions and all seven were deleted. The final state/history/calendar/Auth
+  counts were zero.
+
+Step 4 has not begun. Its exact proposed staging Auth delta is:
+
+- set `site_url` to `https://beta.rosterbot.work`;
+- set the redirect allowlist to only `https://beta.rosterbot.work/`, matching
+  the current client callback generated at the beta root;
+- make no signup, provider, SMTP, JWT, session, captcha, CORS, production Auth,
+  browser credential or capability change; and
+- apply through a new exact-ref guarded staging executor, then read back and
+  assert those two values and the unchanged capability 4 before browser work.
 
 ## Rollback and stop conditions
 

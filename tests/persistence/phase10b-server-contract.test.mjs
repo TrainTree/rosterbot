@@ -1,0 +1,57 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readSource} from './helpers.mjs';
+
+const sql=readSource('supabase/staging/phase10b-capability-attestation-schema5-contract.sql');
+const executor=readSource('supabase/deploy/phase10b-staging-executor.mjs');
+const integration=readSource('supabase/tests/phase10b-staging-contract.mjs');
+const preflight=readSource('backend-capture/phase10b/preflight-readonly.mjs');
+
+test('Phase 10B contract is staging-only and leaves capability at 4',()=>{
+  assert.match(sql,/outside supabase\/migrations/);
+  assert.match(sql,/maximum_schema <> 4/);
+  assert.match(sql,/installation changed the advertised capability/);
+  assert.doesNotMatch(sql,/update\s+public\.roster_schema_capability/i);
+  assert.match(executor,/wuzyurvrztskljpxpeaq/);
+  assert.match(executor,/requestedRef!==STAGING_REF/);
+  assert.match(executor,/rithmbggiiusrmdcqrif/);
+  assert.match(executor,/PHASE10B_CONFIRM/);
+});
+
+test('capability attestation is hard-bound, authenticated, stable and argument-free',()=>{
+  assert.match(sql,/get_roster_schema_capability\(\)/);
+  for(const value of ['isolated-staging','wuzyurvrztskljpxpeaq','rosterbot-schema5-cloud-v1'])assert.match(sql,new RegExp(value));
+  assert.match(sql,/language plpgsql\s+stable\s+parallel safe\s+security definer/s);
+  assert.match(sql,/if auth\.uid\(\) is null/);
+  assert.match(sql,/revoke execute[\s\S]*?from public, anon, service_role/);
+  assert.match(sql,/grant execute[\s\S]*?to authenticated/);
+  assert.doesNotMatch(sql,/get_roster_schema_capability\([^)]*[a-z_]+\s+(text|integer|jsonb)/);
+});
+
+test('schema-5 plaintext server validator covers the approved visible contract',()=>{
+  for(const token of ['generation_number','generation_fingerprint','rosterbot-canonical-json-v1','rosterbot-schema5-content-v1','personalState','projectionFingerprint','sourceFingerprint','previousGeneration','sourceGeneration','plaintext_schema5_envelope_invalid'])assert.match(sql,new RegExp(token));
+  assert.match(sql,/generation_object->>'id' is distinct from\s+generation_number \|\| ':' \|\| generation_fingerprint/);
+  assert.match(sql,/checksum_object->>'value' is distinct from generation_fingerprint/);
+  assert.match(sql,/errcode = 'RB005'[\s\S]*?message = 'payload_malformed'/);
+  assert.match(sql,/_validate_roster_payload\([\s\S]*?true[\s\S]*?_validate_roster_schema5_plaintext/s);
+});
+
+test('gate-4 integration covers hold, spoof resistance, deterministic errors, concurrency and cleanup',()=>{
+  for(const token of ['configured-client-claims-five','schema_too_new','payload_schema_mismatch','payload_malformed','get_roster_schema_capability','Same-revision concurrency','RLS disclosed','synthetic_users_deleted:3','final capability and synthetic cleanup audit'])assert.match(integration,new RegExp(token));
+  assert.match(integration,/max_writable_schema:5/,'spoof attempt must explicitly claim capability 5');
+  assert.match(integration,/equal\(finalAudit,\{capability:4,state:0,history:0,calendar:0,auth_users:0\}\)/);
+});
+
+test('read-only preflight is staging-only and checks accepted Phase 8B/8C hashes',()=>{
+  assert.match(preflight,/Refusing non-read-only preflight SQL/);
+  assert.match(preflight,/STAGING_REF='wuzyurvrztskljpxpeaq'/);
+  assert.match(preflight,/path\.includes\(PRODUCTION_REF\)/);
+  for(const file of ['object-inventory.sql','table-details.sql','function-details.sql','privilege-details.sql','column-privileges.sql','write-path-search.sql'])assert.match(preflight,new RegExp(file.replace('.','\\.')));
+});
+
+test('the production client remains in the unconditional schema-5 capability-4 hold',()=>{
+  const cloud=readSource('js/51-cloud-sync.js');
+  assert.match(cloud,/const SCHEMA5_CLOUD_HOLD=localStorage\.getItem\('rosterbot-db-schema-v1'\)==='5'\|\|localStorage\.getItem\('rosterbot-personal-state-v1'\)!=null/);
+  assert.match(cloud,/server capability remains 4/);
+  assert.doesNotMatch(cloud,/get_roster_schema_capability|new_schema_version:5/);
+});
