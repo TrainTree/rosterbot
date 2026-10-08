@@ -147,8 +147,8 @@ test('manual and Cloud entry points use staged transactional replacement and sup
   const importFlow=backup.slice(backup.indexOf("importBtn?.addEventListener"),backup.indexOf("clearBtn?.addEventListener"));
   assert.match(backup,/stageReplacementPayload/);assert.match(backup,/replacePersistenceCopies/);assert.match(backup,/Import preview/);assert.doesNotMatch(importFlow,/for\(const key of keys\)localStorage\.removeItem\(key\)/);
   const apply=cloud.slice(cloud.indexOf('async function applyPayload'),cloud.indexOf('async function restoreCloud'));
-  assert.match(apply,/stageReplacementPayload/);assert.match(apply,/replacePersistenceCopies/);assert.ok(apply.indexOf('stageReplacementPayload')<apply.indexOf('saveSafety'));assert.ok(apply.indexOf('replacePersistenceCopies')<apply.indexOf('setMeta'));
+  assert.match(apply,/validateCloudRow/);assert.match(apply,/replaceFromSchema5Envelope/);assert.match(apply,/stageReplacementPayload/);assert.match(apply,/replacePersistenceCopies/);assert.ok(apply.indexOf('validateCloudRow')<apply.indexOf('saveSafety'));assert.ok(apply.indexOf('replacePersistenceCopies')<apply.lastIndexOf('setMeta'));
   assert.match(cloud,/replacementSuppressed/);assert.match(calendarSource,/isReplacementInProgress/);assert.match(diary,/shouldMirror/);
   assert.match(cloud,/replacement\.rolledBack&&!replacement\.rollbackVerified/);
-  assert.match(cloud,/format:'rosterbot-cloud-restore-safety-v1'/);assert.match(cloud,/mechanism:'phase-4-transactional-replacement'/);
+  assert.match(cloud,/format:'rosterbot-cloud-restore-safety-v1'/);assert.match(cloud,/mechanism:'transactional-local-and-indexeddb-replacement'/);
 });

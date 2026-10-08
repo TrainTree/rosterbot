@@ -161,8 +161,8 @@ test('the visible startup gate waits for verified feature initialisation, not Di
   assert.doesNotMatch(navigation,/addEventListener\('rosterbot:local-ready',finishStartup\)/);
 });
 
-test('Cloud schema/RPC and schema-4 backup contracts are unchanged',()=>{
+test('Cloud supports attested schema 5 while backup export remains schema 4',()=>{
   const cloud=readSource('js/51-cloud-sync.js'),backup=readSource('js/50-data-backup.js');
-  assert.match(cloud,/new_schema_version:4/);assert.doesNotMatch(cloud,/new_schema_version:5/);
+  assert.match(cloud,/new_schema_version:schemaVersion/);assert.match(cloud,/get_roster_schema_capability/);
   assert.match(backup,/schemaVersion:4/);assert.doesNotMatch(backup,/schemaVersion:5/);
 });

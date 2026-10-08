@@ -233,13 +233,13 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
     built.envelope.previousGeneration={storageSchemaVersion:5,number:current.envelope.generation.number,fingerprint:current.envelope.generation.fingerprint};
     const revalidated=await schema5.validateSchema5Envelope(built.envelope,{registry,canonical,cryptoImpl});
     if(!revalidated.ok)return {ok:false,stage:'backup-candidate-validation',errors:revalidated.errors};
-    const candidateRaw=JSON.stringify(built.envelope),canonicalKeys=canonical.stateKeys(registry),allPersonal=[...new Set(canonicalKeys.flatMap(key=>registry.compatibilityKeys(key)))],auxiliaryKeys=registry.surfaceKeys('backup').filter(key=>registry.get(key)?.category!=='personal'&&key!==KEYS.marker),allKeys=[...new Set([...allPersonal,...auxiliaryKeys,KEYS.envelope,KEYS.guard,KEYS.marker])],beforeRows=await indexedDbTarget.read(allKeys),beforeLocal=Object.fromEntries(allKeys.map(key=>[key,storage.getItem(key)]));
+    const candidateRaw=JSON.stringify(built.envelope),canonicalKeys=canonical.stateKeys(registry),allPersonal=[...new Set(canonicalKeys.flatMap(key=>registry.compatibilityKeys(key)))],auxiliaryKeys=registry.surfaceKeys('backup').filter(key=>registry.get(key)?.category!=='personal'&&key!==KEYS.marker),allKeys=[...new Set([...allPersonal,...auxiliaryKeys,KEYS.envelope,KEYS.guard,KEYS.marker])],localKeys=[...allKeys,KEYS.clear],beforeRows=await indexedDbTarget.read(allKeys),beforeLocal=Object.fromEntries(localKeys.map(key=>[key,storage.getItem(key)]));
     const rollback=async()=>{
       let error=null;
-      try{for(const key of allKeys){const raw=beforeLocal[key];if(raw==null)storage.removeItem(key);else storage.setItem(key,raw)}}catch(cause){error=cause}
+      try{for(const key of localKeys){const raw=beforeLocal[key];if(raw==null)storage.removeItem(key);else storage.setItem(key,raw)}}catch(cause){error=cause}
       try{await indexedDbTarget.apply({put:[...beforeRows.values()].filter(Boolean),remove:allKeys.filter(key=>!beforeRows.get(key))})}catch(cause){error=error||cause}
       const checkRows=await indexedDbTarget.read(allKeys).catch(()=>new Map());let verified=!error;
-      for(const key of allKeys)if(storage.getItem(key)!==beforeLocal[key]||rawFor(checkRows.get(key)||null)!==rawFor(beforeRows.get(key)||null))verified=false;
+      for(const key of localKeys)if(storage.getItem(key)!==beforeLocal[key])verified=false;for(const key of allKeys)if(rawFor(checkRows.get(key)||null)!==rawFor(beforeRows.get(key)||null))verified=false;
       return {rolledBack:true,rollbackVerified:verified,rollbackError:error};
     };
     try{
@@ -253,10 +253,40 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
       const auxRows=await indexedDbTarget.read(auxiliaryKeys.filter(key=>registry.get(key)?.indexedDb));
       for(const key of auxiliaryKeys){const expected=Object.prototype.hasOwnProperty.call(schema4Storage||{},key)?String(schema4Storage[key]):null;if(storage.getItem(key)!==expected)throw Object.assign(new Error(`Imported device-local value failed verification: ${key}`),{phase:'auxiliary-verification'});if(registry.get(key)?.indexedDb&&rawFor(auxRows.get(key)||null)!==expected)throw Object.assign(new Error(`Imported device mirror failed verification: ${key}`),{phase:'auxiliary-verification'})}
       const projectionCheck=await verifyProjection({storage,indexedDbTarget,expectedFingerprint:built.sourceFingerprint,registry,canonical,cryptoImpl});if(!projectionCheck.ok)throw Object.assign(new Error('Imported schema-4 projection fingerprint failed verification'),{phase:'projection-verification'});
+      if(kind==='clear')storage.setItem(KEYS.clear,timestamp);else storage.removeItem(KEYS.clear);if((kind==='clear'&&storage.getItem(KEYS.clear)!==timestamp)||(kind!=='clear'&&storage.getItem(KEYS.clear)!=null))throw Object.assign(new Error('Imported clear-state marker failed verification'),{phase:'clear-marker'});
       const guardRaw=JSON.stringify(makeGuard({migrationId:`schema4-backup:${built.sourceFingerprint}`,source:{fingerprint:built.sourceFingerprint}},built.envelope,timestamp)),guard=await dualWriteRaw({storage,indexedDbTarget,key:KEYS.guard,raw:guardRaw});if(!guard.ok)throw Object.assign(guard.error||new Error('Imported generation guard failed'),{phase:'guard'});
       const marker=await dualWriteRaw({storage,indexedDbTarget,key:KEYS.marker,raw:'5'});if(!marker.ok)throw Object.assign(marker.error||new Error('Imported generation marker failed'),{phase:'marker'});
       return {ok:true,stage:'verified',envelope:built.envelope,fingerprint:built.fingerprint,sourceFingerprint:built.sourceFingerprint,compatibilityProjection:revalidated.projection};
     }catch(error){return {ok:false,stage:error.phase||'backup-commit',error,...await rollback()}}
+  }
+  async function replaceFromSchema5Envelope({storage,indexedDbTarget,envelope,source='schema5-cloud-restore',registry=defaultRegistry,canonical=defaultCanonical,cryptoImpl=globalThis.crypto,now=new Date().toISOString()}={}){
+    if(!storage||!indexedDbTarget)return {ok:false,stage:'replacement-target',reason:'Schema-5 replacement requires local and IndexedDB targets.'};
+    const timestamp=new Date(now).toISOString(),current=await existingSchema5({storage,indexedDbTarget,registry,canonical,cryptoImpl});
+    if(!current.ok)return {ok:false,stage:'current-schema5-validation',reason:current.reason||'A verified current schema-5 generation is required.'};
+    let candidate;try{candidate=schema5.copyJson(envelope,canonical)}catch(error){return {ok:false,stage:'incoming-schema5-parse',error,reason:error?.message||String(error)}}
+    const checked=await schema5.validateSchema5Envelope(candidate,{registry,canonical,cryptoImpl});
+    if(!checked.ok)return {ok:false,stage:'incoming-schema5-validation',errors:checked.errors,reason:'Incoming schema-5 envelope did not validate.'};
+    const candidateRaw=JSON.stringify(candidate),canonicalKeys=canonical.stateKeys(registry),allPersonal=[...new Set(canonicalKeys.flatMap(key=>registry.compatibilityKeys(key)))],allKeys=[...new Set([...allPersonal,KEYS.envelope,KEYS.guard,KEYS.marker])],localKeys=[...allKeys,KEYS.clear],beforeRows=await indexedDbTarget.read(allKeys),beforeLocal=Object.fromEntries(localKeys.map(key=>[key,storage.getItem(key)]));
+    const rollback=async()=>{
+      let error=null;
+      try{for(const key of localKeys){const raw=beforeLocal[key];if(raw==null)storage.removeItem(key);else storage.setItem(key,raw)}}catch(cause){error=cause}
+      try{await indexedDbTarget.apply({put:[...beforeRows.values()].filter(Boolean),remove:allKeys.filter(key=>!beforeRows.get(key))})}catch(cause){error=error||cause}
+      const rows=await indexedDbTarget.read(allKeys).catch(()=>new Map());let verified=!error;
+      for(const key of localKeys)if(storage.getItem(key)!==beforeLocal[key])verified=false;for(const key of allKeys)if(rawFor(rows.get(key)||null)!==rawFor(beforeRows.get(key)||null))verified=false;
+      return {rolledBack:true,rollbackVerified:verified,rollbackError:error,beforeLocal};
+    };
+    try{
+      const envelopeWrite=await dualWriteRaw({storage,indexedDbTarget,key:KEYS.envelope,raw:candidateRaw});if(!envelopeWrite.ok)throw Object.assign(envelopeWrite.error||new Error('Schema-5 Cloud envelope write failed'),{phase:'envelope'});
+      const envelopeCheck=await verifyEnvelopeCopies({storage,indexedDbTarget,raw:candidateRaw,registry,canonical,cryptoImpl});if(!envelopeCheck.ok)throw Object.assign(new Error(envelopeCheck.reason),{phase:'envelope-verification'});
+      const projectionWrite=await dualProjectionWrite({storage,indexedDbTarget,projection:checked.projection,registry});if(!projectionWrite.ok)throw Object.assign(projectionWrite.error||new Error('Schema-5 Cloud compatibility projection failed'),{phase:'projection'});
+      const projectionCheck=await verifyProjection({storage,indexedDbTarget,expectedFingerprint:candidate.compatibility.projectionFingerprint,registry,canonical,cryptoImpl});if(!projectionCheck.ok)throw Object.assign(new Error('Schema-5 Cloud compatibility projection fingerprint failed verification'),{phase:'projection-verification'});
+      if(candidate.personalState.kind==='clear')storage.setItem(KEYS.clear,candidate.timestamps.updatedAt);else storage.removeItem(KEYS.clear);if((candidate.personalState.kind==='clear'&&storage.getItem(KEYS.clear)!==candidate.timestamps.updatedAt)||(candidate.personalState.kind!=='clear'&&storage.getItem(KEYS.clear)!=null))throw Object.assign(new Error('Schema-5 Cloud clear-state marker failed verification'),{phase:'clear-marker'});
+      const guardRaw=JSON.stringify(makeGuard({migrationId:`${source}:${candidate.generation.fingerprint}`,source:{fingerprint:current.envelope.generation.fingerprint}},candidate,timestamp)),guard=await dualWriteRaw({storage,indexedDbTarget,key:KEYS.guard,raw:guardRaw});if(!guard.ok)throw Object.assign(guard.error||new Error('Schema-5 Cloud generation guard failed'),{phase:'guard'});
+      const marker=await dualWriteRaw({storage,indexedDbTarget,key:KEYS.marker,raw:'5'});if(!marker.ok)throw Object.assign(marker.error||new Error('Schema-5 Cloud marker failed'),{phase:'marker'});
+      const finalEnvelope=await existingSchema5({storage,indexedDbTarget,registry,canonical,cryptoImpl}),finalProjection=await verifyProjection({storage,indexedDbTarget,expectedFingerprint:candidate.compatibility.projectionFingerprint,registry,canonical,cryptoImpl});
+      if(!finalEnvelope.ok||finalEnvelope.envelope.generation.fingerprint!==candidate.generation.fingerprint||!finalProjection.ok)throw Object.assign(new Error('Schema-5 Cloud replacement final verification failed'),{phase:'final-verification'});
+      return {ok:true,stage:'verified',envelope:candidate,fingerprint:checked.fingerprint,compatibilityProjection:checked.projection,previousFingerprint:current.envelope.generation.fingerprint,source};
+    }catch(error){return {ok:false,stage:error.phase||'schema5-cloud-commit',error,...await rollback()}}
   }
   async function syncProjection({storage,indexedDbTarget,registry=defaultRegistry,canonical=defaultCanonical,cryptoImpl=globalThis.crypto,now=new Date().toISOString(),writer=WRITER,preserveExplicitClear=false}={}){
     const current=await existingSchema5({storage,indexedDbTarget,registry,canonical,cryptoImpl});if(!current.ok)return {ok:false,stage:'current-schema5-validation',reason:current.reason};
@@ -274,6 +304,6 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
     return replaceFromSchema4Storage({storage,indexedDbTarget,schema4Storage:values,source:'local-schema5-projection-update',registry,canonical,cryptoImpl,now,writer}).then(result=>({...result,changed:result.ok}));
   }
   function unknownAppKeys(values,{registry=defaultRegistry}={}){return Object.keys(values||{}).filter(key=>appOwned(key)&&!registry.get(key)).sort()}
-  return Object.freeze({KEYS,JOURNAL_FORMAT,JOURNAL_VERSION,WRITER,CHECKPOINT,run,replaceFromSchema4Storage,syncProjection,existingSchema5,verifyProjection,snapshotCheck,readJournalPair,rollbackFromSnapshot,unknownAppKeys,dualWriteRaw,dualProjectionWrite});
+  return Object.freeze({KEYS,JOURNAL_FORMAT,JOURNAL_VERSION,WRITER,CHECKPOINT,run,replaceFromSchema4Storage,replaceFromSchema5Envelope,syncProjection,existingSchema5,verifyProjection,snapshotCheck,readJournalPair,rollbackFromSnapshot,unknownAppKeys,dualWriteRaw,dualProjectionWrite});
 });
 try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.complete('03-schema5-migration','RosterBotSchema5Migration',document.currentScript?.src||'js/03-schema5-migration.js')}catch(_){}

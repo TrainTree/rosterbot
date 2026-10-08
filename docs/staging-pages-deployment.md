@@ -31,10 +31,11 @@ The command refuses to overwrite a non-empty directory. It copies only
 `index.html`, `.nojekyll`, and the `css`, `data`, and `js` runtime directories;
 writes a staging-only `CNAME`; replaces the ordinary production deployment
 profile with an exact `https://beta.rosterbot.work` / isolated-staging profile;
-verifies local asset references and the schema-5 Cloud hold; scans the entire
-output for production Supabase identifiers and privileged/JWT credentials; and
-creates fresh SHA-256 checksums. The key is required through the environment so
-the staging credential is not hard-coded into ordinary production source.
+verifies local asset references and the schema-5 capability gate; scans the
+entire output for production Supabase identifiers and privileged/JWT
+credentials; and creates fresh SHA-256 checksums. The key is required through
+the environment so the staging credential is not hard-coded into ordinary
+production source.
 
 The generator accepts only a modern `sb_publishable_` browser credential. It
 rejects missing, malformed, legacy-JWT, secret and service-role inputs before
@@ -52,13 +53,22 @@ shasum -a 256 -c "$staging_dir/SHA256SUMS.txt"
 
 Expected `CNAME` content is exactly `beta.rosterbot.work`.
 
-## Approval boundary
+For a Step 7B redeployment, also compare the generated runtime files with the
+committed source hashes, confirm Cloud fallback and saved-configuration
+override are disabled, and record the generated `SHA256SUMS.txt`. Push only
+that reviewed output to `TrainTree/rosterbot-beta/main`. After GitHub Pages is
+live, fetch each hosted runtime asset and require an exact checksum match
+before enabling staging capability 5 or creating synthetic test users.
 
-Stop here until approval is given to create the repository, push the bundle,
-configure GitHub Pages, and modify DNS. None of those actions are performed by
-the preparation script.
+## Step 7B approval boundary
 
-## GitHub setup after approval
+The repository, Pages site, custom domain and DNS were established in the
+earlier approved beta deployment. Stop here until separate Step 7B approval is
+given to push a replacement deploy-only bundle and exercise it against
+isolated staging. The preparation script itself performs no Git, GitHub, DNS,
+Auth, database or capability mutation.
+
+## Initial GitHub setup reference
 
 1. In the `TrainTree` GitHub organization, confirm `rosterbot.work` is verified
    under **Organization settings → Pages → Verified domains**. If it is not,
@@ -104,10 +114,13 @@ removing it is not required to configure the explicit staging name.
 
 The staging bundle does not contain server migrations and does not change the
 production Supabase project or its capability. The v0.30 client retains its
-local-schema-5/server-capability-4 transfer hold. Because
-`beta.rosterbot.work` is a different origin from `rosterbot.work`, it receives
-separate localStorage, IndexedDB, cookies and service state.
+schema-5 transfer hold while staging advertises capability 4. Capability 5 can
+release only after a fresh authenticated attestation validates the exact
+beta/staging environment, project, contract and writable range; the grant is
+session-scoped and is revoked on authentication or trust-binding changes.
+Because `beta.rosterbot.work` is a different origin from `rosterbot.work`, it
+receives separate localStorage, IndexedDB, cookies and service state.
 
 Do not use production user accounts or production backups on staging. Use only
-synthetic fixtures. Do not deploy any schema-capability-5 SQL or modify the
-production Pages repository as part of this staging setup.
+synthetic fixtures. Do not change either project's capability or modify the
+production Pages repository as part of bundle preparation/deployment.

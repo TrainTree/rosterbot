@@ -78,7 +78,9 @@ try{
 
   const conflict=await save(owner,1,plain4('stale'));
   equal(conflict.ok,false);
-  check(String(conflict.data?.message||'').startsWith('revision_conflict:'),JSON.stringify(conflict.data));
+  equal(conflict.data?.code,'RB003',JSON.stringify(conflict.data));
+  equal(conflict.data?.message,'revision_conflict',JSON.stringify(conflict.data));
+  equal(conflict.data?.details,'expected_revision=1 current_revision=2',JSON.stringify(conflict.data));
   equal((await rows(owner,'roster_revisions')).data.length,2);
 
   check((await save(other,0,plain4('other'))).ok);

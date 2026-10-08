@@ -78,7 +78,8 @@ test('v0.30 maps deterministic server errors to no-retry safe states',()=>{
   const cloud=readSource('js/51-cloud-sync.js');
   assert.match(cloud,/holdForDeterministicWriteError\(err\)/);
   assert.match(cloud,/autoRetryNotBefore=Date\.now\(\)\+10000/,'unknown network failures retain the existing retry path');
-  assert.doesNotMatch(cloud,/new_schema_version:5|schemaVersion:5/,'schema-5 client writes remain disabled');
+  assert.match(cloud,/new_schema_version:schemaVersion/,'schema-5 client writes use the validated dynamic schema');
+  assert.match(cloud,/await requireCloudTransferAllowed\(\)/,'schema-5 writes retain the attestation gate');
 });
 
 test('staging harness names every required concurrency, downgrade, payload, RLS and role case',()=>{

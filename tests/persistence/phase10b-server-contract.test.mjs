@@ -78,9 +78,12 @@ test('Step 6 capability executor is exact-ref guarded and permits one 4 to 5 row
   assert.doesNotMatch(capabilityExecutor,/PATCH|admin\/users|save_roster_state\s*\(/);
 });
 
-test('the production client remains in the unconditional schema-5 capability-4 hold',()=>{
-  const cloud=readSource('js/51-cloud-sync.js');
-  assert.match(cloud,/const SCHEMA5_CLOUD_HOLD=localStorage\.getItem\('rosterbot-db-schema-v1'\)==='5'\|\|localStorage\.getItem\('rosterbot-personal-state-v1'\)!=null/);
-  assert.match(cloud,/server capability remains 4/);
-  assert.doesNotMatch(cloud,/get_roster_schema_capability|new_schema_version:5/);
+test('schema-5 release is hard-bound to beta staging and cannot release production',()=>{
+  const cloud=readSource('js/51-cloud-sync.js'),gate=readSource('js/07-cloud-schema5.js');
+  assert.match(cloud,/get_roster_schema_capability/);
+  assert.match(cloud,/await requireCloudTransferAllowed\(\)/);
+  for(const token of ['https://beta.rosterbot.work','wuzyurvrztskljpxpeaq','isolated-staging','rosterbot-schema5-cloud-v1'])assert.match(gate,new RegExp(token.replaceAll('.','\\.')));
+  assert.match(gate,/allowSavedConfiguration===false/);
+  assert.match(gate,/fallbackToEmbedded===false/);
+  assert.doesNotMatch(gate,/rithmbggiiusrmdcqrif|https:\/\/rosterbot\.work/);
 });

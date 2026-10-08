@@ -177,12 +177,12 @@ test('ordinary post-migration edits keep schema 5 and schema-4 projection consis
   const envelope=pair.storage.getItem(runtime.KEYS.envelope),reloaded=await runtime.run({...runOptions(pair,'2026-10-07T05:00:00.000Z')});assert.equal(reloaded.status,'already-complete');assert.equal(pair.storage.getItem(runtime.KEYS.envelope),envelope);
 });
 
-test('Cloud capability-4 hold gates uploads, downloads, history restore and wrapper rotation',()=>{
-  assert.match(cloudSource,/const SCHEMA5_CLOUD_HOLD=.*rosterbot-db-schema-v1.*==='5'/);
-  assert.match(cloudSource,/async function rpcSave\([^)]*\)\{requireCloudTransferAllowed\(\)/);
-  assert.match(cloudSource,/async function applyPayload\([^)]*\}\s*=\s*\{\}\)\{\s*requireCloudTransferAllowed\(\)/);
-  assert.match(cloudSource,/async function rotateEncryptionWrappers\([^)]*\)\{requireCloudTransferAllowed\(\)/);
+test('Cloud attestation gate covers uploads, downloads, history restore and wrapper rotation',()=>{
+  assert.match(cloudSource,/function schema5CapabilityHold\(\)/);
+  assert.match(cloudSource,/async function rpcSave\([^)]*\)\{await requireCloudTransferAllowed\(\)/);
+  assert.match(cloudSource,/async function applyPayload\([^)]*\}\s*=\s*\{\}\)\{\s*await requireCloudTransferAllowed\(\)/);
+  assert.match(cloudSource,/async function rotateEncryptionWrappers\([^)]*\)\{await requireCloudTransferAllowed\(\)/);
   assert.match(cloudSource,/async function restoreCloud[\s\S]*?await applyPayload\(remote\.payload/);
   assert.match(cloudSource,/async function restoreHistoryRevision[\s\S]*?await applyPayload\(r\.payload/);
-  assert.match(cloudSource,/async function autoSyncAttempt\([^)]*\)\{if\(SCHEMA5_CLOUD_HOLD\).*?return/);
+  assert.match(cloudSource,/async function autoSyncAttempt[\s\S]*?await requireCloudTransferAllowed\(\)/);
 });

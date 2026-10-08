@@ -44,7 +44,9 @@ await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0
 const base=`http://127.0.0.1:${server.address().port}`;
 
 async function launch(profile,viewport={width:1280,height:900}){
-  return chromium.launchPersistentContext(profile,{headless:true,executablePath,viewport,acceptDownloads:true,locale:'en-AU',timezoneId:'Australia/Melbourne'});
+  const context=await chromium.launchPersistentContext(profile,{headless:true,executablePath,viewport,acceptDownloads:true,locale:'en-AU',timezoneId:'Australia/Melbourne'});
+  await context.addInitScript(fixedNow=>{const NativeDate=Date,fixed=NativeDate.parse(fixedNow);let tick=0;class FixedDate extends NativeDate{constructor(...args){super(...(args.length?args:[fixed+tick++]))}static now(){return fixed+tick++}}Object.defineProperty(window,'Date',{value:FixedDate,configurable:true})},'2026-10-08T12:00:00+11:00');
+  return context;
 }
 async function instrument(context,record){
   await context.addInitScript(()=>{
@@ -153,7 +155,7 @@ try{
   else{
   const selected=process.env.PHASE10A_FIXTURE?[process.env.PHASE10A_FIXTURE]:Object.keys(corpus);
   for(const name of selected){console.error(`[phase10a] upgrade ${name}`);const result=await upgradeFixture(name);results.fixtures.push(result);if(name==='longLivedOfficial'){backupFile=result.backup;const profileContext=await launch(result.profile),page=profileContext.pages()[0]||await profileContext.newPage();await page.goto(`${base}/v30/index.html`);await ready(page,{schema5:true});await page.waitForFunction(()=>!!window.RosterBotCalendarSubscription?.build);longBefore=await capture(page,corpus.longLivedOfficial);await profileContext.close()}}
-  if(!process.env.PHASE10A_FIXTURE){for(const boundary of ['before-snapshot','after-snapshot','after-candidate-build','after-candidate-validation','during-schema5-write','after-schema5-write','after-schema5-verification','during-compatibility-projection','after-compatibility-projection','after-final-commit']){console.error(`[phase10a] interrupt ${boundary}`);results.interruptions.push(await interruptionBoundary(boundary))}for(const fault of ['localStorage-unavailable','indexedDB-unavailable','schema5-write-failure']){console.error(`[phase10a] fault ${fault}`);results.faults.push(await storageFaultCase(fault))}results.backupRoundTrip=await backupRoundTrip(backupFile,longBefore);results.postMigrationMutations=await postMigrationMutationJourney();results.hostedProductionUpgrade=await hostedProductionUpgrade()}
+  if(!process.env.PHASE10A_FIXTURE){for(const boundary of ['before-snapshot','after-snapshot','after-candidate-build','after-candidate-validation','during-schema5-write','after-schema5-write','after-schema5-verification','during-compatibility-projection','after-compatibility-projection','after-final-commit']){console.error(`[phase10a] interrupt ${boundary}`);results.interruptions.push(await interruptionBoundary(boundary))}for(const fault of ['localStorage-unavailable','indexedDB-unavailable','schema5-write-failure']){console.error(`[phase10a] fault ${fault}`);results.faults.push(await storageFaultCase(fault))}results.backupRoundTrip=await backupRoundTrip(backupFile,longBefore);results.postMigrationMutations=await postMigrationMutationJourney();results.hostedProductionUpgrade=process.env.PHASE10A_SKIP_HOSTED==='1'?{skipped:true,reason:'local-only safety boundary'}:await hostedProductionUpgrade()}
   console.log(JSON.stringify(results,null,2));
   }
 }finally{await new Promise(resolve=>server.close(resolve))}

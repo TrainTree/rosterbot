@@ -130,11 +130,14 @@ test('ordinary production deployment and manual development fallback remain unch
   assert.deepEqual(JSON.parse(JSON.stringify(api.resolve({profile,origin:'http://localhost:8765',savedRaw:JSON.stringify(manual)}).config)),manual);
 });
 
-test('beta profile schema request and forged client claims cannot release the capability-4 hold',()=>{
-  const cloud=fs.readFileSync(path.join(root,'js/51-cloud-sync.js'),'utf8');
-  assert.match(cloud,/const SCHEMA5_CLOUD_HOLD=localStorage\.getItem\('rosterbot-db-schema-v1'\)==='5'\|\|localStorage\.getItem\('rosterbot-personal-state-v1'\)!=null/);
-  assert.match(cloud,/async function rpcSave\([^)]*\)\{requireCloudTransferAllowed\(\)/);
-  assert.match(cloud,/async function applyPayload\([^)]*\}\s*=\s*\{\}\)\{\s*requireCloudTransferAllowed\(\)/);
-  assert.match(cloud,/async function rotateEncryptionWrappers\([^)]*\)\{requireCloudTransferAllowed\(\)/);
-  assert.doesNotMatch(cloud,/get_roster_schema_capability|new_schema_version:5|requestedCloudSchema.*SCHEMA5_CLOUD_HOLD/);
+test('beta schema-5 release path requires exact authenticated server attestation',()=>{
+  const cloud=fs.readFileSync(path.join(root,'js/51-cloud-sync.js'),'utf8'),gate=fs.readFileSync(path.join(root,'js/07-cloud-schema5.js'),'utf8');
+  assert.match(cloud,/async function rpcSave\([^)]*\)\{await requireCloudTransferAllowed\(\)/);
+  assert.match(cloud,/async function applyPayload\([^)]*\}\s*=\s*\{\}\)\{\s*await requireCloudTransferAllowed\(\)/);
+  assert.match(cloud,/async function rotateEncryptionWrappers\([^)]*\)\{await requireCloudTransferAllowed\(\)/);
+  assert.match(cloud,/get_roster_schema_capability/);
+  assert.match(cloud,/new_schema_version:schemaVersion/);
+  for(const value of [BETA_ORIGIN,STAGING_REF,'isolated-staging','rosterbot-schema5-cloud-v1'])assert(gate.includes(value));
+  assert.match(gate,/STAGING_URL=`https:\/\/\$\{STAGING_REF\}\.supabase\.co`/);
+  assert.match(gate,/context\.userId/);assert.match(gate,/context\.accessToken/);
 });

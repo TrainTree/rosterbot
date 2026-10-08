@@ -74,10 +74,16 @@ for(const match of index.matchAll(/(?:src|href)="([^"#?]+)"/g)){
 }
 
 const cloud=await readFile(path.join(destination,'js/51-cloud-sync.js'),'utf8');
+const cloudSchema5=await readFile(path.join(destination,'js/07-cloud-schema5.js'),'utf8');
 assert.match(cloud,/SCHEMA5_CLOUD_HOLD/,'Schema-5 Cloud hold is missing from the staging bundle.');
-assert.match(cloud,/server capability remains 4/,'Production Cloud capability-4 hold message is missing from the staging bundle.');
 assert.match(cloud,/requireCloudTransferAllowed/,'Cloud transfer guard is missing from the staging bundle.');
-assert.doesNotMatch(cloud,/get_roster_schema_capability|new_schema_version:5/,'Step 5 must not add a client-side capability-5 release path.');
+assert.match(cloud,/get_roster_schema_capability/,'Authenticated capability attestation is missing from the staging bundle.');
+assert.match(cloud,/new_schema_version:schemaVersion/,'Schema-5 save wire path is missing from the staging bundle.');
+assert.match(cloud,/replaceFromSchema5Envelope/,'Transactional schema-5 restore path is missing from the staging bundle.');
+for(const value of [stagingOrigin,stagingProjectRef,'rosterbot-schema5-cloud-v1'])assert(cloudSchema5.includes(value),`Schema-5 capability gate is missing exact binding: ${value}`);
+assert.match(cloudSchema5,/STAGING_URL=`https:\/\/\$\{STAGING_REF\}\.supabase\.co`/,'Schema-5 capability gate does not derive the exact staging URL from its fixed project ref.');
+assert.match(cloudSchema5,/allowSavedConfiguration===false/);
+assert.match(cloudSchema5,/fallbackToEmbedded===false/);
 
 const runtimeFiles=copied.filter(relative=>relative!=='CNAME');
 const runtimeText=(await Promise.all(runtimeFiles.map(async relative=>`${relative}\n${await readFile(path.join(destination,relative),'utf8')}`))).join('\n');
@@ -105,6 +111,6 @@ console.log(JSON.stringify({
   credentialAudit:{browserSafePublishableKeys:1,jwtCredentials:0,secretCredentials:0,managementOrPersonalAccessTokens:0,databaseConnectionStrings:0,privilegedCredentials:0},
   productionIdentifierAudit:{projectRef:false,url:false,publishableKey:false},
   savedConfigurationIgnored:true,
-  cloudCapabilityHold:4,
+  cloudCapabilityRelease:'fresh-authenticated-schema5-attestation-required',
   files:copied.length+1
 },null,2));

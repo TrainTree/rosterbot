@@ -1,10 +1,13 @@
 # v0.30 Phase 10B — schema-5 Cloud staging architecture
 
-Status: architecture approved; remote execution steps 1–4 and local Step 5 passed on 8 October
-2026 (Australia/Melbourne). The isolated staging contract and beta Auth origin
-configuration are installed while the advertised capability remains 4. A
-candidate beta-only bundle has been generated and reviewed locally but not
-deployed. Step 6 onward has not begun.
+Status: architecture approved. Steps 1–6 passed, and the first Step 7 beta run
+failed closed as designed on 9 October 2026 (Australia/Melbourne): the exact
+beta-to-staging binding and authenticated schema-5 attestation worked, but the
+then-current browser client had no attestation integration or schema-5 save
+path, so its hold remained active and it emitted no roster save. Staging was
+returned to capability `4..4`. Step 7A has now implemented and locally tested
+the missing browser path. No Step 7A bundle has been deployed, staging remains
+at `4..4`, and remote Step 7B has not begun.
 
 ## Scope and immutable boundaries
 
@@ -29,12 +32,13 @@ deploying another beta bundle requires a separately approved execution step.
 
 ## Why beta needs an explicit Cloud configuration
 
-The current client treats only `rosterbot.work` and `www.rosterbot.work` as
-hosted. On every other hostname, including `beta.rosterbot.work`, it uses a
-saved manual configuration or falls back to the hard-coded production
-Supabase configuration. The unconditional local-schema-5 Cloud hold currently
-prevents schema-5 transfer, but that fallback cannot remain when Phase 10B
-introduces a release path.
+The ordinary production profile treats only `rosterbot.work` and
+`www.rosterbot.work` as hosted. On other hostnames it may use an explicit
+development configuration or its schema-4 fallback. The beta deploy profile
+instead binds `beta.rosterbot.work` directly to isolated staging, disables
+saved-configuration overrides and fallback, and cannot select production. The
+Step 7A client adds a schema-5 release path only for that exact beta binding
+after fresh authenticated attestation; every other profile remains held.
 
 `beta.rosterbot.work` therefore requires a staging-specific, deploy-time
 publishable configuration. It must never inherit, fall back to, accept a saved
@@ -163,10 +167,12 @@ are both required; neither substitutes for the other.
 Schema-5 download never writes individual feature keys first. A dedicated
 transactional replacement stages and validates the remote envelope, derives
 and validates its schema-4 compatibility projection, captures the previous
-known-good local schema-5 generation and projection, then commits and verifies
-the envelope, projection, marker, journal and IndexedDB mirror. Any failure
-restores and verifies the exact prior local state or enters non-destructive
-recovery with evidence retained.
+known-good local envelope, projection, migration guard, marker, clear-state
+tombstone and IndexedDB mirror, then commits and verifies the replacement as a
+unit. Any failure restores and verifies those exact prior values, including
+the distinction between an absent key and a stored value, or enters
+non-destructive recovery with evidence retained. The prior known-good snapshot
+remains recoverable throughout replacement.
 
 The Cloud row and history are unchanged by a download or history inspection.
 Uploading after a local restore creates a new schema-5 revision through the
@@ -224,28 +230,29 @@ tokens, passwords or payload contents.
     schema-5 mutation request. This proof uses read-only/static fixtures or a
     request interceptor; it does not sign in to or mutate production.
 
-## Remote execution sequence after approval
+## Remaining Step 7B execution sequence after approval
 
-1. Read-only preflight the exact staging project ref, catalog, capability,
-   Auth redirect allowlist and zero synthetic-user baseline. Reconfirm the
-   production ref deny guard.
-2. Apply the reviewed staging-only capability-attestation and validator SQL
-   while `max_writable_schema` remains 4.
-3. Run catalog, grant, capability-4 and regression checks.
-4. Add only the beta Auth redirect/site URL required for the isolated staging
-   project, if interactive browser Auth needs it.
-5. Generate and review a beta-only bundle containing the staging publishable
-   profile. Confirm it contains no service/management credential and no
-   production fallback for the beta origin.
-6. Advance only isolated staging to `max_writable_schema = 5` through a guarded
-   executor that requires the exact staging ref and explicit Phase 10B opt-in.
-7. Run API integration tests and browser tests with synthetic users/data.
-8. Deploy the reviewed beta-only bundle to `TrainTree/rosterbot-beta`; do not
-   push the experiment branch or touch the production repository.
-9. Run the physical/browser staging matrix and retain privacy-safe evidence.
-10. Delete synthetic users/data and perform a final audit. Keep or lower the
-    staging gate according to the reviewed rollback exercise; production stays
-    at 4 in either case.
+1. Read-only preflight the exact staging project ref, catalog, capability
+   `4..4`, beta-only Auth settings and zero synthetic-user/data baseline.
+   Reconfirm the production ref deny guard.
+2. Regenerate the deploy-only beta bundle from the committed Step 7A source
+   using the reviewed generator and the staging publishable key.
+3. Verify source/runtime hashes, exact origin/ref/URL/key binding, disabled
+   fallback and saved override, and absence of production identifiers and
+   privileged credentials.
+4. Push only the reviewed deploy bundle to `TrainTree/rosterbot-beta/main`,
+   wait for Pages, and compare the hosted runtime assets with the candidate.
+5. Advance only isolated staging to `max_writable_schema = 5` through the
+   guarded executor, then obtain a fresh authenticated browser attestation.
+6. Run the complete plaintext/encrypted, history, restore, conflict,
+   downgrade, malformed, concurrency, session-revocation and fresh-device
+   browser matrix using synthetic staging users/data. Continuously assert that
+   no request targets production.
+7. Lower staging to `4..4` immediately if the browser/contract path fails. On
+   success, leave it at the separately approved final value.
+8. Delete every synthetic Auth identity/user and application row, rerun the
+   persistence and staging regressions, and record final zero counts. Do not
+   modify production or begin Phase 10C.
 
 ## Steps 1–3 execution record
 
@@ -347,10 +354,54 @@ The final candidate exists only under `/tmp/rosterbot-phase10b-step5-final.zAuyA
 It has not been initialized as a Git repository, pushed, published or opened
 against a Cloud account.
 
-## Exact proposed Step 6 procedure
+## Steps 6, 7 and 7A execution record
 
-Step 6 requires a separate approval and must change only the singleton staging
-capability row. Before the one update, a hard-guarded executor must:
+The reviewed Step 5 candidate was subsequently deployed to the dedicated beta
+site and exercised only against isolated staging. The beta origin/profile
+binding and authenticated `get_roster_schema_capability()` response matched the
+reviewed schema-5 contract. The browser's pre-existing unconditional hold did
+not release, and no `save_roster_state` request was emitted. This was classified
+as a client implementation gap, not a data-integrity failure. Staging was left
+at capability `4..4` before local work resumed.
+
+Step 7A was completed locally on 9 October 2026:
+
+- `js/07-cloud-schema5.js` defines the exact beta/staging trust contract,
+  validates plaintext and encrypted schema-5 wire objects, and holds the
+  capability grant only in memory for the authenticated session;
+- `js/51-cloud-sync.js` requests and validates a fresh authenticated
+  attestation, releases schema-5 transfer only while every trust condition
+  remains true, writes `new_schema_version: 5`, and validates schema-5 current
+  and historical downloads before replacement;
+- logout, session/user change, authentication loss, attestation failure or
+  refusal, malformed/unsupported capability, and origin/profile/project/key
+  drift revoke the grant immediately. No grant is written to localStorage or
+  IndexedDB;
+- plaintext uploads carry the exact validated schema-5 envelope. Encrypted
+  uploads carry `rosterbot-encrypted-v1` with outer `schemaVersion: 5`, the
+  canonical schema-5 identity HMAC/fingerprint, and ciphertext that decrypts
+  to the same validated envelope;
+- schema-5 download and history restore use the transactional local
+  replacement path. The rollback/tombstone correction preserves absent keys
+  as absent and restores the previous known-good envelope, projection, guard,
+  marker and IndexedDB state after any failed replacement;
+- the stale Phase 8C trigger fixture now supplies a valid current schema-5
+  envelope, and its baseline integration assertion accepts the current
+  deterministic revision-conflict contract without weakening validators; and
+- local tests cover valid and refused attestation, forged capability claims,
+  all revocation transitions, plaintext/encrypted upload, fresh-state
+  download, rollback, conflict/stale/downgrade/malformed/mismatch cases and a
+  hard assertion that the beta profile cannot contact production.
+
+Step 7A performed no deployment, remote account/data operation, Auth change or
+Supabase capability change. The next remote action is the separately approved
+Step 7B procedure above.
+
+## Historical Step 6 procedure
+
+Step 6 was separately approved and changed only the singleton staging
+capability row. Before its one update, the hard-guarded executor was required
+to:
 
 1. require the literal target ref `wuzyurvrztskljpxpeaq` and an exact opt-in
    phrase tied to that ref, while explicitly denying `rithmbggiiusrmdcqrif`;

@@ -19,12 +19,13 @@ test('backup payload contract remains v0.29 schema 4',()=>{
   assert.doesNotMatch(source,/schemaVersion:5/);
 });
 
-test('Cloud payload and RPC contracts remain schema 4',()=>{
+test('Cloud keeps schema 4 compatibility and adds attested schema 5 transport',()=>{
   const source=readSource('js/51-cloud-sync.js');
   assert.match(source,/version:'0\.26\.1-mobile-ui-hotfix',schemaVersion:4/);
-  assert.match(source,/new_schema_version:4/);
+  assert.match(source,/new_schema_version:schemaVersion/);
+  assert.match(source,/schemaVersion=cloudSchema5\?\.isPlaintext\?\.\(plain\)\?5:4/);
+  assert.match(source,/get_roster_schema_capability/);
   assert.match(source,/ENC_FORMAT='rosterbot-encrypted-v1'/);
-  assert.doesNotMatch(source,/new_schema_version:5|schemaVersion:5/);
 });
 
 test('explicit-clear implementation no longer removes the tombstone from diary mirroring',()=>{
