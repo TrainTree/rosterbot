@@ -44,10 +44,13 @@ test('gate-4 integration covers hold, spoof resistance, deterministic errors, co
   assert.match(integration,/equal\(finalAudit,\{capability:4,state:0,history:0,calendar:0,auth_users:0\}\)/);
 });
 
-test('read-only preflight is staging-only and checks accepted Phase 8B/8C hashes',()=>{
+test('read-only preflight is staging-only and checks accepted Phase 10B hashes',()=>{
   assert.match(preflight,/Refusing non-read-only preflight SQL/);
   assert.match(preflight,/STAGING_REF='wuzyurvrztskljpxpeaq'/);
   assert.match(preflight,/path\.includes\(PRODUCTION_REF\)/);
+  assert.match(preflight,/PHASE10B_EXPECTED_MAX_WRITABLE_SCHEMA\|\|5/);
+  assert.match(preflight,/matches_accepted_phase10b:true/);
+  for(const hash of ['784826b6bacd78816846fb6ec556c330fd4dbf3afb7adc0a1097dc93b0b3bb5a','1d1084393f16b7c3327c939d96ee6ef3bde27527ef2cc24898e30b31a96ee3e3','dac47d14679d699615b46db8eb805f2abbd058fcb45190587c1bd1d4834ebf05'])assert.match(preflight,new RegExp(hash));
   for(const file of ['object-inventory.sql','table-details.sql','function-details.sql','privilege-details.sql','column-privileges.sql','write-path-search.sql'])assert.match(preflight,new RegExp(file.replace('.','\\.')));
 });
 

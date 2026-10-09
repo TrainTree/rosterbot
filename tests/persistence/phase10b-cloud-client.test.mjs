@@ -126,6 +126,15 @@ test('client and server contracts retain authoritative revision, downgrade, malf
   assert.match(sql,/pg_advisory_xact_lock/);assert.match(sql,/for update/);
 });
 
+test('schema-4 upgrade comparison aligns only canonically equal legacy values for plaintext and encrypted payloads',()=>{
+  const cloud=readSource('js/51-cloud-sync.js');
+  assert.match(cloud,/remotePlain=isEncryptedPayload\(remote\?\.payload\)\?await decryptCloudPayload\(remote\.payload\):remote\?\.payload/);
+  assert.match(cloud,/function alignSchema4ProjectionStorage/);
+  assert.match(cloud,/canonical\(JSON\.parse\(local\[key\]\)\)===canonical\(JSON\.parse\(remoteRaw\)\)/);
+  assert.match(cloud,/if\(same\)local\[key\]=remoteRaw/);
+  assert.match(cloud,/alignSchema4ProjectionStorage\(normalizedStorage\(schema5ProjectionStorage\(plain\)\),remotePlain\)/);
+});
+
 test('maintained Phase 8C trigger fixture is a current client-valid schema-5 envelope',async()=>{
   const sql=readSource('supabase/tests/phase8c-trigger-contract.sql'),match=/schema_version = 5,\s*payload = '(\{"format":"rosterbot-personal-state"[^']+\})'::jsonb/s.exec(sql);
   assert(match,'schema-5 trigger fixture not found');assert.equal((await schema5.validateSchema5Envelope(JSON.parse(match[1]))).ok,true);

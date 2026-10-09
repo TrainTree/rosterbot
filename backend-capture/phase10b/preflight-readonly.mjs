@@ -9,14 +9,16 @@ const STAGING_REF='wuzyurvrztskljpxpeaq';
 const STAGING_NAME='rosterbot-phase8c-staging';
 const STAGING_REGION='ap-southeast-1';
 const PRODUCTION_REF='rithmbggiiusrmdcqrif';
+const EXPECTED_MAX_WRITABLE_SCHEMA=Number(process.env.PHASE10B_EXPECTED_MAX_WRITABLE_SCHEMA||5);
+if(![4,5].includes(EXPECTED_MAX_WRITABLE_SCHEMA))throw new Error('PHASE10B_EXPECTED_MAX_WRITABLE_SCHEMA must be exactly 4 or 5.');
 const queryRoot=new URL('../phase8a/introspection/',import.meta.url);
 const expectedCatalogHashes=new Map([
-  ['object-inventory.sql','c449b5885e074aab34a31619825a430815225a6f871d9ed9bce0ce189789aa8a'],
+  ['object-inventory.sql','784826b6bacd78816846fb6ec556c330fd4dbf3afb7adc0a1097dc93b0b3bb5a'],
   ['table-details.sql','8e01802f433e269e76cf6f1c6585a6c2e8c92d18244ba63bfb93dac9ace5292b'],
-  ['function-details.sql','9f15ff46d0b3d840f29aa6956f8727669815d4b891da7a0b2ca939e045e77e57'],
+  ['function-details.sql','1d1084393f16b7c3327c939d96ee6ef3bde27527ef2cc24898e30b31a96ee3e3'],
   ['privilege-details.sql','4eaf1bbddbabf28f322a7cc57045f16afac3f85a1feb9f56bf15e13e2b511e3a'],
   ['column-privileges.sql','37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570'],
-  ['write-path-search.sql','f8bd949222e4a6ca86a2b1015cc361162ff202033711b54fcefb8876388e7feb']
+  ['write-path-search.sql','dac47d14679d699615b46db8eb805f2abbd058fcb45190587c1bd1d4834ebf05']
 ]);
 
 const accessToken=(await readFile(join(homedir(),'.supabase','access-token'),'utf8')).trim();
@@ -69,7 +71,7 @@ for(const [file,expectedSha256] of expectedCatalogHashes){
   const rows=await query(sql,`read-only catalog check: ${file}`);
   const actualSha256=sha256(canonical(rows));
   assert(actualSha256===expectedSha256,`${file} drifted: expected ${expectedSha256}, received ${actualSha256}`);
-  catalog.push({query_file:file,rows:rows.length,sha256:actualSha256,matches_accepted_phase8c:true});
+  catalog.push({query_file:file,rows:rows.length,sha256:actualSha256,matches_accepted_phase10b:true});
 }
 
 const evidenceSql=`
@@ -136,7 +138,7 @@ select jsonb_build_object(
 ) as evidence;
 `;
 const evidence=(await query(evidenceSql,'read-only capability, rows, Auth, trigger, grant and RLS audit'))[0]?.evidence;
-assert(evidence?.capability?.min===4&&evidence?.capability?.max===4&&Number(evidence?.capability?.rows)===1,'Capability is not exactly singleton 4..4.');
+assert(evidence?.capability?.min===4&&evidence?.capability?.max===EXPECTED_MAX_WRITABLE_SCHEMA&&Number(evidence?.capability?.rows)===1,`Capability is not exactly singleton 4..${EXPECTED_MAX_WRITABLE_SCHEMA}.`);
 for(const [name,count] of Object.entries(evidence.row_counts||{}))assert(Number(count)===0,`${name} is not empty: ${count}`);
 assert(Number(evidence.unexpected_auth_users)===0,'Unexpected non-synthetic Auth users exist.');
 assert(JSON.stringify((evidence.triggers||[]).map(item=>[item.name,item.enabled]))===JSON.stringify([
@@ -159,6 +161,7 @@ const safeAuthConfig={
 console.log(JSON.stringify({
   captured_at:new Date().toISOString(),
   mode:'read-only isolated-staging preflight; no production request; no user identifiers or payloads',
+  expected_capability:{min:4,max:EXPECTED_MAX_WRITABLE_SCHEMA},
   staging_identity:{ref:project.ref,name:project.name,region:project.region,status:project.status},
   production_refused:PRODUCTION_REF,
   target_confirmations:targetConfirmations,
