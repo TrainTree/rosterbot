@@ -149,13 +149,13 @@ function buildDay(date,week,roster,line,dayIndex,manual=false){
   const startTime=cell.signon||'', endTime=cell.signoff||(startTime&&!isOff&&!isALR?addClockMinutes(startTime,480):'');
   return {date:k,week,roster,line,depot:'SCS',dataset:roster==='FLEX'?'FLEX':datasetKeyForDate(k),code:cell.code,rosteredStart:startTime,rosteredEnd:endTime,rosteredBookHours:cell.bookHours||'',exact:!!cell.exact&&!!cell.signoff,status:isOff?'off':isALR?'alr':'worked',actualCode:/^SP\d/i.test(cell.code)?cell.code:'',actualStart:startTime,actualEnd:endTime,ph:!!holiday,holidayName:holiday,phMode:defaultPhMode(cell,false),allowances:{},lookupMsg:cell.signoff?'':(startTime&&!isOff&&!isALR?'8h finish assumed from roster start':'')};
 }
-function buildFortnight(){
+function buildFortnight({persist=true}={}){
   const start=snapPeriod(parseDate($('#periodDate').value||PAY_ANCHOR));$('#periodDate').value=dateKey(start);
   const mode=$('#entryMode').value,manual=mode==='manual',forecast=mode==='forecast',r1=$('#r1').value,l1=+$('#l1').value,r2=$('#r2').value,l2=+$('#l2').value;loadedEntryMode=mode;dayState=[];
   const modeHint=$('#entryModeHint');if(modeHint){modeHint.classList.remove('pending');modeHint.textContent='This input method is loaded for the current fortnight.';}
   for(let i=0;i<14;i++){const week=i<7?1:2,date=addDays(start,i),roster=week===1?r1:r2,line=week===1?l1:l2;let built;if(forecast){built=sharedDayForDate(date,week);if(!built){const k=dateKey(date),holiday=holidayFor(k);built={date:k,week,roster:'SHARED',line:'',dataset:null,code:'NO DATA',rosteredStart:'',rosteredEnd:'',exact:false,status:'off',actualCode:'',actualStart:'',actualEnd:'',ph:!!holiday,holidayName:holiday,phMode:'choose',allowances:{},lookupMsg:'This date is outside the roster currently shared by RosterBot. Enter it manually or choose roster lines.'};}}else built=buildDay(date,week,roster,line,i%7,manual);dayState.push(built);}
   if(forecast&&dayState.some(d=>d.pdtCurrent)&&$('#pdtMode').value==='none'&&!window.RosterBotEmployment?.at?.(dayState[0]?.date)){$('#pdtMode').value='current';updatePdtUI();}else updatePdtUI();
-  renderEditor();calculate();saveState();updateDatasetNote();
+  renderEditor();calculate();if(persist)saveState();updateDatasetNote();
 }
 function statusOptions(d){
   if(d.roster==='MANUAL')return [['off','OR / not worked'],['worked','Rostered work'],['worked_or','Worked on an OR day'],['annual','Annual leave'],['personal','Personal leave'],['ph_credit','PH Days Leave (use PH credit)'],['unpaid','Unpaid leave (no pay)']];
@@ -622,7 +622,7 @@ function restore(){
     if(loadedEntryMode==='forecast'&&sharedForecastAvailable()){
       const ps=snapPeriod(parseDate(saved.period||PAY_ANCHOR)),pe=addDays(ps,13),pk=dateKey(ps),ek=dateKey(pe);
       const leaveOverlap=(sharedRosterWeeks()||[]).some(w=>w.isAnnualLeave&&w.wcDate>=pk&&w.wcDate<=ek);
-      if(leaveOverlap){buildFortnight();return true;}
+      if(leaveOverlap){buildFortnight({persist:false});return true;}
     }
     if(Array.isArray(saved.days)&&saved.days.length===14){
       dayState=saved.days;
@@ -689,6 +689,6 @@ window.PayBotCombined={
   calculateDays(days,grade='PB205',pdtMode='none'){try{return computePayCalculation(days,grade,pdtMode)}catch(_){return null}}
 };
 try{window.dispatchEvent(new CustomEvent('paybot:ready'))}catch(_){}
-toggleEntryMode();updatePdtUI();if(!restore())buildFortnight();
+toggleEntryMode();updatePdtUI();if(!restore())buildFortnight({persist:false});
 
 })();

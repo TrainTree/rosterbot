@@ -118,9 +118,9 @@
     if(setupPanel)setupPanel.hidden=isDiaryMode();
     if(convertQuickToDiaryBtn){const hasHistory=hasSavedTimeline();convertQuickToDiaryBtn.textContent=hasHistory?'Open my personal diary':'Turn this into my personal diary';if(quickConvertNote)quickConvertNote.textContent=hasHistory?'Your saved personal diary is untouched by this Quick scenario. In Advanced Builder you can also copy the current Quick setup into the diary as a new or earlier period.':'Quick mode stays lightweight. Converting copies this starting roster (and any Quick annual-leave weeks) into the diary; the Quick setup itself remains available separately.';}
   }
-  function setExperience(mode,{display=true}={}){
-    experienceMode=mode==='diary'?'diary':'quick';try{localStorage.setItem('rosterbot-experience-v1',experienceMode)}catch(_){}updateExperienceUI();saveRosterSession();
-    if(display){if(isDiaryMode()){if(hasSavedTimeline())setCurrentPayCycle(true);else{setupPanel.hidden=true;window.RosterBotDiary?.showAdvanced?.();}}else{if(!viewFromDate.value){const w=E.weekCommencing(startDate.value||localTodayIso());viewFromDate.value=w;viewToDate.value=E.addDays(w,13)}generateDisplay(false);}}
+  function setExperience(mode,{display=true,persist=true}={}){
+    experienceMode=mode==='diary'?'diary':'quick';if(persist){try{localStorage.setItem('rosterbot-experience-v1',experienceMode)}catch(_){}}updateExperienceUI();if(persist)saveRosterSession();
+    if(display){if(isDiaryMode()){if(hasSavedTimeline())setCurrentPayCycle(true,{persist});else{setupPanel.hidden=true;window.RosterBotDiary?.showAdvanced?.();}}else{if(!viewFromDate.value){const w=E.weekCommencing(startDate.value||localTodayIso());viewFromDate.value=w;viewToDate.value=E.addDays(w,13)}generateDisplay(false,{persist});}}
   }
   const MANUAL_DAY_KEYS=['sun','mon','tue','wed','thu','fri','sat'];
   let startManualPatternUpdatedAt='';
@@ -172,7 +172,7 @@
   }
   function isDisplayDimmedDate(date){const from=monthFocusFrom||activeViewFrom,to=monthFocusTo||activeViewTo;return (from&&E.compareIsoDates(date,from)<0)||(to&&E.compareIsoDates(date,to)>0)}
   function setCurrentWeek(display=true){const today=localTodayIso(),wc=E.weekCommencing(today);setViewRange(wc,E.addDays(wc,6),display)}
-  function setCurrentPayCycle(display=true){const start=snapPayPeriodIso(localTodayIso());setViewRange(start,E.addDays(start,13),display);syncQuickCalendar(start)}
+  function setCurrentPayCycle(display=true,{persist=true}={}){const start=snapPayPeriodIso(localTodayIso());setViewRange(start,E.addDays(start,13),false);if(display)generateDisplay(false,{persist});syncQuickCalendar(start)}
   function shiftViewPayCycle(delta){const base=snapPayPeriodIso(viewFromDate.value||localTodayIso()),start=E.addDays(base,delta*14);setViewRange(start,E.addDays(start,13),true);syncQuickCalendar(start)}
   const CAL_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   let quickCalCursor={year:0,month:0},quickCalSelected='';
@@ -186,13 +186,13 @@
   function chooseQuickCalendarDate(iso){quickCalSelected=iso;const start=snapPayPeriodIso(iso);setViewRange(start,E.addDays(start,13),true);const dt=isoUtc(iso);quickCalCursor={year:dt.getUTCFullYear(),month:dt.getUTCMonth()};renderQuickCalendar()}
 
 
-  function applyTheme(theme) {
+  function applyTheme(theme,{persist=true}={}) {
     const chosen = ['1', '2', '3', '4', '5', '6', '7'].includes(String(theme)) ? String(theme) : '1';
     document.documentElement.dataset.theme = chosen;
     styleSelect.value = chosen;
     const themeColours = { '1':'#0b5364', '2':'#111315', '3':'#0b3a70', '4':'#e6531d', '5':'#c7353c', '6':'#6f3489', '7':'#202020' };
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColours[chosen] || '#0b5364');
-    try { localStorage.setItem('rosterbot-theme-v1.9', chosen);window.RosterBotSchema5Persistence?.notifyPersonalChange?.('rosterbot-theme-v1.9'); } catch (_) {}
+    if(persist){try { localStorage.setItem('rosterbot-theme-v1.9', chosen);window.RosterBotSchema5Persistence?.notifyPersonalChange?.('rosterbot-theme-v1.9'); } catch (_) {}}
   }
 
   function initialiseTheme() {
@@ -203,7 +203,7 @@
       else if(checked?.sourceKey==='rosterbot-theme')saved=({ '1':'2', '2':'1', '3':'6' })[checked.raw]||'1';
       else saved=checked?.valid?checked.value:(localStorage.getItem('rosterbot-theme-v1.9')||'1');
     } catch (_) { saved = '1'; }
-    applyTheme(saved);
+    applyTheme(saved,{persist:false});
   }
 
   function localTodayIso() {
@@ -667,8 +667,8 @@
     const settings = engineSettingsForView(from);
     const weeks = E.buildWeeks(data, settings, count);
     const persist = options.persist !== false && !document.documentElement.classList.contains('v28-lookup-active');
+    window.ROSTERBOT_SHARED = { settings, weeks, updatedAt: Date.now(), viewFrom:from, viewTo:to, experienceMode };
     if(persist){
-      window.ROSTERBOT_SHARED = { settings, weeks, updatedAt: Date.now(), viewFrom:from, viewTo:to, experienceMode };
       try { localStorage.setItem('rosterbot-shared-settings-v1', JSON.stringify(settings)); } catch (_) {}
       saveRosterSession();
       try { window.dispatchEvent(new CustomEvent('rosterbot:forecast', { detail: { settings } })); } catch (_) {}
@@ -678,18 +678,19 @@
     outputTitle.textContent = `${E.formatDateLong(from)} – ${E.formatDateLong(to)}`;
     viewRangeSummary.textContent=`${daysBetween(from,to)+1} day${daysBetween(from,to)===0?'':'s'} · ${count} WC week${count===1?'':'s'}`;
     outputSection.hidden = false;
-    if(persist){updateDiaryPosition();refreshPayPreviews();updateHomeDashboard(weeks);}
+    updateDiaryPosition();refreshPayPreviews();updateHomeDashboard(weeks);
     if (shouldScroll) outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     return {settings,weeks,from,to,persist};
   }
 
   window.RosterBotUI = {
-    refresh(){ if (!outputSection.hidden) generateDisplay(false); },
+    refresh(options={}){ if (!outputSection.hidden) generateDisplay(false,options); },
     generate(){ generateDisplay(true); },
     currentSettings,
     engineSettingsForView,
     isDiaryMode,
     setExperience,
+    showCurrentPayCycle(options={}){setCurrentPayCycle(true,options)},
     saveCurrentAsMyRoster,
     saveSession: saveRosterSession,
     restoreSession: restoreRosterSession,
@@ -1014,7 +1015,7 @@
   let startRoleDateManuallyEdited=false;
   const restoredRosterSession = restoreRosterSession(); if(restoredRosterSession&&startRoleDate)startRoleDateManuallyEdited=true; if (!restoredRosterSession) updateStartHints();
   updateExperienceUI();
-  if(restoredRosterSession){if(isDiaryMode()&&hasSavedTimeline()){setCurrentPayCycle(false);setupPanel.hidden=true;generateDisplay(false)}else{const w=E.weekCommencing(startDate.value);viewFromDate.value=restoredRosterSession&&readJson('rosterbot-session-settings-v1',{})?.lastViewedFrom||w;viewToDate.value=restoredRosterSession&&readJson('rosterbot-session-settings-v1',{})?.lastViewedTo||E.addDays(w,13);setupPanel.hidden=false;generateDisplay(false)}}else{viewFromDate.value=E.weekCommencing(startDate.value);viewToDate.value=E.addDays(viewFromDate.value,13);setupPanel.hidden=!isDiaryMode();updateDiaryPosition()}
+  if(restoredRosterSession){if(isDiaryMode()&&hasSavedTimeline()){setCurrentPayCycle(false);setupPanel.hidden=true;generateDisplay(false,{persist:false})}else{const w=E.weekCommencing(startDate.value);viewFromDate.value=restoredRosterSession&&readJson('rosterbot-session-settings-v1',{})?.lastViewedFrom||w;viewToDate.value=restoredRosterSession&&readJson('rosterbot-session-settings-v1',{})?.lastViewedTo||E.addDays(w,13);setupPanel.hidden=false;generateDisplay(false,{persist:false})}}else{viewFromDate.value=E.weekCommencing(startDate.value);viewToDate.value=E.addDays(viewFromDate.value,13);setupPanel.hidden=!isDiaryMode();updateDiaryPosition()}
 
   startRoleDate?.addEventListener('change',()=>{startRoleDateManuallyEdited=true;saveRosterSession()});
   startDate.addEventListener('change', () => {

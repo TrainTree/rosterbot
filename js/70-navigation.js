@@ -30,7 +30,7 @@
   function detailsFor(x){if(!x)return null;const a=x.day.actualOverride||null,c=x.day.cell||{},kind=statusFor(x);if(kind==='leave'){const raw=a?.status||(c.type==='alr'?'alr':'annual');return {kind,label:leaveLabels[raw]||'Leave',code:leaveLabels[raw]||'Leave',start:'',end:'',duration:''}}if(kind==='off')return {kind,label:'OR',code:'OR',start:'',end:'',duration:''};if(kind==='shift'){const start=a?.actualStart||c.start||'',end=a?.actualEnd||c.finish||'',code=a?.actualCode||c.shift||'SHIFT',mins=durationMinutes(start,end),duration=(a&&['worked','worked_or'].includes(a.status)?durationText(mins):(c.bookHours||durationText(mins)));return {kind,label:code,code,start,end,duration}}return {kind,label:'No roster',code:'—',start:'',end:'',duration:''}}
   function timeline(){const rows=readJson('rosterbot-timeline-v1',[]);return Array.isArray(rows)?rows:[]}
   function currentRosterSummary(){const rows=timeline().slice().sort((a,b)=>String(a.startWC).localeCompare(String(b.startWC))),today=localToday();let active=null;for(const r of rows)if(String(r.startWC)<=today)active=r;if(!active)active=rows[0];if(!active)return null;if(active.mode==='manual')return {main:active.manualType==='adhoc'?'Manual fortnight entry':'Personal work pattern',meta:`User-entered schedule · from ${shortDate(active.startWC)}`};const t=active.trackA||{},other=active.trackB;let main=`${t.roster||'ROSTER'} · Line ${t.line||'—'}`;let meta=`${t.depot||'SCS'} · from ${shortDate(active.startWC)}`;if(other)meta+=` · alternates ${other.roster||''} ${other.line||''}`;return {main,meta}}
-  function ensureCurrentCycle(){if(timeline().length){$('homeToday')?.click();setTimeout(renderDashboard,80)}}
+  function ensureCurrentCycle({persist=true}={}){if(timeline().length){if(persist)$('homeToday')?.click();else window.RosterBotUI?.showCurrentPayCycle?.({persist:false});setTimeout(renderDashboard,80)}}
   const drilldownClasses=['v27-drilldown-active','v27-view-week','v27-view-fortnight','v27-view-calendar','v27-view-month'];
   function clearDrilldown(){drilldownClasses.forEach(c=>document.documentElement.classList.remove(c));if($('outputEyebrow'))$('outputEyebrow').textContent='YOUR ROSTER'}
   function setDrilldown(mode){clearDrilldown();if(!mode)return;document.documentElement.classList.add('v27-drilldown-active',`v27-view-${mode}`);if($('outputEyebrow'))$('outputEyebrow').textContent=mode==='week'||mode==='fortnight'?'MY ROSTER':'CALENDAR';if($('outputTitle'))$('outputTitle').textContent=mode==='week'||mode==='fortnight'?'My roster':'Calendar'}
@@ -45,19 +45,19 @@
   function clearHubViews(){document.documentElement.classList.remove('v29-view-roster','v29-view-more')}
   function showRosterSurface(){if($('paybotPage')&&!$('paybotPage').hidden)$('rosterbotNavBtn')?.click()}
   function restorePersonalSetupAfterLookup(){if(document.documentElement.classList.contains('v28-lookup-active'))window.RosterBotUI?.restoreSession?.()}
-  function preparePersonalSurface(){
-    showRosterSurface();restorePersonalSetupAfterLookup();clearHubViews();document.documentElement.classList.remove('v28-onboarding-active','v28-onboarding-preview','v28-lookup-active');const confirm=$('v28PreviewConfirm');if(confirm)confirm.hidden=true;document.documentElement.classList.add('v29-app-ready');window.RosterBotUI?.setExperience?.('diary',{display:false});
+  function preparePersonalSurface({persist=true}={}){
+    showRosterSurface();restorePersonalSetupAfterLookup();clearHubViews();document.documentElement.classList.remove('v28-onboarding-active','v28-onboarding-preview','v28-lookup-active');const confirm=$('v28PreviewConfirm');if(confirm)confirm.hidden=true;document.documentElement.classList.add('v29-app-ready');window.RosterBotUI?.setExperience?.('diary',{display:false,persist});
   }
-  function showOnboarding(){
+  function showOnboarding({persist=true}={}){
     showRosterSurface();restorePersonalSetupAfterLookup();clearDrilldown();clearHubViews();document.documentElement.classList.remove('v29-app-ready','v27-dashboard-active','v28-lookup-active','v28-onboarding-preview');document.documentElement.classList.add('v28-onboarding-active');
-    window.RosterBotUI?.setExperience?.('quick',{display:false});const setup=$('setupPanel');if(setup)setup.hidden=false;resetOnboardingPreview();applyOnboardingCopy(false);window.scrollTo({top:0,behavior:'smooth'});
+    window.RosterBotUI?.setExperience?.('quick',{display:false,persist});const setup=$('setupPanel');if(setup)setup.hidden=false;resetOnboardingPreview();applyOnboardingCopy(false);window.scrollTo({top:0,behavior:'smooth'});
   }
   function showRosterLookup(){
     showRosterSurface();clearDrilldown();clearHubViews();document.documentElement.classList.remove('v27-dashboard-active','v28-onboarding-preview');document.documentElement.classList.add('v28-onboarding-active','v28-lookup-active');window.RosterBotUI?.setExperience?.('quick',{display:false});const setup=$('setupPanel');if(setup)setup.hidden=false;resetOnboardingPreview();applyOnboardingCopy(true);const back=$('v28LookupBack');if(back)back.textContent=timeline().length?'← Back to Roster':'← Back to setup';window.scrollTo({top:0,behavior:'smooth'});
   }
-  function showDashboard(){
-    if(!timeline().length){showOnboarding();return}
-    clearDrilldown();preparePersonalSurface();document.documentElement.classList.add('v27-dashboard-active');setPrimaryNav('home');window.scrollTo({top:0,behavior:'smooth'});ensureCurrentCycle();renderDashboard()
+  function showDashboard({persist=true}={}){
+    if(!timeline().length){showOnboarding({persist});return}
+    clearDrilldown();preparePersonalSurface({persist});document.documentElement.classList.add('v27-dashboard-active');setPrimaryNav('home');window.scrollTo({top:0,behavior:'smooth'});ensureCurrentCycle({persist});renderDashboard()
   }
   function showRosterHub(){
     if(!timeline().length){showOnboarding();return}
@@ -153,7 +153,7 @@
   document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('settingsModal')?.hidden)closeModal('settingsModal');else if(!$('rosterViewerModal')?.hidden)closeModal('rosterViewerModal')});
   let v27YearSwipeX=null,v27YearSwipeY=null;const v27YearStrip=$('historyMonths')?.closest?.('.v27-history-strip')||$('historyMonths');v27YearStrip?.addEventListener('touchstart',e=>{const t=e.touches?.[0];if(!t)return;v27YearSwipeX=t.clientX;v27YearSwipeY=t.clientY},{passive:true});v27YearStrip?.addEventListener('touchend',e=>{if(v27YearSwipeX==null)return;const t=e.changedTouches?.[0];if(!t)return;const dx=t.clientX-v27YearSwipeX,dy=t.clientY-v27YearSwipeY;v27YearSwipeX=v27YearSwipeY=null;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.25){if(dx<0)$('historyNextYear')?.click();else $('historyPrevYear')?.click();}} ,{passive:true});
   let startupPrepared=false,startupRendered=false;
-  function prepareStartup(){if(startupPrepared)return;startupPrepared=true;showDashboard()}
+  function prepareStartup(){if(startupPrepared)return;startupPrepared=true;showDashboard({persist:false})}
   function finishStartup(){
     if(startupRendered)return;startupRendered=true;
     try{prepareStartup()}finally{document.documentElement.classList.remove('rb-booting')}

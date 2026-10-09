@@ -216,5 +216,5 @@
   document.getElementById('timelineEmploymentProfileBtn')?.addEventListener('click',()=>{hideAdvanced();window.RosterBotEmployment?.open?.();});
 window.RosterBotDiary={mirrorNow,clearDatabase,showDay,showWeek,showAdvanced,isWeekLocked,toggleWeekLock};
   function signalDiaryReady(){window.__rosterbotLocalReady=true;try{window.dispatchEvent(new CustomEvent('rosterbot:local-ready'))}catch(_){}}
-  (async()=>{try{localStorage.setItem(K.schema,String(window.RosterBotSchema5?.SCHEMA5_STORAGE_SCHEMA||4))}catch(_){}if(timeline().length&&localStorage.getItem(K.leave)==null){const legacy=settings().annualLeaveWeeks||[];localStorage.setItem(K.leave,JSON.stringify(legacy.map(wc)));window.RosterBotSchema5Persistence?.notifyPersonalChange?.(K.leave)}setBasicLock();if(window.ROSTERBOT_SHARED?.weeks?.length)window.RosterBotUI?.refresh?.();scheduleMirror();signalDiaryReady();})().catch(e=>{console.warn('RosterBot diary initialization failed before sync readiness',e);signalDiaryReady()});
+  (async()=>{try{localStorage.setItem(K.schema,String(window.RosterBotSchema5?.SCHEMA5_STORAGE_SCHEMA||4))}catch(_){}setBasicLock();if(window.ROSTERBOT_SHARED?.weeks?.length)window.RosterBotUI?.refresh?.({persist:false});scheduleMirror();signalDiaryReady();})().catch(e=>{console.warn('RosterBot diary initialization failed before sync readiness',e);signalDiaryReady()});
 })();
