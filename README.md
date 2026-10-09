@@ -1,4 +1,4 @@
-# RosterBot v0.29.1 — Recursion Hotfix
+# RosterBot v0.30.0 — Data Safety
 
 This is the modular RosterBot source build. It keeps the frozen official roster/pay reference packs separate from the application UI, personal history and sync code.
 
@@ -7,9 +7,20 @@ This is the modular RosterBot source build. It keeps the frozen official roster/
 - `data/rosters-fp64-fp68-20260908.js` — official effective-dated roster/roster-book data and the lightweight roster catalogue. Treat as read-only until official roster source data changes.
 - `data/pay-reference-20260923.js` — PayBot roster lookup data, public holidays, verified/entitlement pay-rate anchors, grade rates and allowances. Treat as read-only until authoritative pay/reference data changes.
 
-The frozen-data files are unchanged from the validated pre-v0.29 build.
+The frozen-data files are unchanged from the validated v0.29 production build.
 
-## v0.29.1 hotfix
+## v0.30.0 changes
+
+- Adds a deterministic, restart-safe local schema-4 to schema-5 migration with verified compatibility projection, generation ancestry, recovery journal and previous-generation evidence.
+- Keeps manual `.rosterbot` exports at schema 4 for compatibility while schema-5 local and Cloud state remain authoritative.
+- Makes backup import and Cloud restore transactional, including exact rollback after a failed replacement.
+- Requires a fresh authenticated server capability attestation before any schema-5 Cloud roster/history/save transfer.
+- Keeps production Cloud fixed to `https://rosterbot.work` (plus the documented `https://www.rosterbot.work` alias) and production Supabase project `rithmbggiiusrmdcqrif`; saved configuration and fallback cannot redirect the production build.
+- Retains safe startup diagnostics and fail-closed recovery UI without including test harnesses or synthetic data in the production runtime bundle.
+
+Official roster and PayBot reference data are unchanged.
+
+## v0.29.1 hotfix retained
 
 - Fixed an accidental recursive week-heading formatter introduced in v0.29.0.
 - Restores first-run previews, normal roster rendering and Home → This pay fortnight.
@@ -47,10 +58,10 @@ Manual work patterns are user-entered schedule data; they are deliberately label
 - `js/75-sources.js` — public Sources reference UI.
 - `js/80-calendar-subscription.js` — sanitised live calendar projection/publisher and cross-device feed updater.
 
-## Validation before tester promotion
+## Validation before release
 
 The build should still be tested on the target phone/browser before promotion. In particular test: an existing PB205 roster, a fresh trainee/manual-pattern setup, a mid-fortnight role change, a current-scheme PDT day, an outstation MAIN roster, Sources on a narrow phone, backup/import, and Cloud Sync across two devices.
 
-## Running
+## Production bundle
 
-Upload the whole directory to the web host, preserving the folder structure. No calendar Edge Function or SQL redeployment is needed for v0.29.1. For local testing, serve this directory with any simple static HTTP server and open `index.html`.
+Generate the reviewed runtime-only bundle with `node scripts/prepare-production-pages.mjs <empty-output-directory>`. The generator includes only `.nojekyll`, `CNAME`, `index.html`, `css/`, `data/`, `js/`, and its checksum manifest; source tests, Supabase tooling, captured evidence and synthetic fixtures are excluded. For local testing, serve the source directory with any simple static HTTP server and open `index.html`.

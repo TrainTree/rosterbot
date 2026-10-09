@@ -13,15 +13,15 @@ test('fixtures are synthetic and contain no production account identity',()=>{
   assert.doesNotMatch(text,/@(gmail|outlook|icloud|yahoo)\./i);
 });
 
-test('backup payload contract remains v0.29 schema 4',()=>{
+test('v0.30 backup payload contract remains schema 4',()=>{
   const source=readSource('js/50-data-backup.js');
-  assert.match(source,/app:'RosterBotPayBot',version:'0\.26\.1-mobile-ui-hotfix',schemaVersion:4/);
+  assert.match(source,/app:'RosterBotPayBot',version:'0\.30\.0',schemaVersion:4/);
   assert.doesNotMatch(source,/schemaVersion:5/);
 });
 
 test('Cloud keeps schema 4 compatibility and adds attested schema 5 transport',()=>{
   const source=readSource('js/51-cloud-sync.js');
-  assert.match(source,/version:'0\.26\.1-mobile-ui-hotfix',schemaVersion:4/);
+  assert.match(source,/version:'0\.30\.0',schemaVersion:4/);
   assert.match(source,/new_schema_version:schemaVersion/);
   assert.match(source,/schemaVersion=cloudSchema5\?\.isPlaintext\?\.\(plain\)\?5:4/);
   assert.match(source,/get_roster_schema_capability/);

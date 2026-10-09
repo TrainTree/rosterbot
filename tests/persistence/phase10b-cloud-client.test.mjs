@@ -12,12 +12,18 @@ const runtime=require(`${root}/js/03-schema5-migration.js`);
 const cloudSchema5=require(`${root}/js/07-cloud-schema5.js`);
 const golden=JSON.parse(fs.readFileSync(path.join(root,'tests/fixtures/schema4-to-schema5-golden.json'),'utf8'));
 const KEY='sb_publishable_Phase10bCapabilityFixture_12345';
+const STAGING_REF='wuzyurvrztskljpxpeaq',STAGING_URL=`https://${STAGING_REF}.supabase.co`,BETA_ORIGIN='https://beta.rosterbot.work';
+const PRODUCTION_REF='rithmbggiiusrmdcqrif',PRODUCTION_URL=`https://${PRODUCTION_REF}.supabase.co`,PRODUCTION_ORIGIN='https://rosterbot.work';
 
 function context(overrides={}){
-  const profile={version:1,deployment:'beta-staging',environment:'isolated-staging',projectRef:cloudSchema5.STAGING_REF,url:cloudSchema5.STAGING_URL,publishableKey:KEY,allowedOrigins:[cloudSchema5.BETA_ORIGIN],allowSavedConfiguration:false,fallbackToEmbedded:false,requestedCloudSchema:5};
-  return {profile,config:{url:cloudSchema5.STAGING_URL,key:KEY},origin:cloudSchema5.BETA_ORIGIN,enabled:true,userId:'synthetic-user-a',accessToken:'synthetic-access-a',...overrides};
+  const profile={version:1,deployment:'beta-staging',environment:'isolated-staging',projectRef:STAGING_REF,url:STAGING_URL,publishableKey:KEY,allowedOrigins:[BETA_ORIGIN],allowSavedConfiguration:false,fallbackToEmbedded:false,requestedCloudSchema:5};
+  return {profile,config:{url:STAGING_URL,key:KEY},origin:BETA_ORIGIN,enabled:true,fixedBinding:true,userId:'synthetic-user-a',accessToken:'synthetic-access-a',...overrides};
 }
-const validAttestation=()=>({environment:'isolated-staging',project_ref:cloudSchema5.STAGING_REF,contract:cloudSchema5.CONTRACT,min_writable_schema:4,max_writable_schema:5});
+function productionContext(overrides={}){
+  const profile={version:1,deployment:'production',environment:'production',projectRef:PRODUCTION_REF,url:PRODUCTION_URL,publishableKey:KEY,allowedOrigins:[PRODUCTION_ORIGIN,'https://www.rosterbot.work'],allowSavedConfiguration:false,fallbackToEmbedded:false,requestedCloudSchema:5};
+  return {profile,config:{url:PRODUCTION_URL,key:KEY},origin:PRODUCTION_ORIGIN,enabled:true,fixedBinding:true,userId:'synthetic-user-a',accessToken:'synthetic-access-a',...overrides};
+}
+const validAttestation=(ctx=context())=>({environment:ctx.profile.environment,project_ref:ctx.profile.projectRef,contract:cloudSchema5.CONTRACT,min_writable_schema:4,max_writable_schema:5});
 
 test('fresh exact authenticated attestation is the only capability-5 release',async()=>{
   const state=cloudSchema5.createCapabilityState(),ctx=context();
@@ -25,6 +31,9 @@ test('fresh exact authenticated attestation is the only capability-5 release',as
   assert.deepEqual(await state.attest(async()=>validAttestation(),ctx),validAttestation());
   assert.equal(state.isGranted(ctx),true);
   assert.equal(state.status(ctx).reason,'granted');
+  const production=productionContext(),productionState=cloudSchema5.createCapabilityState();
+  assert.deepEqual(await productionState.attest(async()=>validAttestation(production),production),validAttestation(production));
+  assert.equal(productionState.isGranted(production),true);
 });
 
 test('no auth, capability 4, wrong identity, malformed and forged attestations retain the hold',async t=>{
@@ -60,14 +69,18 @@ test('logout, token/user/config/origin/profile changes and failed attestation im
   const client=readSource('js/51-cloud-sync.js');assert.match(client,/async function signOut\(\)\{if\(busy\)return;revokeSchema5Capability\('logout'\)/);assert.match(client,/if\(before!==sessionIdentity\(\)\)revokeSchema5Capability\(s\?'session-changed':'logout'\)/);
 });
 
-test('exact production and non-beta bindings can never become trusted',()=>{
-  const base=context();
+test('only exact fixed deployment bindings can become trusted',()=>{
+  const base=context(),production=productionContext();
+  assert.equal(cloudSchema5.trustedContext(base),true);
+  assert.equal(cloudSchema5.trustedContext(production),true);
   for(const candidate of [
     {...base,origin:'https://rosterbot.work'},
     {...base,config:{url:'https://rithmbggiiusrmdcqrif.supabase.co',key:KEY}},
-    {...base,profile:{...base.profile,deployment:'production'}},
     {...base,profile:{...base.profile,projectRef:'rithmbggiiusrmdcqrif'}},
-    {...base,profile:{...base.profile,publishableKey:'forged'}}
+    {...base,profile:{...base.profile,publishableKey:'forged'}},
+    {...production,fixedBinding:false},
+    {...production,config:{url:STAGING_URL,key:KEY}},
+    {...production,profile:{...production.profile,allowSavedConfiguration:true}}
   ])assert.equal(cloudSchema5.trustedContext(candidate),false);
 });
 

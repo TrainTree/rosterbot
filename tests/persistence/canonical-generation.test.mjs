@@ -70,7 +70,7 @@ test('v0.29 states without generation metadata retain legacy missing-store recov
 test('a verified replacement creates generation metadata and retains one previous known-good projection',async()=>{
   const old=rawTimeline('old','A'),next=rawTimeline('next','B'),storage=new MemoryStorage({[timelineKey]:old}),idb=new MemoryIndexedDb([{key:timelineKey,value:old,updatedAt:'old'}]);
   const result=await safety.replaceCanonicalPersistenceCopies({storage,indexedDbTarget:idb,registry,localSet:[[timelineKey,next]],indexedDbSet:[[timelineKey,next]],now:'2026-10-01T01:00:00.000Z'});
-  assert.equal(result.ok,true);assert.equal(result.generation.verification,'verified');assert.equal(result.generation.writer,'v0.30-phase6');assert.match(result.generation.fingerprint,/^[a-f0-9]{64}$/);assert.equal(safety.isReplacementInProgress(),false);
+  assert.equal(result.ok,true);assert.equal(result.generation.verification,'verified');assert.equal(result.generation.writer,'v0.30.0');assert.match(result.generation.fingerprint,/^[a-f0-9]{64}$/);assert.equal(safety.isReplacementInProgress(),false);
   const localMeta=canonical.parseGeneration(storage.getItem(canonical.GENERATION_KEY),{registry}),idbMeta=canonical.parseGeneration(idb.rows.get(canonical.GENERATION_KEY).value,{registry}),previous=canonical.parsePrevious(storage.getItem(canonical.PREVIOUS_KEY),{registry});
   assert.equal(localMeta.ok,true);assert.deepEqual(localMeta.value,idbMeta.value);assert.equal(previous.ok,true);assert.equal(previous.value.projection.storage[timelineKey],old);assert.equal((await canonical.verifyPrevious(previous.value,{registry})).ok,true);
 });

@@ -14,7 +14,7 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
   const PREVIOUS_FORMAT='rosterbot-previous-generation-v1';
   const GENERATION_KEY='rosterbot-local-generation-v1';
   const PREVIOUS_KEY='rosterbot-previous-generation-v1';
-  const WRITER_VERSION='v0.30-phase6';
+  const WRITER_VERSION='v0.30.0';
   const RECOVERABLE=new Set(['valid','legacy']);
   const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
   const isObject=value=>!!value&&typeof value==='object'&&!Array.isArray(value);

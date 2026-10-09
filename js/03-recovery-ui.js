@@ -6,7 +6,7 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
   if(root)root.RosterBotRecoveryUI=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
-  const BUILD_VERSION='v0.30-phase7b';
+  const BUILD_VERSION='v0.30.0';
   const RECOVERABLE=new Set(['valid','legacy']);
   const SECRET_SENSITIVITY=new Set(['secret','cryptographic']);
   const LABELS={

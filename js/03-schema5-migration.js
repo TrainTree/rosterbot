@@ -19,7 +19,7 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
   });
   const JOURNAL_FORMAT='rosterbot-schema5-migration-journal';
   const JOURNAL_VERSION=1;
-  const WRITER=Object.freeze({app:'RosterBotPayBot',version:'0.30.0',build:'20261006-phase9-local-schema5'});
+  const WRITER=Object.freeze({app:'RosterBotPayBot',version:'0.30.0',build:'v0.30.0-release'});
   const CHECKPOINT=Object.freeze(Object.fromEntries(schema5.JOURNAL_STATES.map((state,index)=>[state,index])));
   const appOwned=key=>/^(?:rosterbot|paybot)-/.test(String(key||''));
   const isObject=value=>!!value&&typeof value==='object'&&!Array.isArray(value);

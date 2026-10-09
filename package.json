@@ -1,5 +1,5 @@
 {
-  "name": "rosterbot-v0.30-data-safety",
+  "name": "rosterbot-v0.30.0",
   "private": true,
   "scripts": {
     "test": "node --test tests/persistence/*.test.mjs",

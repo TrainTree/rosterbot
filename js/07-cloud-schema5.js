@@ -6,9 +6,6 @@
   else Object.defineProperty(root,'RosterBotCloudSchema5',{value:api,writable:false,configurable:false,enumerable:true});
 })(typeof window!=='undefined'?window:globalThis,function(schema5){
   'use strict';
-  const BETA_ORIGIN='https://beta.rosterbot.work';
-  const STAGING_REF='wuzyurvrztskljpxpeaq';
-  const STAGING_URL=`https://${STAGING_REF}.supabase.co`;
   const CONTRACT='rosterbot-schema5-cloud-v1';
   const ENCRYPTED_FORMAT='rosterbot-encrypted-v1';
   const HASH=/^[a-f0-9]{64}$/;
@@ -18,21 +15,22 @@
   function trustedContext(context){
     const profile=context?.profile,config=context?.config;
     return !!(
-      profile?.version===1&&profile.deployment==='beta-staging'&&profile.environment==='isolated-staging'&&
-      profile.projectRef===STAGING_REF&&profile.url===STAGING_URL&&profile.requestedCloudSchema===5&&
-      Array.isArray(profile.allowedOrigins)&&profile.allowedOrigins.length===1&&profile.allowedOrigins[0]===BETA_ORIGIN&&
-      profile.allowSavedConfiguration===false&&profile.fallbackToEmbedded===false&&context.origin===BETA_ORIGIN&&
-      context.enabled===true&&config?.url===STAGING_URL&&config?.key===profile.publishableKey&&
+      profile?.version===1&&['beta-staging','production'].includes(profile.deployment)&&
+      typeof profile.environment==='string'&&profile.environment.length>0&&/^[a-z]{20}$/.test(String(profile.projectRef||''))&&
+      profile.url===`https://${profile.projectRef}.supabase.co`&&profile.requestedCloudSchema===5&&
+      Array.isArray(profile.allowedOrigins)&&profile.allowedOrigins.includes(context.origin)&&
+      profile.allowSavedConfiguration===false&&profile.fallbackToEmbedded===false&&
+      context.enabled===true&&context.fixedBinding===true&&config?.url===profile.url&&config?.key===profile.publishableKey&&
       typeof profile.publishableKey==='string'&&profile.publishableKey.length>0&&
       typeof context.userId==='string'&&context.userId.length>0&&typeof context.accessToken==='string'&&context.accessToken.length>0
     );
   }
-  function validateAttestation(value){
+  function validateAttestation(value,context){
     if(!object(value))return {ok:false,reason:'attestation-not-object'};
     const expected=['contract','environment','max_writable_schema','min_writable_schema','project_ref'];
     if(JSON.stringify(Object.keys(value).sort())!==JSON.stringify(expected))return {ok:false,reason:'attestation-fields'};
-    if(value.environment!=='isolated-staging')return {ok:false,reason:'attestation-environment'};
-    if(value.project_ref!==STAGING_REF)return {ok:false,reason:'attestation-project'};
+    if(value.environment!==context?.profile?.environment)return {ok:false,reason:'attestation-environment'};
+    if(value.project_ref!==context?.profile?.projectRef)return {ok:false,reason:'attestation-project'};
     if(value.contract!==CONTRACT)return {ok:false,reason:'attestation-contract'};
     const minimum=value.min_writable_schema,maximum=value.max_writable_schema;
     if(!Number.isSafeInteger(minimum)||!Number.isSafeInteger(maximum)||minimum>5||maximum<5||minimum>maximum)return {ok:false,reason:'attestation-schema-range'};
@@ -51,12 +49,12 @@
     function accept(attestation,context){
       revoke('attestation-pending');
       if(!trustedContext(context))return {ok:false,reason:lastReason='untrusted-context'};
-      const checked=validateAttestation(attestation);if(!checked.ok)return {ok:false,reason:lastReason=checked.reason};
+      const checked=validateAttestation(attestation,context);if(!checked.ok)return {ok:false,reason:lastReason=checked.reason};
       grant={signature:Object.freeze(contextSignature(context)),attestation:checked.value,grantedAt:Date.now()};lastReason='granted';return {ok:true,attestation:checked.value};
     }
     async function attest(request,context){
       revoke('attestation-pending');
-      if(!trustedContext(context))throw Object.assign(new Error('Schema-5 Cloud is held because the beta deployment binding is not trusted.'),{code:'SCHEMA5_CLOUD_CAPABILITY_HOLD',reason:lastReason='untrusted-context'});
+      if(!trustedContext(context))throw Object.assign(new Error('Schema-5 Cloud is held because the deployment binding is not trusted.'),{code:'SCHEMA5_CLOUD_CAPABILITY_HOLD',reason:lastReason='untrusted-context'});
       try{
         const response=await request();const result=accept(response,context);
         if(!result.ok)throw Object.assign(new Error(`Schema-5 Cloud capability attestation was refused: ${result.reason}.`),{code:'SCHEMA5_CLOUD_CAPABILITY_HOLD',reason:result.reason});
@@ -82,5 +80,5 @@
   }
   async function validatePlaintext(payload,options={}){return schema5.validateSchema5Envelope(payload,options)}
   function hmacIdentity(envelope){return schema5.schema5Identity(envelope)}
-  return Object.freeze({BETA_ORIGIN,STAGING_REF,STAGING_URL,CONTRACT,ENCRYPTED_FORMAT,trustedContext,validateAttestation,createCapabilityState,isPlaintext,isEncrypted,validateEncryptedOuter,validatePlaintext,hmacIdentity});
+  return Object.freeze({CONTRACT,ENCRYPTED_FORMAT,trustedContext,validateAttestation,createCapabilityState,isPlaintext,isEncrypted,validateEncryptedOuter,validatePlaintext,hmacIdentity});
 });

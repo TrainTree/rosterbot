@@ -6,6 +6,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
   const PROFILE_KEYS=new Set(['version','deployment','environment','projectRef','url','publishableKey','allowedOrigins','allowSavedConfiguration','fallbackToEmbedded','requestedCloudSchema']);
+  const PRODUCTION_ORIGINS=Object.freeze(['https://rosterbot.work','https://www.rosterbot.work']);
   const disabled=(reason,profile=null,origin='')=>Object.freeze({enabled:false,reason,profile,origin,config:null,fixedBinding:true});
   function object(value){return !!value&&typeof value==='object'&&!Array.isArray(value)}
   function parseJwtPayload(key){
@@ -39,9 +40,9 @@
     if(!browserSafeKey(profile.publishableKey,profile.projectRef))return {ok:false,reason:'deployment-browser-key'};
     if(!Array.isArray(profile.allowedOrigins)||profile.allowedOrigins.length===0||new Set(profile.allowedOrigins).size!==profile.allowedOrigins.length||profile.allowedOrigins.some(origin=>!validOrigin(origin)))return {ok:false,reason:'deployment-origins'};
     if(profile.deployment==='beta-staging'){
-      if(profile.environment!=='isolated-staging'||profile.allowedOrigins.length!==1||profile.allowSavedConfiguration!==false||profile.fallbackToEmbedded!==false||profile.requestedCloudSchema!==5)return {ok:false,reason:'beta-deployment-contract'};
+      if(profile.environment!=='isolated-staging'||profile.allowedOrigins.length!==1||profile.allowedOrigins.some(origin=>PRODUCTION_ORIGINS.includes(origin))||profile.allowSavedConfiguration!==false||profile.fallbackToEmbedded!==false||profile.requestedCloudSchema!==5)return {ok:false,reason:'beta-deployment-contract'};
     }else if(profile.deployment==='production'){
-      if(profile.environment!=='production'||profile.allowSavedConfiguration!==true||profile.fallbackToEmbedded!==true||profile.requestedCloudSchema!==4)return {ok:false,reason:'production-deployment-contract'};
+      if(profile.environment!=='production'||JSON.stringify(profile.allowedOrigins)!==JSON.stringify(PRODUCTION_ORIGINS)||profile.allowSavedConfiguration!==false||profile.fallbackToEmbedded!==false||profile.requestedCloudSchema!==5)return {ok:false,reason:'production-deployment-contract'};
     }else return {ok:false,reason:'deployment-kind'};
     return {ok:true,profile};
   }
@@ -57,19 +58,17 @@
   function resolve({profile=root.RosterBotCloudDeploymentProfile,origin=root.location?.origin||'',savedRaw=null}={}){
     const checked=validateProfile(profile);if(!checked.ok)return disabled(checked.reason,null,String(origin||''));
     const value=checked.profile,currentOrigin=String(origin||''),embedded=embeddedConfiguration(value);
-    if(value.deployment==='beta-staging'){
-      if(currentOrigin!==value.allowedOrigins[0])return disabled('beta-origin-mismatch',value,currentOrigin);
-      return Object.freeze({enabled:true,reason:null,profile:value,origin:currentOrigin,config:embedded,fixedBinding:true});
-    }
     if(value.allowedOrigins.includes(currentOrigin))return Object.freeze({enabled:true,reason:null,profile:value,origin:currentOrigin,config:embedded,fixedBinding:true});
+    if(value.deployment==='beta-staging')return disabled('beta-origin-mismatch',value,currentOrigin);
+    if(value.deployment==='production')return disabled('production-origin-mismatch',value,currentOrigin);
     const saved=value.allowSavedConfiguration?savedConfiguration(savedRaw):null,config=saved||(value.fallbackToEmbedded?embedded:null);
     return config?Object.freeze({enabled:true,reason:null,profile:value,origin:currentOrigin,config,fixedBinding:false}):disabled('cloud-configuration-missing',value,currentOrigin);
   }
   function assertRequest(runtime,targetUrl,actualOrigin=root.location?.origin||''){
     if(!runtime?.enabled||!runtime.config)throw Object.assign(new Error('Cloud is disabled because its deployment configuration is unavailable.'),{code:'CLOUD_CONFIG_DISABLED'});
-    if(runtime.profile?.deployment==='beta-staging'){
-      if(String(actualOrigin)!==runtime.profile.allowedOrigins[0]||runtime.origin!==runtime.profile.allowedOrigins[0])throw Object.assign(new Error('Cloud is disabled on this origin.'),{code:'CLOUD_ORIGIN_MISMATCH'});
-      if(runtime.config.url!==runtime.profile.url||runtime.config.key!==runtime.profile.publishableKey)throw Object.assign(new Error('Cloud is disabled because the beta binding does not match its deployment profile.'),{code:'CLOUD_CONFIG_MISMATCH'});
+    if(runtime.fixedBinding){
+      if(!runtime.profile.allowedOrigins.includes(String(actualOrigin))||!runtime.profile.allowedOrigins.includes(runtime.origin))throw Object.assign(new Error('Cloud is disabled on this origin.'),{code:'CLOUD_ORIGIN_MISMATCH'});
+      if(runtime.config.url!==runtime.profile.url||runtime.config.key!==runtime.profile.publishableKey)throw Object.assign(new Error('Cloud is disabled because its binding does not match the deployment profile.'),{code:'CLOUD_CONFIG_MISMATCH'});
     }
     let target;try{target=new URL(String(targetUrl))}catch(_){throw Object.assign(new Error('Cloud request URL is malformed.'),{code:'CLOUD_REQUEST_URL_INVALID'})}
     if(target.origin!==runtime.config.url)throw Object.assign(new Error('Cloud request does not match the bound Supabase project.'),{code:'CLOUD_REQUEST_PROJECT_MISMATCH'});

@@ -118,26 +118,30 @@ test('generator refuses missing, malformed and privileged credentials before cre
   }
 });
 
-test('ordinary production deployment and manual development fallback remain unchanged',()=>{
+test('production deployment is fixed to documented production origins and ignores saved configuration',()=>{
   const window={location:{origin:'https://rosterbot.work'},atob:value=>Buffer.from(value,'base64').toString('binary')},context=vm.createContext({window,URL});
   vm.runInContext(fs.readFileSync(path.join(root,'js/05-cloud-deployment-profile.js'),'utf8'),context);
   vm.runInContext(fs.readFileSync(path.join(root,'js/06-cloud-config.js'),'utf8'),context);
   const profile=window.RosterBotCloudDeploymentProfile,api=window.RosterBotCloudConfig,embedded={url:PRODUCTION_URL,key:PRODUCTION_KEY};
   assert.deepEqual(JSON.parse(JSON.stringify(api.resolve({profile,origin:'https://rosterbot.work'}).config)),embedded);
   assert.deepEqual(JSON.parse(JSON.stringify(api.resolve({profile,origin:'https://www.rosterbot.work'}).config)),embedded);
-  assert.deepEqual(JSON.parse(JSON.stringify(api.resolve({profile,origin:'http://localhost:8765'}).config)),embedded);
   const manual={url:'https://abcdefghijklmnopqrst.supabase.co',key:'sb_publishable_ManualDevelopmentFixture_123'};
-  assert.deepEqual(JSON.parse(JSON.stringify(api.resolve({profile,origin:'http://localhost:8765',savedRaw:JSON.stringify(manual)}).config)),manual);
+  for(const origin of ['http://localhost:8765','https://beta.rosterbot.work']){
+    const result=api.resolve({profile,origin,savedRaw:JSON.stringify(manual)});assert.equal(result.enabled,false);assert.equal(result.config,null);assert.equal(result.reason,'production-origin-mismatch');
+  }
+  const exact=api.resolve({profile,origin:'https://rosterbot.work',savedRaw:JSON.stringify(manual)});
+  assert.deepEqual(JSON.parse(JSON.stringify(exact.config)),embedded);assert.equal(exact.fixedBinding,true);
+  assert.throws(()=>api.assertRequest(exact,`${STAGING_URL}/rest/v1/roster_state`,'https://rosterbot.work'),error=>error.code==='CLOUD_REQUEST_PROJECT_MISMATCH');
 });
 
-test('beta schema-5 release path requires exact authenticated server attestation',()=>{
+test('schema-5 release path requires exact profile-bound authenticated server attestation',()=>{
   const cloud=fs.readFileSync(path.join(root,'js/51-cloud-sync.js'),'utf8'),gate=fs.readFileSync(path.join(root,'js/07-cloud-schema5.js'),'utf8');
   assert.match(cloud,/async function rpcSave\([^)]*\)\{await requireCloudTransferAllowed\(\)/);
   assert.match(cloud,/async function applyPayload\([^)]*\}\s*=\s*\{\}\)\{\s*await requireCloudTransferAllowed\(\)/);
   assert.match(cloud,/async function rotateEncryptionWrappers\([^)]*\)\{await requireCloudTransferAllowed\(\)/);
   assert.match(cloud,/get_roster_schema_capability/);
   assert.match(cloud,/new_schema_version:schemaVersion/);
-  for(const value of [BETA_ORIGIN,STAGING_REF,'isolated-staging','rosterbot-schema5-cloud-v1'])assert(gate.includes(value));
-  assert.match(gate,/STAGING_URL=`https:\/\/\$\{STAGING_REF\}\.supabase\.co`/);
+  for(const value of ['rosterbot-schema5-cloud-v1','context.fixedBinding===true','value.environment!==context?.profile?.environment','value.project_ref!==context?.profile?.projectRef'])assert(gate.includes(value));
+  assert.doesNotMatch(gate,/wuzyurvrztskljpxpeaq|rithmbggiiusrmdcqrif|https:\/\/beta\.rosterbot\.work|https:\/\/rosterbot\.work/);
   assert.match(gate,/context\.userId/);assert.match(gate,/context\.accessToken/);
 });

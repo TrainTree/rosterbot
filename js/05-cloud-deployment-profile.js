@@ -8,9 +8,9 @@
     url:'https://rithmbggiiusrmdcqrif.supabase.co',
     publishableKey:'sb_publishable_TnrRQNNVqPbLq_JkNgu9Zg_--0mqp4B',
     allowedOrigins:Object.freeze(['https://rosterbot.work','https://www.rosterbot.work']),
-    allowSavedConfiguration:true,
-    fallbackToEmbedded:true,
-    requestedCloudSchema:4
+    allowSavedConfiguration:false,
+    fallbackToEmbedded:false,
+    requestedCloudSchema:5
   });
   Object.defineProperty(root,'RosterBotCloudDeploymentProfile',{value:profile,writable:false,configurable:false,enumerable:true});
 })(window);

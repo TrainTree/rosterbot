@@ -58,7 +58,7 @@ console.log(`\nPhase 7A schema-5 migration design`);
 console.log(`- envelope: ${SCHEMA5_FORMAT} · schema=${SCHEMA5_STORAGE_SCHEMA} · production writes=false`);
 console.log(`- golden fixtures: ${schema5Successful.length} success · ${schema5Cases.length-schema5Successful.length} rejected · exact fingerprints=true`);
 console.log(`- journal checkpoints: ${JOURNAL_STATES.join(' → ')}`);
-console.log(`- compatibility: production registry=${registry.schemaVersion} · backup remains schema 4 · schema-5 Cloud requires the beta/staging attestation`);
+console.log(`- compatibility: production registry=${registry.schemaVersion} · backup remains schema 4 · schema-5 Cloud requires an exact deployment-profile attestation`);
 
 const futureFixture=JSON.parse(fs.readFileSync(path.join(root,'tests/fixtures/schema5-bootstrap-guard.json'),'utf8'));
 const futureLocal=Object.fromEntries(Object.entries(futureFixture.localStorage).map(([key,value])=>[key,typeof value==='string'?value:JSON.stringify(value)]));
@@ -67,4 +67,4 @@ console.log(`\nPhase 7B rollback-proof bootstrap guard`);
 console.log(`- client capability: supported=${compatibility.POLICY.currentSupportedStorageSchema} · reader=${compatibility.POLICY.readerSchema} · writer=${compatibility.POLICY.writerSchema} · highest-write=${compatibility.POLICY.highestSafeWriteSchema}`);
 console.log(`- future fixture: blocked=${futureDecision.blocked} · detected-schema=${futureDecision.detected.highestStorageSchema} · projection-writable=${futureDecision.detected.projectionWritable}`);
 console.log(`- normal schema 4: allowed=${compatibility.inspect({localValues:{'rosterbot-db-schema-v1':'4'}}).allowed} · production writes remain schema 4`);
-console.log(`- Cloud boundary: exact beta/staging profile plus fresh authenticated capability attestation · server-side schema/revision guards remain authoritative`);
+console.log(`- Cloud boundary: exact fixed deployment profile plus fresh authenticated capability attestation · server-side schema/revision guards remain authoritative`);

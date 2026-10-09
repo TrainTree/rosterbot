@@ -80,10 +80,9 @@ assert.match(cloud,/requireCloudTransferAllowed/,'Cloud transfer guard is missin
 assert.match(cloud,/get_roster_schema_capability/,'Authenticated capability attestation is missing from the staging bundle.');
 assert.match(cloud,/new_schema_version:schemaVersion/,'Schema-5 save wire path is missing from the staging bundle.');
 assert.match(cloud,/replaceFromSchema5Envelope/,'Transactional schema-5 restore path is missing from the staging bundle.');
-for(const value of [stagingOrigin,stagingProjectRef,'rosterbot-schema5-cloud-v1'])assert(cloudSchema5.includes(value),`Schema-5 capability gate is missing exact binding: ${value}`);
-assert.match(cloudSchema5,/STAGING_URL=`https:\/\/\$\{STAGING_REF\}\.supabase\.co`/,'Schema-5 capability gate does not derive the exact staging URL from its fixed project ref.');
-assert.match(cloudSchema5,/allowSavedConfiguration===false/);
-assert.match(cloudSchema5,/fallbackToEmbedded===false/);
+for(const value of ['rosterbot-schema5-cloud-v1','context.fixedBinding===true','value.environment!==context?.profile?.environment','value.project_ref!==context?.profile?.projectRef'])assert(cloudSchema5.includes(value),`Schema-5 capability gate is missing profile-bound validation: ${value}`);
+assert(!cloudSchema5.includes(stagingProjectRef),'Shared schema-5 gate must not hard-code the staging project.');
+assert(!cloudSchema5.includes(stagingOrigin),'Shared schema-5 gate must not hard-code the beta origin.');
 
 const runtimeFiles=copied.filter(relative=>relative!=='CNAME');
 const runtimeText=(await Promise.all(runtimeFiles.map(async relative=>`${relative}\n${await readFile(path.join(destination,relative),'utf8')}`))).join('\n');
