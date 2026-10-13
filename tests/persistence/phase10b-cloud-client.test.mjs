@@ -148,6 +148,17 @@ test('schema-4 upgrade comparison aligns only canonically equal legacy values fo
   assert.match(cloud,/alignSchema4ProjectionStorage\(normalizedStorage\(schema5ProjectionStorage\(plain\)\),remotePlain\)/);
 });
 
+test('historical schema-4 encryption domain and verified unlock publication remain compatible',()=>{
+  const cloud=readSource('js/51-cloud-sync.js'),unlock=cloud.slice(cloud.indexOf('async function unlockEncryption'),cloud.indexOf('function lockEncryptionDevice'));
+  assert.match(cloud,/schema===5\?'RosterBot schema-5 cloud fingerprint v1\\0':'RosterBot sync fingerprint v1\\0'/);
+  assert.doesNotMatch(cloud,/RosterBot schema-4 cloud fingerprint v1/);
+  const candidateVerification=unlock.indexOf('await decryptCloudPayload(remote.payload,master,profile)'),publishProfile=unlock.indexOf('cryptoProfile=profile'),publishMaster=unlock.indexOf('masterKeyBytes=master'),installedVerification=unlock.indexOf('await decryptCloudPayload(remote.payload);'),success=unlock.indexOf("setStatus('Encrypted cloud unlocked on this device.");
+  assert(candidateVerification>=0&&candidateVerification<publishProfile&&publishProfile<publishMaster&&publishMaster<installedVerification&&installedVerification<success,'unlock success or key publication precedes verified decryption');
+  for(const reason of ['deriving','derived-key-verifying-payload','installed-context-verifying','unlocked-verified','unlock-verification-failed','missing-key-at-decrypt','same-user-token-refresh-preserved','revoked-logout','revoked-user-change','revoked-auth-loss','revoked-config-change','revoked-explicit-lock'])assert.match(cloud,new RegExp(reason));
+  const diagnostic=cloud.slice(cloud.indexOf('function cryptoTransition'),cloud.indexOf('function isPlainSchema4'));
+  assert.doesNotMatch(diagnostic,/accessToken|refresh_token|masterKeyBytes\s*[:=]\s*masterKeyBytes|ciphertext|passphrase|secret/);
+});
+
 test('maintained Phase 8C trigger fixture is a current client-valid schema-5 envelope',async()=>{
   const sql=readSource('supabase/tests/phase8c-trigger-contract.sql'),match=/schema_version = 5,\s*payload = '(\{"format":"rosterbot-personal-state"[^']+\})'::jsonb/s.exec(sql);
   assert(match,'schema-5 trigger fixture not found');assert.equal((await schema5.validateSchema5Envelope(JSON.parse(match[1]))).ok,true);
