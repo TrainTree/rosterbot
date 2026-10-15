@@ -46,13 +46,14 @@ test('beta Pages bundle contains only the exact staging deployment profile',()=>
   try{
     assert.equal(prepared.status,0,prepared.stderr||prepared.stdout);
     assert.equal(fs.readFileSync(path.join(output,'CNAME'),'utf8'),'beta.rosterbot.work\n');
-    assert.equal(fs.readFileSync(path.join(output,'index.html'),'utf8'),fs.readFileSync(path.join(root,'index.html'),'utf8'));
+    const normalizeBuild=value=>value.replace(/rb-build:[a-f0-9]{64}/g,'rb-build:<normalized>');
+    assert.equal(normalizeBuild(fs.readFileSync(path.join(output,'index.html'),'utf8')),normalizeBuild(fs.readFileSync(path.join(root,'index.html'),'utf8')));
     for(const directory of ['css','data','js']){
       const sourceFiles=filesBelow(path.join(root,directory)),outputFiles=filesBelow(path.join(output,directory));
       assert.deepEqual(outputFiles,sourceFiles);
       for(const file of sourceFiles){
-        if(file==='05-cloud-deployment-profile.js')continue;
-        assert.deepEqual(fs.readFileSync(path.join(output,directory,file)),fs.readFileSync(path.join(root,directory,file)));
+        if(file==='05-cloud-deployment-profile.js'||file==='00-build-identity.js')continue;
+        assert.equal(normalizeBuild(fs.readFileSync(path.join(output,directory,file),'utf8')),normalizeBuild(fs.readFileSync(path.join(root,directory,file),'utf8')),`${directory}/${file}`);
       }
     }
     const published=new Set(filesBelow(output));
@@ -118,15 +119,15 @@ test('generator refuses missing, malformed and privileged credentials before cre
   }
 });
 
-test('production deployment is fixed to documented production origins and ignores saved configuration',()=>{
+test('production deployment is fixed to the canonical production origin and ignores saved configuration',()=>{
   const window={location:{origin:'https://rosterbot.work'},atob:value=>Buffer.from(value,'base64').toString('binary')},context=vm.createContext({window,URL});
   vm.runInContext(fs.readFileSync(path.join(root,'js/05-cloud-deployment-profile.js'),'utf8'),context);
   vm.runInContext(fs.readFileSync(path.join(root,'js/06-cloud-config.js'),'utf8'),context);
   const profile=window.RosterBotCloudDeploymentProfile,api=window.RosterBotCloudConfig,embedded={url:PRODUCTION_URL,key:PRODUCTION_KEY};
   assert.deepEqual(JSON.parse(JSON.stringify(api.resolve({profile,origin:'https://rosterbot.work'}).config)),embedded);
-  assert.deepEqual(JSON.parse(JSON.stringify(api.resolve({profile,origin:'https://www.rosterbot.work'}).config)),embedded);
+  assert.equal(api.resolve({profile,origin:'https://www.rosterbot.work'}).enabled,false);
   const manual={url:'https://abcdefghijklmnopqrst.supabase.co',key:'sb_publishable_ManualDevelopmentFixture_123'};
-  for(const origin of ['http://localhost:8765','https://beta.rosterbot.work']){
+  for(const origin of ['https://www.rosterbot.work','http://localhost:8765','https://beta.rosterbot.work']){
     const result=api.resolve({profile,origin,savedRaw:JSON.stringify(manual)});assert.equal(result.enabled,false);assert.equal(result.config,null);assert.equal(result.reason,'production-origin-mismatch');
   }
   const exact=api.resolve({profile,origin:'https://rosterbot.work',savedRaw:JSON.stringify(manual)});

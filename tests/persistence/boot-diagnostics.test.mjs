@@ -23,7 +23,7 @@ test('the boot collector precedes every external script and preserves first-erro
 });
 
 test('foundational modules mark start/completion and publish without Web Crypto, IndexedDB or localStorage',()=>{
-  const markers=[],window={RosterBotBootDiagnostics:{start:(...args)=>markers.push(['start',...args]),complete:(...args)=>markers.push(['complete',...args]),dependency(module,expected){throw new Error(`${module} expected ${expected}`)}}},context=vm.createContext({window,globalThis:window,document:{currentScript:{src:'https://diagnostic.invalid/module.js'}},console,TextEncoder:undefined});
+  const markers=[],window={__rosterbotRequireBuildComponent:()=>true,RosterBotBootDiagnostics:{start:(...args)=>markers.push(['start',...args]),complete:(...args)=>markers.push(['complete',...args]),dependency(module,expected){throw new Error(`${module} expected ${expected}`)}}},context=vm.createContext({window,globalThis:window,document:{currentScript:{src:'https://diagnostic.invalid/module.js'}},console,TextEncoder:undefined});
   for(const [file,moduleName,globalName] of modules){vm.runInContext(readSource(file),context,{filename:file});assert(window[globalName],`${file} did not publish ${globalName}`);assert(markers.some(row=>row[0]==='start'&&row[1]===moduleName));assert(markers.some(row=>row[0]==='complete'&&row[1]===moduleName&&row[2]===globalName))}
   assert.equal('crypto'in window,false);assert.equal('indexedDB'in window,false);assert.equal('localStorage'in window,false);
 });
@@ -36,7 +36,7 @@ test('dependency failures are explicit at the module boundary instead of becomin
     ['js/03-schema5-migration.js','03-schema5-migration expected persistence registry']
   ];
   for(const [file,expected] of cases){
-    const window={RosterBotBootDiagnostics:{start(){},complete(){},dependency(module,dependency){throw new Error(`RosterBot startup dependency missing:\n${module} expected ${dependency}`)}}},context=vm.createContext({window,globalThis:window,document:{currentScript:{src:file}},console});
+    const window={__rosterbotRequireBuildComponent:()=>true,RosterBotBootDiagnostics:{start(){},complete(){},dependency(module,dependency){throw new Error(`RosterBot startup dependency missing:\n${module} expected ${dependency}`)}}},context=vm.createContext({window,globalThis:window,document:{currentScript:{src:file}},console});
     assert.throws(()=>vm.runInContext(readSource(file),context,{filename:file}),new RegExp(expected));
   }
   const bootstrap=readSource('js/03-persistence-bootstrap.js');

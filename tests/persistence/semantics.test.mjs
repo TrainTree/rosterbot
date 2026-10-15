@@ -57,7 +57,7 @@ test('historical embedded manual pattern wins over the current reusable pattern'
 });
 
 function employmentApi(storage){
-  const context={localStorage:storage,console,CustomEvent:class{constructor(type,init){this.type=type;this.detail=init?.detail}},document:{getElementById:()=>null,addEventListener:()=>{}},dispatchEvent:()=>{}};
+  const context={localStorage:storage,console,__rosterbotRequireBuildComponent:()=>true,CustomEvent:class{constructor(type,init){this.type=type;this.detail=init?.detail}},document:{getElementById:()=>null,addEventListener:()=>{}},dispatchEvent:()=>{}};
   context.window=context;
   vm.runInNewContext(readSource('js/40-employment-profile.js'),context,{filename:'js/40-employment-profile.js'});
   return context.RosterBotEmployment;

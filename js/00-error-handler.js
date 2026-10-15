@@ -1,6 +1,7 @@
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/00-error-handler.js','rb-build:17f36d05bbaa5f3cd5122d1020a06d24468cd58cda751a9c63fc27834d367d21')}catch(error){throw error}
 // Capture exact raw values before any feature module can create defaults. The
 // recovery preflight compares this immutable view with IndexedDB.
-try {
+if(window.__rosterbotCanonicalOriginDecision?.action==='continue')try {
   var rosterbotStartupStorage = {};
   for (var rosterbotStorageIndex = 0; rosterbotStorageIndex < localStorage.length; rosterbotStorageIndex++) {
     var rosterbotStorageKey = localStorage.key(rosterbotStorageIndex);

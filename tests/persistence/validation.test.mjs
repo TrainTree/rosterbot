@@ -110,12 +110,13 @@ test('safe reads are side-effect free and preserve malformed raw text for recove
 test('registry validation cannot write before the boot and recovery gate',()=>{
   const source=readSource('js/01-persistence-registry.js');
   assert.doesNotMatch(source,/\.setItem\(|\.removeItem\(|indexedDB\.open/);
-  const index=readSource('index.html'),bootstrap=readSource('js/03-persistence-bootstrap.js');
+  const index=readSource('index.html'),bootstrap=readSource('js/03-persistence-bootstrap.js'),inventory=readSource('scripts/runtime-assets.mjs');
   assert(index.indexOf('js/01-persistence-registry.js')<index.indexOf('js/03-persistence-bootstrap.js'));
   assert.equal(index.includes('js/20-roster-ui.js'),false);
   assert.equal(index.includes('js/60-diary.js'),false);
   assert(bootstrap.indexOf('safety.decideRecovery')<bootstrap.indexOf('await loadApplication()'));
-  assert(bootstrap.indexOf("'js/20-roster-ui.js'")<bootstrap.indexOf("'js/60-diary.js'"));
+  assert.match(bootstrap,/RosterBotBuild\?\.featureAssets/);
+  assert(inventory.indexOf("'js/20-roster-ui.js'")<inventory.indexOf("'js/60-diary.js'"));
 });
 
 test('all valid v0.29 fixture values retain their parsed semantics',()=>{

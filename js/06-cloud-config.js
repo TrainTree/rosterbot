@@ -1,3 +1,4 @@
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/06-cloud-config.js','rb-build:17f36d05bbaa5f3cd5122d1020a06d24468cd58cda751a9c63fc27834d367d21')}catch(error){throw error}
 (function(root,factory){
   'use strict';
   const api=factory(root);
@@ -6,7 +7,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
   const PROFILE_KEYS=new Set(['version','deployment','environment','projectRef','url','publishableKey','allowedOrigins','allowSavedConfiguration','fallbackToEmbedded','requestedCloudSchema']);
-  const PRODUCTION_ORIGINS=Object.freeze(['https://rosterbot.work','https://www.rosterbot.work']);
+  const PRODUCTION_ORIGINS=Object.freeze(['https://rosterbot.work']);
   const disabled=(reason,profile=null,origin='')=>Object.freeze({enabled:false,reason,profile,origin,config:null,fixedBinding:true});
   function object(value){return !!value&&typeof value==='object'&&!Array.isArray(value)}
   function parseJwtPayload(key){

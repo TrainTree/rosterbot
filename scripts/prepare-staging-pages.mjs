@@ -4,6 +4,9 @@ import {copyFile, mkdir, readdir, readFile, stat, writeFile} from 'node:fs/promi
 import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
+import {execFileSync} from 'node:child_process';
+import {BUILD_ID_PLACEHOLDER,COLD_START_ASSETS,GENERATED_MANIFEST_ASSET} from './runtime-assets.mjs';
+import {generateRuntimeBuild} from './runtime-build.mjs';
 
 const sourceRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const destination=process.argv[2]?path.resolve(process.argv[2]):null;
@@ -15,7 +18,12 @@ const productionProjectRef='rithmbggiiusrmdcqrif';
 const productionProjectUrl=`https://${productionProjectRef}.supabase.co`;
 const productionPublishableKey='sb_publishable_TnrRQNNVqPbLq_JkNgu9Zg_--0mqp4B';
 const publishableKey=String(process.env.PHASE10B_BETA_PUBLISHABLE_KEY||'').trim();
-const directories=['css','data','js'];
+
+function sourceCommitIfClean(){
+  const supplied=String(process.env.ROSTERBOT_SOURCE_COMMIT||'').trim();
+  if(supplied){if(!/^[a-f0-9]{40}$/.test(supplied))throw new Error('ROSTERBOT_SOURCE_COMMIT must be a full lowercase Git commit.');return supplied}
+  try{if(execFileSync('git',['status','--porcelain'],{cwd:sourceRoot,encoding:'utf8'}).trim())return null;return execFileSync('git',['rev-parse','HEAD'],{cwd:sourceRoot,encoding:'utf8'}).trim()}catch(_){return null}
+}
 
 if(!destination){
   console.error('Usage: PHASE10B_BETA_PUBLISHABLE_KEY=sb_publishable_... node scripts/prepare-staging-pages.mjs <empty-output-directory>');
@@ -36,7 +44,7 @@ const betaProfile=Object.freeze({
   fallbackToEmbedded:false,
   requestedCloudSchema:5
 });
-const betaProfileScript=`(function(root){\n  'use strict';\n  const profile=Object.freeze(${JSON.stringify(betaProfile)});\n  Object.freeze(profile.allowedOrigins);\n  Object.defineProperty(root,'RosterBotCloudDeploymentProfile',{value:profile,writable:false,configurable:false,enumerable:true});\n})(window);\n`;
+const betaProfileScript=`try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/05-cloud-deployment-profile.js','${BUILD_ID_PLACEHOLDER}')}catch(error){throw error}\n(function(root){\n  'use strict';\n  const profile=Object.freeze(${JSON.stringify(betaProfile)});\n  Object.freeze(profile.allowedOrigins);\n  Object.defineProperty(root,'RosterBotCloudDeploymentProfile',{value:profile,writable:false,configurable:false,enumerable:true});\n})(window);\n`;
 
 await mkdir(destination,{recursive:true});
 const existing=await readdir(destination);
@@ -51,20 +59,15 @@ async function copy(relative){
   copied.push(relative);
 }
 
-await copy('.nojekyll');
-await copy('index.html');
-for(const directory of directories){
-  const entries=await readdir(path.join(sourceRoot,directory),{withFileTypes:true});
-  for(const entry of entries.sort((a,b)=>a.name.localeCompare(b.name))){
-    if(!entry.isFile())throw new Error(`Unexpected non-file in runtime directory: ${directory}/${entry.name}`);
-    await copy(`${directory}/${entry.name}`);
-  }
-}
+for(const relative of COLD_START_ASSETS)await copy(relative);
 
 await writeFile(path.join(destination,'js/05-cloud-deployment-profile.js'),betaProfileScript,'utf8');
 
 await writeFile(path.join(destination,'CNAME'),`${stagingDomain}\n`,'utf8');
 copied.push('CNAME');
+await copy('.nojekyll');
+const generatedBuild=await generateRuntimeBuild(destination,{sourceCommit:sourceCommitIfClean(),write:true});
+copied.push(GENERATED_MANIFEST_ASSET);
 
 const index=await readFile(path.join(destination,'index.html'),'utf8');
 for(const match of index.matchAll(/(?:src|href)="([^"#?]+)"/g)){
@@ -105,6 +108,7 @@ await writeFile(path.join(destination,'SHA256SUMS.txt'),`${checksums.join('\n')}
 
 console.log(JSON.stringify({
   destination,
+  runtimeBuild:{applicationVersion:generatedBuild.manifest.applicationVersion,buildId:generatedBuild.buildId,sourceCommit:generatedBuild.manifest.sourceCommit,assetManifestVersion:generatedBuild.manifest.formatVersion,assets:generatedBuild.manifest.assets.length,cacheNamespace:generatedBuild.manifest.cacheNamespace,completeBuildMarker:generatedBuild.manifest.completeBuildMarker},
   customDomain:stagingDomain,
   cloudBinding:{environment:'isolated-staging',origin:stagingOrigin,projectRef:stagingProjectRef,url:stagingProjectUrl,publishableKey,requestedCloudSchema:5},
   credentialAudit:{browserSafePublishableKeys:1,jwtCredentials:0,secretCredentials:0,managementOrPersonalAccessTokens:0,databaseConnectionStrings:0,privilegedCredentials:0},

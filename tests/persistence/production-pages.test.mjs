@@ -56,25 +56,23 @@ test('production bundle is runtime-only v0.30.0 and contains one production brow
   }finally{fs.rmSync(parent,{recursive:true,force:true})}
 });
 
-test('production profile is fixed, origin-bound, and cannot be redirected by saved staging configuration',()=>{
+test('production profile is fixed to the canonical apex and cannot be redirected by saved staging configuration',()=>{
   const {parent,output,prepared}=prepare();
   try{
     assert.equal(prepared.status,0,prepared.stderr||prepared.stdout);
     const {profile,api}=runtimeFrom(output),saved=JSON.stringify({url:STAGING_URL,key:'sb_publishable_StagingRedirectFixture_12345'});
-    assert.deepEqual(JSON.parse(JSON.stringify(profile)),{version:1,deployment:'production',environment:'production',projectRef:PRODUCTION_REF,url:PRODUCTION_URL,publishableKey:PRODUCTION_KEY,allowedOrigins:['https://rosterbot.work','https://www.rosterbot.work'],allowSavedConfiguration:false,fallbackToEmbedded:false,requestedCloudSchema:5});
-    for(const origin of ['https://rosterbot.work','https://www.rosterbot.work']){
-      const resolved=api.resolve({profile,origin,savedRaw:saved});assert.equal(resolved.enabled,true);assert.equal(resolved.fixedBinding,true);assert.deepEqual(JSON.parse(JSON.stringify(resolved.config)),{url:PRODUCTION_URL,key:PRODUCTION_KEY});
-      assert.equal(api.assertRequest(resolved,`${PRODUCTION_URL}/rest/v1/roster_state`,origin),true);
-      assert.throws(()=>api.assertRequest(resolved,`${STAGING_URL}/rest/v1/roster_state`,origin),error=>error.code==='CLOUD_REQUEST_PROJECT_MISMATCH');
-    }
-    for(const origin of ['https://beta.rosterbot.work','http://localhost:8765','https://rosterbot.work.example']){
+    assert.deepEqual(JSON.parse(JSON.stringify(profile)),{version:1,deployment:'production',environment:'production',projectRef:PRODUCTION_REF,url:PRODUCTION_URL,publishableKey:PRODUCTION_KEY,allowedOrigins:['https://rosterbot.work'],allowSavedConfiguration:false,fallbackToEmbedded:false,requestedCloudSchema:5});
+    const resolved=api.resolve({profile,origin:'https://rosterbot.work',savedRaw:saved});assert.equal(resolved.enabled,true);assert.equal(resolved.fixedBinding,true);assert.deepEqual(JSON.parse(JSON.stringify(resolved.config)),{url:PRODUCTION_URL,key:PRODUCTION_KEY});
+    assert.equal(api.assertRequest(resolved,`${PRODUCTION_URL}/rest/v1/roster_state`,'https://rosterbot.work'),true);
+    assert.throws(()=>api.assertRequest(resolved,`${STAGING_URL}/rest/v1/roster_state`,'https://rosterbot.work'),error=>error.code==='CLOUD_REQUEST_PROJECT_MISMATCH');
+    for(const origin of ['https://www.rosterbot.work','https://beta.rosterbot.work','http://localhost:8765','https://rosterbot.work.example']){
       const resolved=api.resolve({profile,origin,savedRaw:saved});assert.equal(resolved.enabled,false);assert.equal(resolved.config,null);assert.equal(resolved.reason,'production-origin-mismatch');
     }
   }finally{fs.rmSync(parent,{recursive:true,force:true})}
 });
 
 test('production schema-5 grant requires a fresh exact production attestation',async()=>{
-  const profile={version:1,deployment:'production',environment:'production',projectRef:PRODUCTION_REF,url:PRODUCTION_URL,publishableKey:PRODUCTION_KEY,allowedOrigins:['https://rosterbot.work','https://www.rosterbot.work'],allowSavedConfiguration:false,fallbackToEmbedded:false,requestedCloudSchema:5};
+  const profile={version:1,deployment:'production',environment:'production',projectRef:PRODUCTION_REF,url:PRODUCTION_URL,publishableKey:PRODUCTION_KEY,allowedOrigins:['https://rosterbot.work'],allowSavedConfiguration:false,fallbackToEmbedded:false,requestedCloudSchema:5};
   const context={profile,config:{url:PRODUCTION_URL,key:PRODUCTION_KEY},origin:'https://rosterbot.work',enabled:true,fixedBinding:true,userId:'synthetic-production-contract-user',accessToken:'synthetic-production-contract-session'};
   const attestation={contract:gate.CONTRACT,environment:'production',max_writable_schema:5,min_writable_schema:4,project_ref:PRODUCTION_REF},state=gate.createCapabilityState();
   assert.equal(state.isGranted(context),false);

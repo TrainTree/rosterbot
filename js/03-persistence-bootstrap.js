@@ -1,15 +1,14 @@
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/03-persistence-bootstrap.js','rb-build:17f36d05bbaa5f3cd5122d1020a06d24468cd58cda751a9c63fc27834d367d21')}catch(error){throw error}
 try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03-persistence-bootstrap','RosterBotRecovery',document.currentScript?.src||'js/03-persistence-bootstrap.js')}catch(_){}
 (function(){
   'use strict';
+  if(window.__rosterbotCanonicalRedirectPending){try{window.RosterBotBootDiagnostics?.complete?.('03-persistence-bootstrap','canonical-redirect-pending',document.currentScript?.src||'js/03-persistence-bootstrap.js')}catch(_){}return}
+  if(window.__rosterbotCanonicalOriginDecision?.action!=='continue'){const detail={component:'canonical-origin-decision',expectedBuildId:window.RosterBotBuild?.buildId||'unknown',observedBuildId:'missing',reason:'canonical-origin-decision-missing'};window.RosterBotBootDiagnostics?.buildMismatch?.(detail);const error=new Error('RosterBot canonical-origin decision is missing.');error.code='ROSTERBOT_CANONICAL_ORIGIN_DECISION_MISSING';throw error}
+  window.RosterBotBuild.assertFoundations();
   const requireDependency=(expected,value)=>{if(value!==undefined&&value!==null)return value;const message=`RosterBot startup dependency missing:\n03-persistence-bootstrap expected ${expected}`;if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.dependency('03-persistence-bootstrap',expected,value);throw new Error(message)};
   const compatibility=requireDependency('storage compatibility',window.RosterBotStorageCompatibility),registry=requireDependency('persistence registry',window.RosterBotPersistenceRegistry),safety=requireDependency('persistence safety',window.RosterBotPersistenceSafety),recoveryUi=requireDependency('recovery UI',window.RosterBotRecoveryUI),migration=requireDependency('schema-5 migration',window.RosterBotSchema5Migration);
   const personalKeys=registry.surfaceKeys('indexedDb');
-  const moduleSources=[
-    'data/rosters-fp64-fp68-20260908.js','js/10-roster-official.js','js/11-roster-engine.js','js/12-roster-effective-dates.js',
-    'js/40-employment-profile.js','js/20-roster-ui.js','js/30-feedback.js','js/31-changelog.js','data/pay-reference-20260923.js',
-    'js/41-pay-rate-official.js','js/42-paybot.js','js/50-data-backup.js','js/04-cloud-error-contract.js','js/05-cloud-deployment-profile.js','js/06-cloud-config.js','js/07-cloud-schema5.js','js/51-cloud-sync.js','js/60-diary.js','js/61-page-bridge.js',
-    'js/75-sources.js','js/70-navigation.js','js/80-calendar-subscription.js'
-  ];
+  const moduleSources=requireDependency('build feature asset inventory',window.RosterBotBuild?.featureAssets);
   let state=null,applicationLoaded=false,applicationStarting=false,applicationReady=false,recoveryBusy=false,schema5Ready=false,featureLoading=false,featureWritePending=false,projectionSync=Promise.resolve(),personalWriteRevision=0;
   const pendingPersonalValues=new Map();
   function reapplyPendingPersonalValues(){const storage=localStorage;for(const [key,raw] of pendingPersonalValues){if(raw==null)storage.removeItem(key);else storage.setItem(key,raw)}}

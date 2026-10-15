@@ -74,6 +74,9 @@ test('every literal application persistence key is registered',()=>{
   keys.delete('rosterbot-schema5-content-v1'); // Schema-5 checksum scope identifier.
   keys.delete('rosterbot-schema5-cloud-v1'); // Authenticated Cloud capability contract identifier.
   keys.delete('rosterbot-canonical-json-v1'); // Canonicalisation algorithm identifier.
+  keys.delete('rosterbot-build-id'); // Document metadata name, not a storage key.
+  keys.delete('rosterbot-build-manifest.json'); // Generated static asset URL, not a storage key.
+  for(const key of keys)if(/^rosterbot-(?:app|complete)-[a-f0-9]{64}$/.test(key))keys.delete(key); // Future cache namespace/complete marker.
   const missing=[...keys].filter(key=>!registry.get(key)).sort();
   assert.deepEqual(missing,[]);
 });

@@ -1,3 +1,4 @@
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/02-persistence-safety.js','rb-build:17f36d05bbaa5f3cd5122d1020a06d24468cd58cda751a9c63fc27834d367d21')}catch(error){throw error}
 try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('02-persistence-safety','RosterBotPersistenceSafety',document.currentScript?.src||'js/02-persistence-safety.js')}catch(_){}
 (function(root,factory){
   'use strict';

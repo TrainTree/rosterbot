@@ -1,3 +1,4 @@
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/10-roster-official.js','rb-build:17f36d05bbaa5f3cd5122d1020a06d24468cd58cda751a9c63fc27834d367d21')}catch(error){throw error}
 (function(root){
   'use strict';
   const O=root.ROSTERBOT_OFFICIAL_DATA, DAYS=['sun','mon','tue','wed','thu','fri','sat'];

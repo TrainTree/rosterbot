@@ -2,9 +2,11 @@
   "name": "rosterbot-v0.30.0",
   "private": true,
   "scripts": {
+    "build:identity": "node scripts/generate-runtime-build.mjs",
+    "check:build": "node scripts/generate-runtime-build.mjs --verify",
     "test": "node --test tests/persistence/*.test.mjs",
     "test:persistence": "node --test tests/persistence/*.test.mjs",
-    "check:syntax": "node --check js/*.js && node --check tests/persistence/*.mjs && node --check tests/browser/*.mjs && node --check supabase/tests/*.mjs",
+    "check:syntax": "node --check js/*.js && node --check scripts/*.mjs && node --check tests/persistence/*.mjs && node --check tests/browser/*.mjs && node --check supabase/tests/*.mjs",
     "report:persistence": "node tests/persistence/report.mjs"
   }
 }

@@ -4,11 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#111214">
+  <meta name="rosterbot-build-id" content="rb-build:17f36d05bbaa5f3cd5122d1020a06d24468cd58cda751a9c63fc27834d367d21">
   <title>RosterBot 🤖 v0.30.0</title>
   <script id="rosterbotBootDiagnostics">
   (function(){
     'use strict';
     var foundational={
+      '00-build-identity':true,'00-canonical-origin':true,
       '01-storage-compatibility':true,'01-persistence-registry':true,'02-canonical-state':true,'02-persistence-safety':true,
       '02-schema5':true,'03-recovery-ui':true,'03-schema5-migration':true,'03-persistence-bootstrap':true
     },records=[],firstError=null,order=0,active={};
@@ -39,7 +41,7 @@
       document.documentElement.classList.add('rb-booting');startup.setAttribute('data-startup-failure','module');startup.setAttribute('role','alert');
       while(startup.firstChild)startup.removeChild(startup.firstChild);
       var card=document.createElement('div'),title=document.createElement('h1'),message=document.createElement('span'),detail=document.createElement('textarea'),copy=document.createElement('button');
-      card.className='app-startup-card boot-diagnostic-card';title.textContent='RosterBot could not start correctly';message.textContent='A required application module failed before saved data could be checked. Your saved data has not been changed.';
+      var versionFailure=firstError.kind==='build-coherence';card.className='app-startup-card boot-diagnostic-card';title.textContent=versionFailure?'RosterBot application files do not match':'RosterBot could not start correctly';message.textContent=versionFailure?'RosterBot stopped before opening saved data because its application files came from different versions. Reload when a complete version is available. Your saved data has not been changed.':'A required application module failed before saved data could be checked. Your saved data has not been changed.';
       detail.readOnly=true;detail.rows=10;detail.setAttribute('aria-label','Technical startup diagnostic');detail.value=diagnosticText();copy.type='button';copy.textContent='Copy technical diagnostic';
       copy.addEventListener('click',function(){var done=function(){copy.textContent='Diagnostic copied'};try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(detail.value).then(done,function(){detail.select()});return}}catch(_){}detail.focus();detail.select();try{if(document.execCommand('copy'))done()}catch(_){}});
       card.appendChild(title);card.appendChild(message);card.appendChild(detail);card.appendChild(copy);startup.appendChild(card);
@@ -47,20 +49,33 @@
     }
     function scheduleShow(){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show,{once:true});else setTimeout(show,0)}
     function capture(kind,error,detail){
-      detail=detail||{};var filename=detail.filename||'',module=detail.module||moduleFrom(filename),message=String(error&&error.message||detail.message||error||'Unknown startup error'),entry={order:++order,timestamp:new Date().toISOString(),kind:kind,module:module,filename:filename,line:detail.line||0,column:detail.column||0,message:message,stack:String(error&&error.stack||''),foundational:!!foundational[module]};
+      detail=detail||{};var filename=detail.filename||'',module=detail.module||moduleFrom(filename),message=String(error&&error.message||detail.message||error||'Unknown startup error'),entry={order:++order,timestamp:new Date().toISOString(),kind:kind,module:module,component:detail.component||'',filename:filename,line:detail.line||0,column:detail.column||0,message:message,stack:String(error&&error.stack||''),expectedBuildId:detail.expectedBuildId||'',observedBuildId:detail.observedBuildId||'',reason:detail.reason||'',foundational:detail.foundational===true||!!foundational[module]};
       records.push(entry);if(!firstError){firstError=entry;if(entry.foundational)scheduleShow()}return firstError;
     }
+    function buildMismatch(detail){detail=detail||{};var component=String(detail.component||'unknown'),error=new Error('RosterBot application build mismatch: '+component+' expected '+String(detail.expectedBuildId||'unknown')+' but observed '+String(detail.observedBuildId||'missing'));return capture('build-coherence',error,{component:component,module:moduleFrom(component),expectedBuildId:detail.expectedBuildId,observedBuildId:detail.observedBuildId,reason:detail.reason,foundational:true})}
     function dependency(module,expected,value){if(value!==undefined&&value!==null)return value;var error=new Error('RosterBot startup dependency missing:\n'+module+' expected '+expected);capture('dependency',error,{module:module});throw error}
     var previousOnError=window.onerror;
     window.onerror=function(message,filename,line,column,error){capture('window.onerror',error||message,{message:message,filename:filename,line:line,column:column});if(typeof previousOnError==='function')return previousOnError.apply(this,arguments);return false};
     window.addEventListener('error',function(event){
       var target=event&&event.target,resourceUrl=target&&target.src||target&&target.href||'',message=event&&event.message;
       if(!message&&resourceUrl)message=(target&&target.tagName==='SCRIPT'?'Script':'Resource')+' failed to load: '+resourceUrl;
+      if(moduleFrom(resourceUrl)==='00-build-identity'){buildMismatch({component:'js/00-build-identity.js',expectedBuildId:(document.querySelector('meta[name="rosterbot-build-id"]')||{}).content||'unknown',observedBuildId:'missing',reason:'build-identity-load-failed'});return}
       capture('error-event',event&&event.error||message,{message:message,filename:event&&event.filename||resourceUrl,line:event&&event.lineno,column:event&&event.colno});
     },true);
     window.addEventListener('unhandledrejection',function(event){capture('unhandledrejection',event&&event.reason,{message:'Unhandled promise rejection'})},true);
-    window.RosterBotBootDiagnostics={start:start,complete:complete,capture:capture,dependency:dependency,show:show,text:diagnosticText,getFirstError:function(){return firstError},getRecords:function(){return records.slice()}};
+    window.RosterBotBootDiagnostics={start:start,complete:complete,capture:capture,dependency:dependency,buildMismatch:buildMismatch,show:show,text:diagnosticText,getFirstError:function(){return firstError},getRecords:function(){return records.slice()}};
+    window.__rosterbotRequireBuildComponent=function(component,observedBuildId){var build=window.RosterBotBuild;if(!build||typeof build.assertComponent!=='function'){buildMismatch({component:component,expectedBuildId:(document.querySelector('meta[name="rosterbot-build-id"]')||{}).content||'unknown',observedBuildId:observedBuildId||'missing',reason:'build-identity-missing'});var error=new Error('RosterBot build identity is missing before '+component);error.name='RosterBotBuildMismatchError';error.code='ROSTERBOT_BUILD_IDENTITY_MISSING';throw error}return build.assertComponent(component,observedBuildId)};
     marker('boot-diagnostics','complete','RosterBotBootDiagnostics','inline:index.html');
+  })();
+  </script>
+  <script src="js/00-build-identity.js"></script>
+  <script src="js/00-canonical-origin.js"></script>
+  <script id="rosterbotCanonicalOriginDecision">
+  (function(){
+    'use strict';
+    var api=window.RosterBotCanonicalOrigin;if(!api)return;
+    var decision=api.decide(window.location.href);window.__rosterbotCanonicalOriginDecision=decision;
+    if(decision.action==='redirect'){window.__rosterbotCanonicalRedirectPending=true;window.location.replace(decision.target)}
   })();
   </script>
   <link rel="stylesheet" href="css/rosterbot.css">

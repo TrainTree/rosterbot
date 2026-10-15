@@ -4,6 +4,9 @@ import {copyFile, mkdir, readdir, readFile, stat, writeFile} from 'node:fs/promi
 import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
+import {execFileSync} from 'node:child_process';
+import {COLD_START_ASSETS,DEPLOYMENT_SUPPORT_ASSETS,GENERATED_MANIFEST_ASSET} from './runtime-assets.mjs';
+import {generateRuntimeBuild} from './runtime-build.mjs';
 
 const sourceRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const destination=process.argv[2]?path.resolve(process.argv[2]):null;
@@ -16,7 +19,12 @@ const productionPublishableKey='sb_publishable_TnrRQNNVqPbLq_JkNgu9Zg_--0mqp4B';
 const stagingProjectRef='wuzyurvrztskljpxpeaq';
 const stagingProjectUrl=`https://${stagingProjectRef}.supabase.co`;
 const stagingOrigin='https://beta.rosterbot.work';
-const directories=['css','data','js'];
+
+function sourceCommitIfClean(){
+  const supplied=String(process.env.ROSTERBOT_SOURCE_COMMIT||'').trim();
+  if(supplied){if(!/^[a-f0-9]{40}$/.test(supplied))throw new Error('ROSTERBOT_SOURCE_COMMIT must be a full lowercase Git commit.');return supplied}
+  try{if(execFileSync('git',['status','--porcelain'],{cwd:sourceRoot,encoding:'utf8'}).trim())return null;return execFileSync('git',['rev-parse','HEAD'],{cwd:sourceRoot,encoding:'utf8'}).trim()}catch(_){return null}
+}
 
 if(!destination){
   console.error('Usage: node scripts/prepare-production-pages.mjs <empty-output-directory>');
@@ -36,16 +44,9 @@ async function copy(relative){
   copied.push(relative);
 }
 
-await copy('.nojekyll');
-await copy('CNAME');
-await copy('index.html');
-for(const directory of directories){
-  const entries=await readdir(path.join(sourceRoot,directory),{withFileTypes:true});
-  for(const entry of entries.sort((a,b)=>a.name.localeCompare(b.name))){
-    if(!entry.isFile())throw new Error(`Unexpected non-file in runtime directory: ${directory}/${entry.name}`);
-    await copy(`${directory}/${entry.name}`);
-  }
-}
+for(const relative of [...DEPLOYMENT_SUPPORT_ASSETS,...COLD_START_ASSETS])await copy(relative);
+const generatedBuild=await generateRuntimeBuild(destination,{sourceCommit:sourceCommitIfClean(),write:true});
+copied.push(GENERATED_MANIFEST_ASSET);
 
 assert.equal((await readFile(path.join(destination,'CNAME'),'utf8')).trim(),productionDomain,'Production CNAME changed.');
 const index=await readFile(path.join(destination,'index.html'),'utf8');
@@ -57,7 +58,7 @@ for(const match of index.matchAll(/(?:src|href)="([^"#?]+)"/g)){
 }
 
 const profile=await readFile(path.join(destination,'js/05-cloud-deployment-profile.js'),'utf8');
-for(const required of ["deployment:'production'","environment:'production'",`projectRef:'${productionProjectRef}'`,`url:'${productionProjectUrl}'`,`publishableKey:'${productionPublishableKey}'`,"allowedOrigins:Object.freeze(['https://rosterbot.work','https://www.rosterbot.work'])","allowSavedConfiguration:false","fallbackToEmbedded:false","requestedCloudSchema:5"])assert(profile.includes(required),`Production profile is missing: ${required}`);
+for(const required of ["deployment:'production'","environment:'production'",`projectRef:'${productionProjectRef}'`,`url:'${productionProjectUrl}'`,`publishableKey:'${productionPublishableKey}'`,"allowedOrigins:Object.freeze(['https://rosterbot.work'])","allowSavedConfiguration:false","fallbackToEmbedded:false","requestedCloudSchema:5"])assert(profile.includes(required),`Production profile is missing: ${required}`);
 const cloud=await readFile(path.join(destination,'js/51-cloud-sync.js'),'utf8');
 const gate=await readFile(path.join(destination,'js/07-cloud-schema5.js'),'utf8');
 for(const required of ['SCHEMA5_CLOUD_HOLD','requireCloudTransferAllowed','get_roster_schema_capability','new_schema_version:schemaVersion','replaceFromSchema5Envelope'])assert(cloud.includes(required),`Schema-5 Cloud safety path is missing: ${required}`);
@@ -85,6 +86,7 @@ await writeFile(path.join(destination,'SHA256SUMS.txt'),`${checksums.join('\n')}
 console.log(JSON.stringify({
   destination,
   release:'v0.30.0',
+  runtimeBuild:{applicationVersion:generatedBuild.manifest.applicationVersion,buildId:generatedBuild.buildId,sourceCommit:generatedBuild.manifest.sourceCommit,assetManifestVersion:generatedBuild.manifest.formatVersion,assets:generatedBuild.manifest.assets.length,cacheNamespace:generatedBuild.manifest.cacheNamespace,completeBuildMarker:generatedBuild.manifest.completeBuildMarker},
   customDomain:productionDomain,
   cloudBinding:{environment:'production',origins:[productionOrigin,productionAlias],projectRef:productionProjectRef,url:productionProjectUrl,requestedCloudSchema:5},
   credentialAudit:{browserSafePublishableKeys:1,jwtCredentials:0,secretCredentials:0,managementOrPersonalAccessTokens:0,databaseConnectionStrings:0,privilegedCredentials:0},

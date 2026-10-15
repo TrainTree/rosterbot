@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {createRequire} from 'node:module';
 import {root,MemoryStorage,storedValue,readSource} from './helpers.mjs';
+import {FEATURE_ASSETS} from '../../scripts/runtime-assets.mjs';
 
 const require=createRequire(import.meta.url);
 const compatibility=require(`${root}/js/01-storage-compatibility.js`);
@@ -25,6 +26,7 @@ function runBrowserBootstrap(values,{indexedDbRows=null}={}){
   const storage=new ObservedStorage(values),scripts=[],events=[],listeners=new Map(),indexedDbModes=[],startup={dataset:{},innerHTML:'',setAttribute(){},removeAttribute(){}};
   const sandbox={
     localStorage:storage,console,structuredClone,TextEncoder,TextDecoder,Blob,URL,
+    __rosterbotRequireBuildComponent:()=>true,__rosterbotCanonicalOriginDecision:{action:'continue'},RosterBotBuild:{featureAssets:FEATURE_ASSETS,assertFoundations:()=>true},
     setTimeout,clearTimeout,queueMicrotask,
     CustomEvent:class CustomEvent{constructor(type,init={}){this.type=type;this.detail=init.detail}},
     addEventListener(type,handler){const rows=listeners.get(type)||[];rows.push(handler);listeners.set(type,rows)},
