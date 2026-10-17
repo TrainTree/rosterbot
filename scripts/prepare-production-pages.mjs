@@ -5,8 +5,9 @@ import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
-import {DEPLOYMENT_SUPPORT_ASSETS,GENERATED_MANIFEST_ASSET,RUNTIME_SOURCE_ASSETS} from './runtime-assets.mjs';
+import {DEPLOYMENT_SUPPORT_ASSETS,GENERATED_MANIFEST_ASSET,GENERATED_SERVICE_WORKER_ASSET,RUNTIME_SOURCE_ASSETS} from './runtime-assets.mjs';
 import {generateRuntimeBuild} from './runtime-build.mjs';
+import {generateServiceWorker} from './service-worker-build.mjs';
 
 const sourceRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const destination=process.argv[2]?path.resolve(process.argv[2]):null;
@@ -47,6 +48,8 @@ async function copy(relative){
 for(const relative of [...DEPLOYMENT_SUPPORT_ASSETS,...RUNTIME_SOURCE_ASSETS])await copy(relative);
 const generatedBuild=await generateRuntimeBuild(destination,{sourceCommit:sourceCommitIfClean(),write:true});
 copied.push(GENERATED_MANIFEST_ASSET);
+const generatedWorker=await generateServiceWorker(destination,{manifest:generatedBuild.manifest,write:true});
+copied.push(GENERATED_SERVICE_WORKER_ASSET);
 
 assert.equal((await readFile(path.join(destination,'CNAME'),'utf8')).trim(),productionDomain,'Production CNAME changed.');
 const index=await readFile(path.join(destination,'index.html'),'utf8');
@@ -86,7 +89,7 @@ await writeFile(path.join(destination,'SHA256SUMS.txt'),`${checksums.join('\n')}
 console.log(JSON.stringify({
   destination,
   release:'v0.30.0',
-  runtimeBuild:{applicationVersion:generatedBuild.manifest.applicationVersion,buildId:generatedBuild.buildId,sourceCommit:generatedBuild.manifest.sourceCommit,assetManifestVersion:generatedBuild.manifest.formatVersion,assets:generatedBuild.manifest.assets.length,cacheNamespace:generatedBuild.manifest.cacheNamespace,completeBuildMarker:generatedBuild.manifest.completeBuildMarker},
+  runtimeBuild:{applicationVersion:generatedBuild.manifest.applicationVersion,buildId:generatedBuild.buildId,sourceCommit:generatedBuild.manifest.sourceCommit,assetManifestVersion:generatedBuild.manifest.formatVersion,assets:generatedBuild.manifest.assets.length,offlineRequiredAssets:generatedWorker.contract.required.length,cacheNamespace:generatedBuild.manifest.cacheNamespace,completeBuildMarker:generatedBuild.manifest.completeBuildMarker},
   customDomain:productionDomain,
   cloudBinding:{environment:'production',origins:[productionOrigin,productionAlias],projectRef:productionProjectRef,url:productionProjectUrl,requestedCloudSchema:5},
   credentialAudit:{browserSafePublishableKeys:1,jwtCredentials:0,secretCredentials:0,managementOrPersonalAccessTokens:0,databaseConnectionStrings:0,privilegedCredentials:0},

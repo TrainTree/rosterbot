@@ -20,7 +20,7 @@ const server=http.createServer((request,response)=>{
   const pathname=decodeURIComponent(new URL(request.url,'http://localhost').pathname),relative=pathname==='/'?'index.html':pathname.slice(1);
   const absolute=path.resolve(root,relative);requests.push(pathname);
   if(!absolute.startsWith(`${root}${path.sep}`)&&absolute!==path.join(root,'index.html')){response.writeHead(403).end();return}
-  try{const body=fs.readFileSync(absolute);response.writeHead(200,{'content-type':contentTypes.get(path.extname(absolute))||'application/octet-stream','cache-control':'no-store'});response.end(body)}
+  try{const body=fs.readFileSync(absolute),headers={'content-type':contentTypes.get(path.extname(absolute))||'application/octet-stream','cache-control':relative==='service-worker.js'?'no-cache, no-store':'no-store'};if(relative==='service-worker.js')headers['service-worker-allowed']='/';response.writeHead(200,headers);response.end(body)}
   catch(_){response.writeHead(404,{'content-type':'text/plain'});response.end('Not found')}
 });
 await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)});
@@ -51,6 +51,11 @@ try{
     if(ready.result.value.ready==='complete'&&ready.result.value.applicationReady)break;
     await new Promise(resolve=>setTimeout(resolve,50));
   }
+  for(let attempt=0;attempt<300;attempt++){
+    const offline=await command('Runtime.evaluate',{expression:`(async()=>{try{return await window.RosterBotOfflineShell?.refresh?.()}catch(_){return null}})()`,awaitPromise:true,returnByValue:true});
+    if(offline.result.value?.phase==='active'&&offline.result.value?.cacheComplete===true)break;
+    await new Promise(resolve=>setTimeout(resolve,50));
+  }
   const manifestResult=await command('Page.getAppManifest'),installability=await command('Page.getInstallabilityErrors');
   const runtime=await command('Runtime.evaluate',{expression:`(async()=>({
     ready:document.readyState,
@@ -61,13 +66,14 @@ try{
     manifestHref:document.querySelector('link[rel="manifest"]')?.href||'',
     iconHrefs:[...document.querySelectorAll('link[rel~="icon"]')].map(link=>link.href),
     iconStatuses:await Promise.all(['assets/icons/rosterbot-192.png','assets/icons/rosterbot-512.png','assets/icons/rosterbot-maskable-192.png','assets/icons/rosterbot-maskable-512.png','assets/icons/apple-touch-icon.png','assets/icons/favicon-16.png','assets/icons/favicon-32.png','favicon.ico'].map(async url=>({url,status:(await fetch(url,{cache:'no-store'})).status}))),
-    serviceWorkerRegistrations:'serviceWorker' in navigator?(await navigator.serviceWorker.getRegistrations()).length:0
+    serviceWorkerRegistrations:'serviceWorker' in navigator?(await navigator.serviceWorker.getRegistrations()).length:0,
+    offlineShell:window.RosterBotOfflineShell?.getStatus?.()||null
   }))()`,awaitPromise:true,returnByValue:true});
   const value=runtime.result.value;
   assert.equal(manifestResult.url,`${origin}/manifest.webmanifest`);assert.deepEqual(manifestResult.errors,[]);
   assert.equal(value.ready,'complete');assert.equal(value.applicationReady,true);assert.equal(value.startupFailure,'');assert.match(value.buildId,/^rb-build:[a-f0-9]{64}$/);
   assert.deepEqual(value.displayMode,{mode:'browser',installed:false,source:'display-mode-media'});
-  assert.equal(value.manifestHref,`${origin}/manifest.webmanifest`);assert.equal(value.iconHrefs.length,3);assert(value.iconStatuses.every(item=>item.status===200));assert.equal(value.serviceWorkerRegistrations,0);
+  assert.equal(value.manifestHref,`${origin}/manifest.webmanifest`);assert.equal(value.iconHrefs.length,3);assert(value.iconStatuses.every(item=>item.status===200));assert.equal(value.serviceWorkerRegistrations,1);assert.equal(value.offlineShell.phase,'active');assert.equal(value.offlineShell.cacheComplete,true);
   for(const required of ['/manifest.webmanifest','/assets/icons/rosterbot-192.png','/assets/icons/rosterbot-512.png','/assets/icons/rosterbot-maskable-192.png','/assets/icons/rosterbot-maskable-512.png'])assert(requests.includes(required),required);
   console.log(JSON.stringify({
     chromium:path.basename(chromium),manifest:{url:manifestResult.url,errors:manifestResult.errors},
@@ -75,5 +81,7 @@ try{
     serviceWorkerRegistrations:value.serviceWorkerRegistrations
   },null,2));
 }finally{
-  socket.close();browser.kill('SIGTERM');server.close();fs.rmSync(profile,{recursive:true,force:true});
+  socket.close();browser.kill('SIGTERM');
+  await Promise.race([new Promise(resolve=>browser.once('exit',resolve)),new Promise(resolve=>setTimeout(resolve,2000))]);
+  server.close();fs.rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
 }

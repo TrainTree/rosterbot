@@ -6,6 +6,7 @@ export const BUILD_STAMP_PATTERN=/rb-build:[a-f0-9]{64}/g;
 
 export const GENERATED_IDENTITY_ASSET='js/00-build-identity.js';
 export const GENERATED_MANIFEST_ASSET='rosterbot-build-manifest.json';
+export const GENERATED_SERVICE_WORKER_ASSET='service-worker.js';
 
 export const FOUNDATION_ASSETS=Object.freeze([
   'js/00-canonical-origin.js',
@@ -46,7 +47,10 @@ export const FEATURE_ASSETS=Object.freeze([
 ]);
 
 export const STYLE_ASSETS=Object.freeze(['css/rosterbot.css']);
-export const PRESENTATION_SCRIPT_ASSETS=Object.freeze(['js/00-display-mode.js']);
+export const PRESENTATION_SCRIPT_ASSETS=Object.freeze([
+  'js/00-display-mode.js',
+  'js/90-service-worker-registration.js'
+]);
 export const INSTALLABILITY_ASSETS=Object.freeze([
   'manifest.webmanifest',
   'assets/icons/rosterbot-192.png',
@@ -82,6 +86,11 @@ export function assetCriticality(relative){
   if(PRESENTATION_SCRIPT_ASSETS.includes(relative)||INSTALLABILITY_ASSETS.includes(relative))return 'installability-critical';
   if(COSMETIC_ASSETS.includes(relative))return 'cosmetic';
   throw new Error(`Runtime asset is not classified: ${relative}`);
+}
+
+export function isOfflineRequired(relative){
+  const criticality=assetCriticality(relative);
+  return criticality==='startup-critical'||criticality==='installability-critical';
 }
 
 export function assertRuntimeInventory(){
