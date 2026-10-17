@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
-import {BUILD_ID_PLACEHOLDER,COLD_START_ASSETS,GENERATED_MANIFEST_ASSET} from './runtime-assets.mjs';
+import {BUILD_ID_PLACEHOLDER,GENERATED_MANIFEST_ASSET,RUNTIME_SOURCE_ASSETS} from './runtime-assets.mjs';
 import {generateRuntimeBuild} from './runtime-build.mjs';
 
 const sourceRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -59,7 +59,7 @@ async function copy(relative){
   copied.push(relative);
 }
 
-for(const relative of COLD_START_ASSETS)await copy(relative);
+for(const relative of RUNTIME_SOURCE_ASSETS)await copy(relative);
 
 await writeFile(path.join(destination,'js/05-cloud-deployment-profile.js'),betaProfileScript,'utf8');
 

@@ -1,5 +1,5 @@
 export const APPLICATION_VERSION='0.31.0';
-export const ASSET_MANIFEST_VERSION=1;
+export const ASSET_MANIFEST_VERSION=2;
 export const BUILD_ID_PREFIX='rb-build:';
 export const BUILD_ID_PLACEHOLDER=`${BUILD_ID_PREFIX}${'0'.repeat(64)}`;
 export const BUILD_STAMP_PATTERN=/rb-build:[a-f0-9]{64}/g;
@@ -46,23 +46,51 @@ export const FEATURE_ASSETS=Object.freeze([
 ]);
 
 export const STYLE_ASSETS=Object.freeze(['css/rosterbot.css']);
-export const SCRIPT_ASSETS=Object.freeze([...FOUNDATION_ASSETS,...FEATURE_ASSETS]);
+export const PRESENTATION_SCRIPT_ASSETS=Object.freeze(['js/00-display-mode.js']);
+export const INSTALLABILITY_ASSETS=Object.freeze([
+  'manifest.webmanifest',
+  'assets/icons/rosterbot-192.png',
+  'assets/icons/rosterbot-512.png',
+  'assets/icons/rosterbot-maskable-192.png',
+  'assets/icons/rosterbot-maskable-512.png',
+  'assets/icons/apple-touch-icon.png'
+]);
+export const COSMETIC_ASSETS=Object.freeze([
+  'favicon.ico',
+  'assets/icons/favicon-16.png',
+  'assets/icons/favicon-32.png'
+]);
+export const SCRIPT_ASSETS=Object.freeze([...FOUNDATION_ASSETS,...PRESENTATION_SCRIPT_ASSETS,...FEATURE_ASSETS]);
 export const STAMPED_SCRIPT_ASSETS=SCRIPT_ASSETS;
 export const COLD_START_ASSETS=Object.freeze([
   'index.html',
   ...STYLE_ASSETS,
   GENERATED_IDENTITY_ASSET,
-  ...SCRIPT_ASSETS
+  ...FOUNDATION_ASSETS,
+  ...FEATURE_ASSETS
 ]);
-export const RUNTIME_SOURCE_ASSETS=COLD_START_ASSETS;
+export const RUNTIME_SOURCE_ASSETS=Object.freeze([
+  ...COLD_START_ASSETS,
+  ...PRESENTATION_SCRIPT_ASSETS,
+  ...INSTALLABILITY_ASSETS,
+  ...COSMETIC_ASSETS
+]);
 export const DEPLOYMENT_SUPPORT_ASSETS=Object.freeze(['.nojekyll','CNAME']);
 
+export function assetCriticality(relative){
+  if(COLD_START_ASSETS.includes(relative))return 'startup-critical';
+  if(PRESENTATION_SCRIPT_ASSETS.includes(relative)||INSTALLABILITY_ASSETS.includes(relative))return 'installability-critical';
+  if(COSMETIC_ASSETS.includes(relative))return 'cosmetic';
+  throw new Error(`Runtime asset is not classified: ${relative}`);
+}
+
 export function assertRuntimeInventory(){
-  const paths=[...COLD_START_ASSETS,GENERATED_MANIFEST_ASSET];
+  const paths=[...RUNTIME_SOURCE_ASSETS,GENERATED_MANIFEST_ASSET];
   const duplicates=paths.filter((value,index)=>paths.indexOf(value)!==index);
   if(duplicates.length)throw new Error(`Duplicate runtime asset inventory entries: ${[...new Set(duplicates)].join(', ')}`);
   if(!COLD_START_ASSETS.includes('index.html'))throw new Error('Runtime inventory must contain index.html.');
   if(!COLD_START_ASSETS.includes(GENERATED_IDENTITY_ASSET))throw new Error('Runtime inventory must contain the generated build identity.');
+  for(const relative of RUNTIME_SOURCE_ASSETS)assetCriticality(relative);
   return true;
 }
 

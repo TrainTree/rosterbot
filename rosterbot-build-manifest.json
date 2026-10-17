@@ -1,19 +1,20 @@
 {
   "format": "rosterbot-runtime-build-manifest",
-  "formatVersion": 1,
+  "formatVersion": 2,
   "application": "RosterBot",
   "applicationVersion": "0.31.0",
-  "buildId": "rb-build:17f36d05bbaa5f3cd5122d1020a06d24468cd58cda751a9c63fc27834d367d21",
+  "buildId": "rb-build:df94b27c8516f6b050a1072faa6f513f38fbe0c46257112bcc628dc87e352311",
   "sourceCommit": null,
-  "cacheNamespace": "rosterbot-app-17f36d05bbaa5f3cd5122d1020a06d24468cd58cda751a9c63fc27834d367d21",
-  "completeBuildMarker": "rosterbot-complete-17f36d05bbaa5f3cd5122d1020a06d24468cd58cda751a9c63fc27834d367d21",
+  "cacheNamespace": "rosterbot-app-df94b27c8516f6b050a1072faa6f513f38fbe0c46257112bcc628dc87e352311",
+  "completeBuildMarker": "rosterbot-complete-df94b27c8516f6b050a1072faa6f513f38fbe0c46257112bcc628dc87e352311",
   "minimumApplicationVersion": "0.31.0",
   "assets": [
     {
       "url": "index.html",
-      "sha256": "4517a9b272d144ff3e6dabdf9b22c3e273bcac4925df82419e19b8ab8689a337",
-      "bytes": 180117,
+      "sha256": "f25604f32bed898a1f19f609db6e28a9d5753327216e78336dee4059f33b814f",
+      "bytes": 180889,
       "type": "text/html",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
@@ -21,238 +22,352 @@
       "sha256": "0bfa0e9ee872f685f09dfae27a426e2e5dc8fbffbd6372d0dd095175f20e45f5",
       "bytes": 221470,
       "type": "text/css",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/00-build-identity.js",
-      "sha256": "08983420bd7e615abac5a789ac95ea20ff67e6c02f5367adb17585ea5949277b",
-      "bytes": 4049,
+      "sha256": "c2b7669de6fab35789f87af766fe01aaf072645c6366ca15153466d6ff090c28",
+      "bytes": 5624,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/00-canonical-origin.js",
-      "sha256": "39899bb412cbacd557884cf89dbda6eafe300ca478145de897a5c24a9e0c8c9e",
+      "sha256": "8ed87aa6c6d852fd2666ee8c6e8b1e5663b19a7a405ad66a2b87be25f7c5377a",
       "bytes": 1457,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/00-error-handler.js",
-      "sha256": "0ead97b778338439bdf04132fd06ce844b427a140b6f4e24dbc95acdb394991b",
+      "sha256": "53e211ce08a4aba3ddbcd47ae336165202c17cd7845cb3bee5e9c89f9aa3dc90",
       "bytes": 2054,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/01-storage-compatibility.js",
-      "sha256": "ed741e1070a6bf1ee31646c9e74fff5ff476caba91c205b9c722cb16f3564224",
+      "sha256": "650676a1311b81e2792c1d8417e8528299b62a28f40074c3d851a87d04fc0543",
       "bytes": 9839,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/01-persistence-registry.js",
-      "sha256": "0dc85c4c3e93d110ebb1debdddeb4a7de8b3770a03232ef76b6a1a2ac37443b8",
+      "sha256": "e23f61f1fc73e9b7fede2a1e788d7989adc129ed8ee0ee229100196b4a107ca3",
       "bytes": 21883,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/02-canonical-state.js",
-      "sha256": "b992f47cde27717e9d7fab2a5d1b938708506497f1469e31f9771b96d5e353f6",
+      "sha256": "692341d9277d922f6c178c717fef89718a5b3104fbad05199d993b78198e6e0f",
       "bytes": 11629,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/02-persistence-safety.js",
-      "sha256": "b2c34c75794651ecd686c11b38e19620d4d3c848f3593ad7045295db2a6859dd",
+      "sha256": "915ca7a70abfc3675e26f12ee08e536dd1d71fa89a142a93c5725db68346dbdd",
       "bytes": 46705,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/02-schema5.js",
-      "sha256": "e9fda4b6d008e44712886a08b436dc29c2d97de545794e690d86f1a610febd8d",
+      "sha256": "ddcaa6a03b425e183c700f0d35177ccc2172e5e5a67fe68c662539d57c85f701",
       "bytes": 23920,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/03-recovery-ui.js",
-      "sha256": "9cf4994079eabd0f2538e8a9a3c73fd759f86c24e3f1b1e1de66bc0faffcd8f1",
+      "sha256": "d3c25088e094ae8b880c99e73b9f16cc4f78c497dcfa362c23d7ac0f28f2494d",
       "bytes": 18743,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/03-schema5-migration.js",
-      "sha256": "5e7def29e076a2ae692cec8bc5815eb907f228bf3665bfc0b86fe474922d259f",
+      "sha256": "8a1b2237560d32e7de2a349c68d1e59e22b0e2ff7a8d77471101d6555e1b29d3",
       "bytes": 42211,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/03-persistence-bootstrap.js",
-      "sha256": "e9b62a041e6c35212fa1d2176912761f9f0b94e7fd9c76cd2a482a9bb871e292",
+      "sha256": "2b7e3028765450217b68447dd9900a2e3810671c233d095b5c1eafee975afd20",
       "bytes": 22834,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "data/rosters-fp64-fp68-20260908.js",
-      "sha256": "7b90317f2e300d9babf1419b6325bd6ec2605b7289ab6d516ffde18585e6b4a5",
+      "sha256": "c69712ea56908d39b77ecf6b9e3db3b36bd825be9eefa4425ea33cdc8935c059",
       "bytes": 3201466,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/10-roster-official.js",
-      "sha256": "7ec142223a074e7b9fa713faa9e99567a563330fa371d3dbd9e0b17f06ce14f5",
+      "sha256": "35d24920f8085af95dda4bc031371615654c5a5981c7d87e1e4d4750ba19f228",
       "bytes": 9138,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/11-roster-engine.js",
-      "sha256": "6c9ee52f0ac3117b4b87794b863d6a0cb6b42083f7c84fd2be06da7b1440b9aa",
+      "sha256": "4149eea5bebad8ac7f6f3d0c83d780a3714d271fd6f175ad8698e52075097eda",
       "bytes": 18771,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/12-roster-effective-dates.js",
-      "sha256": "a10567ace81ad2f5df0deb1db76a2cdcd6ae3d45fb04195afaa52ba7a324de50",
+      "sha256": "971679a494f3296c065a52e0775fe6d954d789805b61ff4de4ba1a7e7b0afac8",
       "bytes": 5917,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/40-employment-profile.js",
-      "sha256": "d63d085dd37ae256390671cd56f97db758d20980ca0bdc3872a8f7bdd108894d",
+      "sha256": "5d4a0265c3a8716e0bacfc0a38bc0f0fd451e12db99519f78f9fcbdc55a56f7e",
       "bytes": 14406,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/20-roster-ui.js",
-      "sha256": "f7280d2723f16c88e91fdce1df4532bb2ff32e3b74d8a2efaaa684e1c91b9809",
+      "sha256": "d2b7b6be99ec8a2018cda5f40c1b7eb513ee882d8a02817c6abbcdfd03cecc68",
       "bytes": 103700,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/30-feedback.js",
-      "sha256": "f81fa7beb1e1a16d521074d2f4d3a4b7c584493bc9bda3f25a011c260b06192a",
+      "sha256": "765c8b04a7c48aaff41ef0834b2a8206e6a12fd60685fb017b46e96ec9330b60",
       "bytes": 5117,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/31-changelog.js",
-      "sha256": "9fcde1b6e9637e49f7318b49676895ad0182df4857e583e21fb1df021c608a11",
+      "sha256": "9eed0aaac129c5c002b0ec11888409f390966fc1900eb203d2dfe394a4bcfb10",
       "bytes": 1233,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "data/pay-reference-20260923.js",
-      "sha256": "f0e03e8e2062408d3c4438b24f56edf2c8e0aa606141b82ab622b893ce639644",
+      "sha256": "36fca518445b4207eaef8cc218b37273b790423ee131c00090366bfac087a66c",
       "bytes": 2324962,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/41-pay-rate-official.js",
-      "sha256": "3cbfd11b14c8cf9958cfef40216daad538b416c66547b98b89bc906b7cfd5fe2",
+      "sha256": "5e0b0a26a4478cc956acb604e27b51a87f8cb4f9a471dd4e3442f959e93d713f",
       "bytes": 1610,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/42-paybot.js",
-      "sha256": "1dfb0ea90cd6bdf6b2071758744658222ca7682bcc91c0e0a09ce84f3628a635",
+      "sha256": "3489831c988900465f7517c25236dbf52456054ef293be697bf35d4f8ec93ef2",
       "bytes": 74282,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/50-data-backup.js",
-      "sha256": "68b13429ea038be974ec76053e17f07c942f76a26ca81984d03098244fca2e95",
+      "sha256": "15df39b6098d278c05b0565fd62778f9d2cd5849e55886399717b534d62f1e05",
       "bytes": 17329,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/04-cloud-error-contract.js",
-      "sha256": "44877827e16b25ebdb8dde889b6c7f796000cbac074cad1cccf68572193f6e78",
+      "sha256": "3a94e862f3b0ab58f810e9b3c93019aced3253784f227eb9357910e8d2484b06",
       "bytes": 3089,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/05-cloud-deployment-profile.js",
-      "sha256": "3ed154d5c8d39d2ba71bde28aca7332827077d576143d56338cef5ab139a7d02",
+      "sha256": "73104cbfbc4b6ccb6d615f9182d4e56c34e082ecb78f933069aa93bbaa820361",
       "bytes": 847,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/06-cloud-config.js",
-      "sha256": "2539d0c63e0524192ee811e569ebd65baa7e2f75dd075fe92cb300a5e1a9f26d",
+      "sha256": "b2a983cb40844d7d205d3bf40ccb6fa9cd0877f4858a5b81645cd87dc8c99b4f",
       "bytes": 6873,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/07-cloud-schema5.js",
-      "sha256": "335134c34e8adebfad177e9dc6ed1fff950db32a037835cdff16141ff7218683",
+      "sha256": "54c6f403cd9d54bf33017278ac9c731581273abc700527685be283cf9738585f",
       "bytes": 7021,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/51-cloud-sync.js",
-      "sha256": "de27641f2f3f045467ef2f3adce3c6544dae71587e2a664782996a43763d8b29",
+      "sha256": "dc60fa2fb3c68b1ccf2eac2c79498fed8ff46dd6584c76b6c9427cd7ba03fdd0",
       "bytes": 121398,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/60-diary.js",
-      "sha256": "3231cd32ce894b6f964ad36d6b5383986a1d24fd01e2e9ce2ec16ea1e8623391",
+      "sha256": "8b0bcbd33d308918e0cce62320d20be03824309ebf6a33363691d7579b062a52",
       "bytes": 42991,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/61-page-bridge.js",
-      "sha256": "adca896c613209a8ed4fb3b59f68fc2979af11084e0c6c1986747a7967f25059",
+      "sha256": "870e71c185893187b6fe88326fc6e0291db63bcf9424fb54f0d767c58af6ca92",
       "bytes": 1102,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/75-sources.js",
-      "sha256": "38c7c0a661558701a9dd47300d7242b916646fa59c83b10cc3fe58c9781002c2",
+      "sha256": "a7728b91adf3f1bbd7b178b8808d45eb3b1a97763b99eeb93660ba7a04590363",
       "bytes": 5012,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/70-navigation.js",
-      "sha256": "af1a57a6ebc6112c86d59980e0df07fa70403e5215374c7cb55b49e3afb991b0",
+      "sha256": "b16d83f99d32af4b93d31e3a8a78e5ee9c73ad145a5254c710d2bde787f7ef43",
       "bytes": 36572,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
     },
     {
       "url": "js/80-calendar-subscription.js",
-      "sha256": "b6df7027177de658f237c65c1062e64e0b10dbd2c0f41f2c170bb5def1fb668d",
+      "sha256": "a1a354d89f8ad53798bc1acf5049cce60ea6aede721ee6bfe1d6b7bfff781117",
       "bytes": 23973,
       "type": "text/javascript",
+      "criticality": "startup-critical",
       "requiredForColdStart": true
+    },
+    {
+      "url": "js/00-display-mode.js",
+      "sha256": "4defa84fee015d4dcd257c62f74c440c383fce5778f178356cfb4c0cf61a87b2",
+      "bytes": 2521,
+      "type": "text/javascript",
+      "criticality": "installability-critical",
+      "requiredForColdStart": false
+    },
+    {
+      "url": "manifest.webmanifest",
+      "sha256": "07d594562ea3433efcb6adb827315f2d7d95c9052dd3285024bb68dcc05620ba",
+      "bytes": 875,
+      "type": "application/manifest+json",
+      "criticality": "installability-critical",
+      "requiredForColdStart": false
+    },
+    {
+      "url": "assets/icons/rosterbot-192.png",
+      "sha256": "05246126e2a15371836e77e5084d6f0f3509de04e3dbe79f990b82a1cfa9b5b5",
+      "bytes": 48443,
+      "type": "image/png",
+      "criticality": "installability-critical",
+      "requiredForColdStart": false
+    },
+    {
+      "url": "assets/icons/rosterbot-512.png",
+      "sha256": "3661bb243b7db5467faf7331a5f14f128d4e74d1b34ea968f2a1d22a987f59ba",
+      "bytes": 315830,
+      "type": "image/png",
+      "criticality": "installability-critical",
+      "requiredForColdStart": false
+    },
+    {
+      "url": "assets/icons/rosterbot-maskable-192.png",
+      "sha256": "05246126e2a15371836e77e5084d6f0f3509de04e3dbe79f990b82a1cfa9b5b5",
+      "bytes": 48443,
+      "type": "image/png",
+      "criticality": "installability-critical",
+      "requiredForColdStart": false
+    },
+    {
+      "url": "assets/icons/rosterbot-maskable-512.png",
+      "sha256": "3661bb243b7db5467faf7331a5f14f128d4e74d1b34ea968f2a1d22a987f59ba",
+      "bytes": 315830,
+      "type": "image/png",
+      "criticality": "installability-critical",
+      "requiredForColdStart": false
+    },
+    {
+      "url": "assets/icons/apple-touch-icon.png",
+      "sha256": "bdac53960fe711a34f8fa42d789602065089194ccc2f0758fc1dfe0f0ee85125",
+      "bytes": 42933,
+      "type": "image/png",
+      "criticality": "installability-critical",
+      "requiredForColdStart": false
+    },
+    {
+      "url": "favicon.ico",
+      "sha256": "9bcbaf720320ce8525d373887ec26a935a78c40a6d2b0bca6030b74169b655c0",
+      "bytes": 3192,
+      "type": "image/x-icon",
+      "criticality": "cosmetic",
+      "requiredForColdStart": false
+    },
+    {
+      "url": "assets/icons/favicon-16.png",
+      "sha256": "a1a39d885b52d412c7f64da679d195b0356949bc1cc30c3a74ff0e79e776ddef",
+      "bytes": 826,
+      "type": "image/png",
+      "criticality": "cosmetic",
+      "requiredForColdStart": false
+    },
+    {
+      "url": "assets/icons/favicon-32.png",
+      "sha256": "aee076dc99209bcf7f0fb60d87da5957cf1794d0a15efcf9b5165bbd9045fd77",
+      "bytes": 2328,
+      "type": "image/png",
+      "criticality": "cosmetic",
+      "requiredForColdStart": false
     }
   ]
 }

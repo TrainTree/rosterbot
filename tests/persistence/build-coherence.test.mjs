@@ -10,7 +10,7 @@ import {root,readSource} from './helpers.mjs';
 import {
   APPLICATION_VERSION,ASSET_MANIFEST_VERSION,COLD_START_ASSETS,FEATURE_ASSETS,
   FOUNDATION_ASSETS,GENERATED_IDENTITY_ASSET,GENERATED_MANIFEST_ASSET,
-  STAMPED_SCRIPT_ASSETS
+  PRESENTATION_SCRIPT_ASSETS,RUNTIME_SOURCE_ASSETS,STAMPED_SCRIPT_ASSETS
 } from '../../scripts/runtime-assets.mjs';
 import {generateRuntimeBuild,verifyRuntimeBuild} from '../../scripts/runtime-build.mjs';
 
@@ -40,11 +40,11 @@ function bootContext({withIdentity=true}={}){
 }
 
 test('one authoritative inventory covers every current runtime asset exactly once',()=>{
-  const actual=['index.html',...filesBelow(path.join(root,'css'),'css'),...filesBelow(path.join(root,'data'),'data'),...filesBelow(path.join(root,'js'),'js')].sort();
-  assert.deepEqual([...COLD_START_ASSETS].sort(),actual);
-  assert.equal(new Set(COLD_START_ASSETS).size,COLD_START_ASSETS.length);
-  assert.deepEqual(manifest.assets.map(asset=>asset.url),COLD_START_ASSETS);
-  assert.deepEqual([...FOUNDATION_ASSETS,...FEATURE_ASSETS],STAMPED_SCRIPT_ASSETS);
+  const actual=['index.html','manifest.webmanifest','favicon.ico',...filesBelow(path.join(root,'css'),'css'),...filesBelow(path.join(root,'data'),'data'),...filesBelow(path.join(root,'js'),'js'),...filesBelow(path.join(root,'assets/icons'),'assets/icons')].sort();
+  assert.deepEqual([...RUNTIME_SOURCE_ASSETS].sort(),actual);
+  assert.equal(new Set(RUNTIME_SOURCE_ASSETS).size,RUNTIME_SOURCE_ASSETS.length);
+  assert.deepEqual(manifest.assets.map(asset=>asset.url),RUNTIME_SOURCE_ASSETS);
+  assert.deepEqual([...FOUNDATION_ASSETS,...PRESENTATION_SCRIPT_ASSETS,...FEATURE_ASSETS],STAMPED_SCRIPT_ASSETS);
 });
 
 test('generated manifest is deterministic, current, and hashes every cold-start byte',async()=>{
@@ -53,7 +53,7 @@ test('generated manifest is deterministic, current, and hashes every cold-start 
   for(const asset of manifest.assets){const bytes=fs.readFileSync(path.join(root,asset.url));assert.equal(asset.sha256,sha256(bytes),asset.url);assert.equal(asset.bytes,bytes.byteLength,asset.url)}
   const temp=fs.mkdtempSync(path.join(os.tmpdir(),'rosterbot-build-determinism-'));
   try{
-    for(const relative of COLD_START_ASSETS){const target=path.join(temp,relative);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(root,relative),target)}
+    for(const relative of RUNTIME_SOURCE_ASSETS){const target=path.join(temp,relative);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(root,relative),target)}
     const first=await generateRuntimeBuild(temp,{write:true}),firstManifest=fs.readFileSync(path.join(temp,GENERATED_MANIFEST_ASSET),'utf8');
     const second=await generateRuntimeBuild(temp,{write:true}),secondManifest=fs.readFileSync(path.join(temp,GENERATED_MANIFEST_ASSET),'utf8');
     assert.equal(first.buildId,second.buildId);assert.equal(firstManifest,secondManifest);
@@ -63,7 +63,7 @@ test('generated manifest is deterministic, current, and hashes every cold-start 
 
 test('production, beta, bootstrap and future caching consume the shared inventory',()=>{
   for(const generator of ['scripts/prepare-production-pages.mjs','scripts/prepare-staging-pages.mjs']){
-    const source=readSource(generator);assert.match(source,/COLD_START_ASSETS/);assert.match(source,/generateRuntimeBuild/);assert.doesNotMatch(source,/const directories=|readdir\(path\.join\(sourceRoot,directory\)/);
+    const source=readSource(generator);assert.match(source,/RUNTIME_SOURCE_ASSETS/);assert.match(source,/generateRuntimeBuild/);assert.doesNotMatch(source,/const directories=|readdir\(path\.join\(sourceRoot,directory\)/);
   }
   const bootstrap=readSource('js/03-persistence-bootstrap.js');assert.match(bootstrap,/RosterBotBuild\?\.featureAssets/);assert.doesNotMatch(bootstrap,/const moduleSources=\[/);
   assert.equal(manifest.cacheNamespace,`rosterbot-app-${buildId.slice('rb-build:'.length)}`);assert.match(manifest.completeBuildMarker,/^rosterbot-complete-/);

@@ -4,16 +4,16 @@ import path from 'node:path';
 import {
   APPLICATION_VERSION,ASSET_MANIFEST_VERSION,BUILD_ID_PLACEHOLDER,BUILD_STAMP_PATTERN,
   COLD_START_ASSETS,FEATURE_ASSETS,FOUNDATION_ASSETS,GENERATED_IDENTITY_ASSET,
-  GENERATED_MANIFEST_ASSET,STAMPED_SCRIPT_ASSETS
+  GENERATED_MANIFEST_ASSET,INSTALLABILITY_ASSETS,PRESENTATION_SCRIPT_ASSETS,
+  RUNTIME_SOURCE_ASSETS,STAMPED_SCRIPT_ASSETS,assetCriticality
 } from './runtime-assets.mjs';
 
 const sha256=value=>createHash('sha256').update(value).digest('hex');
-const mimeType=relative=>relative.endsWith('.html')?'text/html':relative.endsWith('.css')?'text/css':relative.endsWith('.js')?'text/javascript':relative.endsWith('.json')?'application/json':'application/octet-stream';
+const mimeType=relative=>relative.endsWith('.html')?'text/html':relative.endsWith('.css')?'text/css':relative.endsWith('.js')?'text/javascript':relative.endsWith('.json')?'application/json':relative.endsWith('.webmanifest')?'application/manifest+json':relative.endsWith('.png')?'image/png':relative.endsWith('.ico')?'image/x-icon':'application/octet-stream';
 const normalizedBytes=(relative,bytes)=>{
   if(relative===GENERATED_IDENTITY_ASSET)return null;
-  let text=bytes.toString('utf8');
-  if(relative==='index.html'||STAMPED_SCRIPT_ASSETS.includes(relative))text=text.replace(BUILD_STAMP_PATTERN,BUILD_ID_PLACEHOLDER);
-  return Buffer.from(text,'utf8');
+  if(relative==='index.html'||STAMPED_SCRIPT_ASSETS.includes(relative))return Buffer.from(bytes.toString('utf8').replace(BUILD_STAMP_PATTERN,BUILD_ID_PLACEHOLDER),'utf8');
+  return bytes;
 };
 
 async function regularFile(root,relative){
@@ -24,7 +24,7 @@ async function regularFile(root,relative){
 
 export async function calculateBuildInput(root,{sourceCommit=null}={}){
   const assets=[];
-  for(const relative of COLD_START_ASSETS){
+  for(const relative of RUNTIME_SOURCE_ASSETS){
     if(relative===GENERATED_IDENTITY_ASSET)continue;
     const absolute=await regularFile(root,relative),bytes=await readFile(absolute),normalized=normalizedBytes(relative,bytes);
     assets.push({url:relative,sha256:sha256(normalized),bytes:normalized.byteLength});
@@ -40,9 +40,11 @@ function identitySource({buildId,sourceCommit=null}){
     assetManifestUrl:GENERATED_MANIFEST_ASSET,cacheNamespace:`rosterbot-app-${buildId.slice('rb-build:'.length)}`,
     completeBuildMarker:`rosterbot-complete-${buildId.slice('rb-build:'.length)}`,
     minimumApplicationVersion:APPLICATION_VERSION,
-    foundationalAssets:FOUNDATION_ASSETS,featureAssets:FEATURE_ASSETS,coldStartAssets:COLD_START_ASSETS
+    foundationalAssets:FOUNDATION_ASSETS,presentationAssets:PRESENTATION_SCRIPT_ASSETS,
+    featureAssets:FEATURE_ASSETS,coldStartAssets:COLD_START_ASSETS,
+    installabilityAssets:INSTALLABILITY_ASSETS,runtimeAssets:RUNTIME_SOURCE_ASSETS
   };
-  return `(function(root){\n  'use strict';\n  const identity=${JSON.stringify(identity)};for(const key of ['foundationalAssets','featureAssets','coldStartAssets'])Object.freeze(identity[key]);Object.freeze(identity);\n  const observed=new Map();\n  function mismatch(component,actual,reason){\n    const expected=identity.buildId,detail={component:String(component||'unknown'),expectedBuildId:expected,observedBuildId:String(actual||'missing'),reason:String(reason||'build-mismatch')};\n    try{root.RosterBotBootDiagnostics?.buildMismatch?.(detail)}catch(_){}\n    const error=new Error(\`RosterBot application build mismatch: \${detail.component} expected \${expected} but observed \${detail.observedBuildId}\`);error.name='RosterBotBuildMismatchError';error.code='ROSTERBOT_BUILD_MISMATCH';error.detail=detail;throw error;\n  }\n  function assertComponent(component,componentBuildId){if(componentBuildId!==identity.buildId)mismatch(component,componentBuildId,'component-build-mismatch');observed.set(String(component),String(componentBuildId));return true}\n  function assertFoundations(){const missing=identity.foundationalAssets.filter(asset=>observed.get(asset)!==identity.buildId);if(missing.length)mismatch(missing[0],observed.get(missing[0])||'missing','foundational-component-missing');return true}\n  function observedComponents(){return Object.freeze(Object.fromEntries(observed))}\n  const api=Object.freeze({...identity,assertComponent,assertFoundations,observedComponents});\n  const meta=root.document?.querySelector?.('meta[name="rosterbot-build-id"]')?.content||'';\n  if(meta!==identity.buildId)mismatch('index.html',meta||'missing','document-build-mismatch');\n  Object.defineProperty(root,'RosterBotBuild',{value:api,writable:false,configurable:false,enumerable:true});\n})(window);\n`;
+  return `(function(root){\n  'use strict';\n  const identity=${JSON.stringify(identity)};for(const key of ['foundationalAssets','presentationAssets','featureAssets','coldStartAssets','installabilityAssets','runtimeAssets'])Object.freeze(identity[key]);Object.freeze(identity);\n  const observed=new Map();\n  function mismatch(component,actual,reason){\n    const expected=identity.buildId,detail={component:String(component||'unknown'),expectedBuildId:expected,observedBuildId:String(actual||'missing'),reason:String(reason||'build-mismatch')};\n    try{root.RosterBotBootDiagnostics?.buildMismatch?.(detail)}catch(_){}\n    const error=new Error(\`RosterBot application build mismatch: \${detail.component} expected \${expected} but observed \${detail.observedBuildId}\`);error.name='RosterBotBuildMismatchError';error.code='ROSTERBOT_BUILD_MISMATCH';error.detail=detail;throw error;\n  }\n  function assertComponent(component,componentBuildId){if(componentBuildId!==identity.buildId)mismatch(component,componentBuildId,'component-build-mismatch');observed.set(String(component),String(componentBuildId));return true}\n  function assertFoundations(){const missing=identity.foundationalAssets.filter(asset=>observed.get(asset)!==identity.buildId);if(missing.length)mismatch(missing[0],observed.get(missing[0])||'missing','foundational-component-missing');return true}\n  function observedComponents(){return Object.freeze(Object.fromEntries(observed))}\n  const api=Object.freeze({...identity,assertComponent,assertFoundations,observedComponents});\n  const meta=root.document?.querySelector?.('meta[name="rosterbot-build-id"]')?.content||'';\n  if(meta!==identity.buildId)mismatch('index.html',meta||'missing','document-build-mismatch');\n  Object.defineProperty(root,'RosterBotBuild',{value:api,writable:false,configurable:false,enumerable:true});\n})(window);\n`;
 }
 
 export async function generateRuntimeBuild(root,{sourceCommit=null,write=true}={}){
@@ -60,9 +62,10 @@ export async function generateRuntimeBuild(root,{sourceCommit=null,write=true}={
   const identity=identitySource({buildId,sourceCommit});
   if(write){await mkdir(path.dirname(path.join(root,GENERATED_IDENTITY_ASSET)),{recursive:true});await writeFile(path.join(root,GENERATED_IDENTITY_ASSET),identity,'utf8')}
   const assets=[];
-  for(const relative of COLD_START_ASSETS){
+  for(const relative of RUNTIME_SOURCE_ASSETS){
     const bytes=relative===GENERATED_IDENTITY_ASSET?Buffer.from(identity,'utf8'):await readFile(await regularFile(root,relative));
-    assets.push({url:relative,sha256:sha256(bytes),bytes:bytes.byteLength,type:mimeType(relative),requiredForColdStart:true});
+    const criticality=assetCriticality(relative);
+    assets.push({url:relative,sha256:sha256(bytes),bytes:bytes.byteLength,type:mimeType(relative),criticality,requiredForColdStart:criticality==='startup-critical'});
   }
   const manifest={
     format:'rosterbot-runtime-build-manifest',formatVersion:ASSET_MANIFEST_VERSION,

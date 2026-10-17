@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
-import {COLD_START_ASSETS,DEPLOYMENT_SUPPORT_ASSETS,GENERATED_MANIFEST_ASSET} from './runtime-assets.mjs';
+import {DEPLOYMENT_SUPPORT_ASSETS,GENERATED_MANIFEST_ASSET,RUNTIME_SOURCE_ASSETS} from './runtime-assets.mjs';
 import {generateRuntimeBuild} from './runtime-build.mjs';
 
 const sourceRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -44,7 +44,7 @@ async function copy(relative){
   copied.push(relative);
 }
 
-for(const relative of [...DEPLOYMENT_SUPPORT_ASSETS,...COLD_START_ASSETS])await copy(relative);
+for(const relative of [...DEPLOYMENT_SUPPORT_ASSETS,...RUNTIME_SOURCE_ASSETS])await copy(relative);
 const generatedBuild=await generateRuntimeBuild(destination,{sourceCommit:sourceCommitIfClean(),write:true});
 copied.push(GENERATED_MANIFEST_ASSET);
 
