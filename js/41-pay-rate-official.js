@@ -1,3 +1,4 @@
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/41-pay-rate-official.js','rb-build:f975cefad1b130c09a48db7d44c56aa072049034ff6b25b2e3c31a935cbc3ae8')}catch(error){throw error}
 (function(root){
   'use strict';
   const DATA=root.ROSTERBOT_PAY_RATE_DATA;

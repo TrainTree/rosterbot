@@ -1,3 +1,4 @@
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/30-feedback.js','rb-build:f975cefad1b130c09a48db7d44c56aa072049034ff6b25b2e3c31a935cbc3ae8')}catch(error){throw error}
 (function () {
   'use strict';
   const ENDPOINT = 'https://formspree.io/f/xwlkvlyl';
@@ -96,6 +97,7 @@
     if (includeSetup.checked) payload.set('diagnostics', diagnostics());
 
     try {
+      if (navigator.onLine === false) throw Object.assign(new Error('offline'), { code: 'FEEDBACK_OFFLINE' });
       const response = await fetch(ENDPOINT, {
         method: 'POST',
         body: payload,
@@ -120,7 +122,7 @@
         if (!modal.hidden) closeModal();
       }, 1300);
     } catch (error) {
-      status.textContent = 'Could not send feedback. Check your connection and try again.';
+      status.textContent = navigator.onLine === false ? 'You are offline. Feedback was not queued or sent; try again when you are connected.' : 'Could not send feedback. Check your connection and try again. Nothing was queued.';
       status.className = 'feedback-status error';
       console.error('RosterBot feedback error:', error);
     } finally {
