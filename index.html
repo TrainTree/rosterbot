@@ -9,14 +9,14 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:036b543c23fc8918e561f80facf6755b4a798aaeac2c6dbd37e8fd14d4db8b27">
+  <meta name="rosterbot-build-id" content="rb-build:eaba3e509f3f5d22e9daa35d3db2a07ce1883957b439dc82655338843c17aeb8">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
-  <title>RosterBot 🤖 v0.30.0</title>
+  <title>RosterBot 🤖 v0.31.0</title>
   <script id="rosterbotBootDiagnostics">
   (function(){
     'use strict';
@@ -607,7 +607,7 @@
 
 
     <footer>
-      RosterBot 🤖 v0.30.0 · Local-first HTML/JavaScript · Australia/Melbourne
+      RosterBot 🤖 v0.31.0 · Local-first HTML/JavaScript · Australia/Melbourne
     </footer>
   </main>
 
@@ -615,7 +615,7 @@
     <div class="pb-hero">
       <div>
         <div class="eyebrow">PAY CHECKER</div>
-        <div class="pb-hero-title"><h2>PayBot 🤖💰</h2><span class="pb-beta">v0.30 ESTIMATE</span></div>
+        <div class="pb-hero-title"><h2>PayBot 🤖💰</h2><span class="pb-beta">v0.31 ESTIMATE</span></div>
         <p class="pb-intro">PayBot can use the roster you loaded in RosterBot. You can also choose roster lines or enter shifts yourself.</p>
       </div>
       <button class="btn soft" id="resetBtn" type="button">Reset PayBot fortnight</button>
@@ -651,7 +651,7 @@
     <section id="editorView"></section>
     <section id="payslipView" class="panel results hidden"><table class="pay-table"><thead><tr><th>Pay element</th><th>Hours / units</th><th>Rate</th><th>Value</th></tr></thead><tbody id="payBody"></tbody><tfoot><tr><td colspan="3">Expected gross</td><td id="grossTotal">$0.00</td></tr></tfoot></table><div class="warning">PayBot provides an indicative gross-pay estimate. Rest-job special rules, SDL 8:29 and tax/net calculations are not included yet.</div></section>
     <section id="dailyView" class="panel results hidden"><div class="day-breakdown" id="dailyBody"></div><div class="warning">Day totals include ordinary base or paid leave plus any penalties, overtime and allowances for that day. Time-based pay classes use a 0.1h minimum for any positive time, then round to the nearest 0.1h per shift/day before the fortnight totals are added.</div></section>
-    <footer class="footer">RosterBot 🤖 + PayBot 🤖💰 v0.30.0 · Local-first release · Australia/Melbourne</footer>
+    <footer class="footer">RosterBot 🤖 + PayBot 🤖💰 v0.31.0 · Local-first release · Australia/Melbourne</footer>
   </main>
 
 
@@ -1125,7 +1125,8 @@
         <button id="changelogCloseBtn" class="feedback-close-btn" type="button" aria-label="Close changelog">×</button>
       </div>
       <div class="changelog-body">
-        <article class="changelog-entry current"><div class="changelog-entry-head"><strong>v0.30.0 Data Safety</strong><span>Verified local and Cloud schema upgrade</span><em>Current release</em></div><ul><li>Upgrades local personal data from schema 4 to schema 5 using a verified, restart-safe migration with an exact schema-4 compatibility projection and retained recovery evidence.</li><li>Cloud schema-5 upload and restore remain fail-closed until the signed-in session receives a fresh authenticated capability attestation from the exact configured RosterBot service.</li><li>Backup import and Cloud replacement are transactional, restore failures roll back to the previous verified state, and no-op startup/reload does not create another generation.</li><li>Manual <code>.rosterbot</code> backups remain schema-4 compatible and plaintext; optional Cloud encryption remains client-side AES-256-GCM.</li><li>Frozen official roster and pay-reference datasets remain unchanged.</li></ul></article>
+        <article class="changelog-entry current"><div class="changelog-entry-head"><strong>v0.31.0 PWA, Mobile &amp; Offline</strong><span>Installable, offline-ready RosterBot</span><em>Current release</em></div><ul><li>RosterBot can be installed as a standalone PWA with the approved RosterBot app icon on supported iPhone, iPad, Android and desktop browsers.</li><li>A verified, build-coherent application shell supports cold launch, reload and ordinary roster, diary and PayBot use while offline after one complete online load.</li><li>Local edits remain safely stored while offline; reconnect performs fresh authentication/capability checks and revision-aware reconciliation rather than replaying old requests.</li><li>Complete new builds wait for an explicit <strong>Update now</strong> action and preserve committed local state through the controlled transition.</li><li>Safe areas, keyboard-facing editors, modal scrolling, touch targets and standalone presentation were refined and verified on real iPhone and iPad hardware.</li></ul></article>
+        <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.30.0 Data Safety</strong><span>Verified local and Cloud schema upgrade</span></div><ul><li>Upgrades local personal data from schema 4 to schema 5 using a verified, restart-safe migration with an exact schema-4 compatibility projection and retained recovery evidence.</li><li>Cloud schema-5 upload and restore remain fail-closed until the signed-in session receives a fresh authenticated capability attestation from the exact configured RosterBot service.</li><li>Backup import and Cloud replacement are transactional, restore failures roll back to the previous verified state, and no-op startup/reload does not create another generation.</li><li>Manual <code>.rosterbot</code> backups remain schema-4 compatible and plaintext; optional Cloud encryption remains client-side AES-256-GCM.</li><li>Frozen official roster and pay-reference datasets remain unchanged.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.29.2 Roster Overview</strong><span>Dashboard roster cards and startup rendering</span></div><ul><li>Refined the Home roster overview and fixed startup ordering so saved roster cards render only after the required feature modules are ready.</li><li>Preserved roster history, manual schedules, PayBot, Cloud Sync, calendar and frozen official data.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.29.1 Recursion Hotfix</strong><span>Roster rendering restored</span></div><ul><li>Fixed an accidental self-call in the week-heading formatter that caused “too much recursion” / “Maximum call stack size exceeded” when rendering roster weeks.</li><li>Restored first-run roster previews, saved roster views and Home → This pay fortnight.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.29.0 Employment &amp; Pay Profile</strong><span>Date-aware roles + manual work patterns</span></div><ul><li>Added a dated Employment &amp; Pay Profile for trainee stages, Driver, legacy/current PDT, DTCO and RDS classifications.</li><li>PayBot can resolve classification and applicable pay rate separately for each day, including role changes inside a fortnight.</li><li>Added personal manual work patterns and no-default-pattern mode for employees who do not follow a supplied master rotation.</li><li>Kept the Part 7 guarantee/overtime engine shared across supported Locomotive Operating classifications, with PF441 treated consistently unless contrary evidence is found.</li><li>Fixed Sources mobile table overflow and standardised 14px spacing between Sources sections.</li><li>Frozen official roster and pay-reference datasets remain unchanged.</li></ul></article>

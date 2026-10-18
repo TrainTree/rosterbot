@@ -53,7 +53,7 @@ copied.push(GENERATED_SERVICE_WORKER_ASSET);
 
 assert.equal((await readFile(path.join(destination,'CNAME'),'utf8')).trim(),productionDomain,'Production CNAME changed.');
 const index=await readFile(path.join(destination,'index.html'),'utf8');
-assert.match(index,/<title>RosterBot 🤖 v0\.30\.0<\/title>/,'Production title is not v0.30.0.');
+assert.match(index,/<title>RosterBot 🤖 v0\.31\.0<\/title>/,'Production title is not v0.31.0.');
 for(const match of index.matchAll(/(?:src|href)="([^"#?]+)"/g)){
   const reference=match[1];
   if(/^[a-z]+:/i.test(reference)||reference.startsWith('//'))continue;
@@ -88,7 +88,7 @@ await writeFile(path.join(destination,'SHA256SUMS.txt'),`${checksums.join('\n')}
 
 console.log(JSON.stringify({
   destination,
-  release:'v0.30.0',
+  release:'v0.31.0',
   runtimeBuild:{applicationVersion:generatedBuild.manifest.applicationVersion,buildId:generatedBuild.buildId,sourceCommit:generatedBuild.manifest.sourceCommit,assetManifestVersion:generatedBuild.manifest.formatVersion,assets:generatedBuild.manifest.assets.length,offlineRequiredAssets:generatedWorker.contract.required.length,cacheNamespace:generatedBuild.manifest.cacheNamespace,completeBuildMarker:generatedBuild.manifest.completeBuildMarker},
   customDomain:productionDomain,
   cloudBinding:{environment:'production',origins:[productionOrigin,productionAlias],projectRef:productionProjectRef,url:productionProjectUrl,requestedCloudSchema:5},

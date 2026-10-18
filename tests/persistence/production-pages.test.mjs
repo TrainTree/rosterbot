@@ -38,13 +38,13 @@ function runtimeFrom(output,origin='https://rosterbot.work'){
   return {profile:window.RosterBotCloudDeploymentProfile,api:window.RosterBotCloudConfig};
 }
 
-test('production bundle is runtime-only v0.30.0 and contains one production browser binding',()=>{
+test('production bundle is runtime-only v0.31.0 and contains one production browser binding',()=>{
   const {parent,output,prepared}=prepare();
   try{
     assert.equal(prepared.status,0,prepared.stderr||prepared.stdout);
     const report=JSON.parse(prepared.stdout),published=new Set(filesBelow(output));
     assert.equal(fs.readFileSync(path.join(output,'CNAME'),'utf8').trim(),'rosterbot.work');
-    assert.match(fs.readFileSync(path.join(output,'index.html'),'utf8'),/<title>RosterBot 🤖 v0\.30\.0<\/title>/);
+    assert.match(fs.readFileSync(path.join(output,'index.html'),'utf8'),/<title>RosterBot 🤖 v0\.31\.0<\/title>/);
     for(const forbidden of ['docs','tests','supabase','backend-capture','scripts','.git'])assert(![...published].some(file=>file===forbidden||file.startsWith(`${forbidden}${path.sep}`)),`${forbidden} leaked into production bundle`);
     const bytes=Buffer.concat([...published].map(file=>fs.readFileSync(path.join(output,file)))).toString('utf8');
     assert(bytes.includes(PRODUCTION_REF));assert(bytes.includes(PRODUCTION_URL));assert(bytes.includes(PRODUCTION_KEY));
@@ -95,5 +95,17 @@ test('Phase 11A preflight is exact-production and read-only',()=>{
   assert.match(source,/path\.includes\(`\/projects\/\$\{PRODUCTION_REF\}`\)/);
   assert.match(source,/Potentially mutating token in production preflight/);
   assert.match(source,/attestation_function_present/);
+  assert.doesNotMatch(source,/\/v1\/projects\/\$\{STAGING_REF\}/);
+});
+
+test('Phase 7 production preflight is pinned to the accepted schema-5 catalog and remains read-only',()=>{
+  const source=fs.readFileSync(path.join(root,'backend-capture/phase7-v031/production-preflight-readonly.mjs'),'utf8');
+  assert.match(source,/PRODUCTION_REF='rithmbggiiusrmdcqrif'/);
+  assert.match(source,/Production and staging refs unexpectedly match/);
+  assert.match(source,/Refusing non-read-only production SQL/);
+  assert.match(source,/Potentially mutating token in production preflight/);
+  assert.match(source,/Production capability is not exactly singleton 4\.\.5/);
+  assert.match(source,/rosterbot-schema5-cloud-v1/);
+  assert.match(source,/expectedCatalogHashes/);
   assert.doesNotMatch(source,/\/v1\/projects\/\$\{STAGING_REF\}/);
 });

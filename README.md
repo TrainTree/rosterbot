@@ -1,4 +1,4 @@
-# RosterBot v0.30.0 — Data Safety
+# RosterBot v0.31.0 — PWA, Mobile & Offline
 
 This is the modular RosterBot source build. It keeps the frozen official roster/pay reference packs separate from the application UI, personal history and sync code.
 
@@ -9,7 +9,15 @@ This is the modular RosterBot source build. It keeps the frozen official roster/
 
 The frozen-data files are unchanged from the validated v0.29 production build.
 
-## v0.30.0 changes
+## v0.31.0 changes
+
+- Adds an installable, same-origin RosterBot PWA with an atomic, hash-verified offline application shell.
+- Supports cold offline launch and normal local roster, diary and PayBot work after one complete online load.
+- Keeps offline edits in the existing canonical schema-5 state and reconciles safely after fresh authentication and capability attestation on reconnect.
+- Adds explicit, user-controlled application updates without silently mixing runtime generations.
+- Improves iPhone/iPad standalone safe areas, keyboard-facing editors, modal geometry and touch targets using the approved RosterBot icon.
+
+## v0.30.0 data-safety foundation
 
 - Adds a deterministic, restart-safe local schema-4 to schema-5 migration with verified compatibility projection, generation ancestry, recovery journal and previous-generation evidence.
 - Keeps manual `.rosterbot` exports at schema 4 for compatibility while schema-5 local and Cloud state remain authoritative.
