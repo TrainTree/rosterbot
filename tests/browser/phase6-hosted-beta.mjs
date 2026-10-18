@@ -9,7 +9,9 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),or
 const playwrightRoot=process.env.PHASE10A_PLAYWRIGHT_ROOT||'/private/tmp/rosterbot-phase10a-browser/node_modules/playwright-core';
 const {chromium}=await import(pathToFileURL(path.join(playwrightRoot,'index.mjs'))),executablePath=process.env.PHASE10A_CHROMIUM||'/Users/codex/Library/Caches/ms-playwright/chromium-1187/chrome-mac/Chromium.app/Contents/MacOS/Chromium';
 const fixture=JSON.parse(fs.readFileSync(path.join(root,'tests/fixtures/phase10a-browser-states.json'),'utf8')).scenarios.longLivedOfficial.localStorage;
-const expected=JSON.parse(fs.readFileSync('/private/tmp/rosterbot-v031-phase6-bundle/rosterbot-build-manifest.json','utf8'));
+const reviewedBundle=process.env.PHASE6_BETA_BUNDLE_DIR||'/private/tmp/rosterbot-v031-phase6-bundle';
+const deployMarker=process.env.PHASE6_BETA_DEPLOY_MARKER||'601c587';
+const expected=JSON.parse(fs.readFileSync(path.join(reviewedBundle,'rosterbot-build-manifest.json'),'utf8'));
 const profile=fs.mkdtempSync(path.join(os.tmpdir(),'rosterbot-phase6-hosted-beta-')),requests=[];
 function watch(context){context.on('request',request=>{const url=new URL(request.url());requests.push(url.href);assert(!url.href.includes('rithmbggiiusrmdcqrif'),'production Supabase contact');assert(!url.href.startsWith('https://rosterbot.work'),'production origin contact')})}
 async function launch(){const context=await chromium.launchPersistentContext(profile,{headless:true,executablePath,viewport:{width:390,height:844},serviceWorkers:'allow'});watch(context);return context}
@@ -18,9 +20,9 @@ async function snapshot(page){return page.evaluate(()=>{const raw=localStorage.g
 let context;
 try{
   context=await launch();let page=context.pages()[0]||await context.newPage();
-  await page.goto(`${origin}/phase6-seed.html?phase6=601c587`,{waitUntil:'domcontentloaded'});
+  await page.goto(`${origin}/phase6-seed.html?phase6=${encodeURIComponent(deployMarker)}`,{waitUntil:'domcontentloaded'});
   await page.evaluate(values=>{localStorage.clear();sessionStorage.clear();for(const [key,value]of Object.entries(values))localStorage.setItem(key,typeof value==='string'?value:JSON.stringify(value))},fixture);
-  await page.goto(`${origin}/?phase6=601c587`,{waitUntil:'domcontentloaded'});await ready(page);await page.waitForFunction(()=>localStorage.getItem('rosterbot-db-schema-v1')==='5',{timeout:30000});
+  await page.goto(`${origin}/?phase6=${encodeURIComponent(deployMarker)}`,{waitUntil:'domcontentloaded'});await ready(page);await page.waitForFunction(()=>localStorage.getItem('rosterbot-db-schema-v1')==='5',{timeout:30000});
   await page.waitForFunction(async id=>{const r=await navigator.serviceWorker.getRegistration('/');return r?.active?.state==='activated'&&window.RosterBotOfflineShell?.getStatus?.().cacheComplete===true&&window.RosterBotOfflineShell?.getStatus?.().buildId===id},expected.buildId,{timeout:120000});
   await page.reload({waitUntil:'domcontentloaded'});await ready(page);await page.waitForFunction(id=>window.RosterBotOfflineShell?.getStatus?.().cacheComplete===true&&window.RosterBotOfflineShell?.getStatus?.().buildId===id,expected.buildId,{timeout:30000});
   const online=await snapshot(page);assert.equal(online.buildId,expected.buildId);assert.equal(online.shell?.cacheComplete,true);

@@ -79,6 +79,11 @@ test('standalone detection supports browser, media-query, iOS, and unsupported e
   assert.deepEqual(displayMode.detect({navigator:{standalone:true},matchMedia:()=>({matches:false})}),{mode:'standalone',installed:true,source:'ios-navigator'});
   assert.deepEqual(displayMode.detect({navigator:{}}),{mode:'browser',installed:false,source:'unsupported'});
   assert.deepEqual(displayMode.detect({navigator:{},matchMedia(){throw new Error('unsupported')}}),{mode:'browser',installed:false,source:'unsupported'});
+  assert.deepEqual(displayMode.measureViewport({visualViewport:{height:417.5,width:370,offsetTop:12,offsetLeft:10},innerHeight:768,innerWidth:390}),{height:417.5,width:370,offsetTop:12,offsetLeft:10,offsetRight:10,centerShift:0,layoutHeight:768,layoutWidth:390,constrained:true,valid:true,source:'visual-viewport'});
+  assert.deepEqual(displayMode.measureViewport({innerHeight:768,innerWidth:390}),{height:768,width:390,offsetTop:0,offsetLeft:0,offsetRight:0,centerShift:0,layoutHeight:768,layoutWidth:390,constrained:false,valid:true,source:'layout-viewport'});
+  assert.deepEqual(displayMode.measureViewport({}),{height:null,width:null,offsetTop:0,offsetLeft:0,offsetRight:0,centerShift:0,layoutHeight:null,layoutWidth:null,constrained:false,valid:false,source:'layout-viewport'});
+  assert.equal(displayMode.measureViewport({visualViewport:{height:0,width:390,offsetTop:0,offsetLeft:0},innerHeight:768,innerWidth:390}).valid,false);
+  assert.equal(displayMode.measureViewport({visualViewport:{height:500,width:400,offsetTop:400,offsetLeft:0},innerHeight:768,innerWidth:390}).valid,false);
 });
 
 test('service-worker registration and complete-marker validation stay isolated to PWA runtime modules',()=>{

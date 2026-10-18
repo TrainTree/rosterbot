@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:3e1538bab65a611c9762cda96eb9dffa0e32eaad5118cb38b6e5c906f02e82e9">
+  <meta name="rosterbot-build-id" content="rb-build:036b543c23fc8918e561f80facf6755b4a798aaeac2c6dbd37e8fd14d4db8b27">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -825,6 +825,7 @@
   <div id="dayEditorModal" class="feedback-modal" hidden>
     <section class="feedback-dialog day-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="dayEditorTitle">
       <div class="feedback-dialog-header"><div><div class="eyebrow">ROSTER DIARY</div><h2 id="dayEditorTitle">Edit day</h2></div><div class="day-editor-header-actions"><button id="daySaveCloseBtn" class="primary day-save-close" type="button">Save &amp; close</button><button id="dayEditorClose" class="feedback-close-btn" type="button" aria-label="Close day editor">×</button></div></div>
+      <div class="day-editor-scroll">
       <div id="dayRosteredSummary" class="sequence-preview"></div>
       <section id="dayDutyDetails" class="day-duty-details" hidden><div class="eyebrow">SHIFT DETAILS</div><div id="dayDutyDetailsBody"></div></section>
       <div class="form-grid">
@@ -849,6 +850,7 @@
       <p id="dayEditedMeta" class="muted"></p>
       <div id="dayLockWarning" class="day-lock-warning" hidden>This WC week is locked. You can view the record, but unlock the week before changing it.</div>
       <div class="actions"><button id="daySaveBtn" class="primary" type="button">Save actual day</button><button id="dayUseRosteredBtn" class="secondary" type="button">Use rostered</button><button id="dayClearActualBtn" class="secondary danger-data-btn" type="button">Remove actual record</button></div>
+      </div>
     </section>
   </div>
 
