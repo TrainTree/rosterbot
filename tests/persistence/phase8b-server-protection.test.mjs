@@ -77,7 +77,8 @@ test('v0.30 maps deterministic server errors to no-retry safe states',()=>{
   assert.equal(errors.classify({code:'08006',message:'network failure'}),null);
   const cloud=readSource('js/51-cloud-sync.js');
   assert.match(cloud,/holdForDeterministicWriteError\(err\)/);
-  assert.match(cloud,/autoRetryNotBefore=Date\.now\(\)\+10000/,'unknown network failures retain the existing retry path');
+  assert.match(cloud,/autoRetryNotBefore=Number\(state\.retryAt\|\|0\)/,'unknown network failures retain the bounded typed retry path');
+  assert.match(readSource('js/08-connectivity-state.js'),/Math\.min\(300000,10000\*Math\.pow/,'transient retry remains bounded');
   assert.match(cloud,/new_schema_version:schemaVersion/,'schema-5 client writes use the validated dynamic schema');
   assert.match(cloud,/await requireCloudTransferAllowed\(\)/,'schema-5 writes retain the attestation gate');
 });

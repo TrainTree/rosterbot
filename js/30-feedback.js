@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/30-feedback.js','rb-build:bec61ecfdbfaab3bb1d981a05f5a6585c14c1459cfaeaa196467d5d812e112fb')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/30-feedback.js','rb-build:994c4f6b3afdc8d068d65d544b1ca2cd2db1cc7c6ce69c16a66b793a78bf3d73')}catch(error){throw error}
 (function () {
   'use strict';
   const ENDPOINT = 'https://formspree.io/f/xwlkvlyl';
@@ -97,6 +97,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     if (includeSetup.checked) payload.set('diagnostics', diagnostics());
 
     try {
+      if (navigator.onLine === false) throw Object.assign(new Error('offline'), { code: 'FEEDBACK_OFFLINE' });
       const response = await fetch(ENDPOINT, {
         method: 'POST',
         body: payload,
@@ -121,7 +122,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
         if (!modal.hidden) closeModal();
       }, 1300);
     } catch (error) {
-      status.textContent = 'Could not send feedback. Check your connection and try again.';
+      status.textContent = navigator.onLine === false ? 'You are offline. Feedback was not queued or sent; try again when you are connected.' : 'Could not send feedback. Check your connection and try again. Nothing was queued.';
       status.className = 'feedback-status error';
       console.error('RosterBot feedback error:', error);
     } finally {

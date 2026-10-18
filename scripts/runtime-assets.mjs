@@ -38,6 +38,7 @@ export const FEATURE_ASSETS=Object.freeze([
   'js/05-cloud-deployment-profile.js',
   'js/06-cloud-config.js',
   'js/07-cloud-schema5.js',
+  'js/08-connectivity-state.js',
   'js/51-cloud-sync.js',
   'js/60-diary.js',
   'js/61-page-bridge.js',

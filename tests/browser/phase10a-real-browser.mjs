@@ -14,6 +14,7 @@ const playwrightRoot=process.env.PHASE10A_PLAYWRIGHT_ROOT||'/tmp/rosterbot-phase
 const {chromium}=await import(pathToFileURL(path.join(playwrightRoot,'index.mjs')));
 const executablePath=process.env.PHASE10A_CHROMIUM||'/Users/codex/Library/Caches/ms-playwright/chromium-1187/chrome-mac/Chromium.app/Contents/MacOS/Chromium';
 const corpus=JSON.parse(fs.readFileSync(path.join(root,'tests/fixtures/phase10a-browser-states.json'),'utf8')).scenarios;
+const currentBuild=JSON.parse(fs.readFileSync(path.join(root,'rosterbot-build-manifest.json'),'utf8'));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml'};
 const raw=value=>typeof value==='string'?value:JSON.stringify(value);
 
@@ -31,7 +32,7 @@ function idbValues(name){
   if(item.indexedDb==='stale-inherited-personal')return select(mergedLocal('longLivedOfficial'));
   return {};
 }
-function harnessHtml(){return '<!doctype html><meta charset="utf-8"><script src="/v30/js/01-persistence-registry.js"></script><script src="/v30/js/02-canonical-state.js"></script><script src="/v30/js/02-schema5.js"></script><script src="/v30/js/03-schema5-migration.js"></script><body>runtime harness</body>'}
+function harnessHtml(){return `<!doctype html><meta charset="utf-8"><meta name="rosterbot-build-id" content="${currentBuild.buildId}"><script src="/v30/js/00-build-identity.js"></script><script>window.__rosterbotRequireBuildComponent=(component,buildId)=>window.RosterBotBuild.assertComponent(component,buildId)</script><script src="/v30/js/01-persistence-registry.js"></script><script src="/v30/js/02-canonical-state.js"></script><script src="/v30/js/02-schema5.js"></script><script src="/v30/js/03-schema5-migration.js"></script><body>runtime harness</body>`}
 function safeFile(base,relative){const resolved=path.resolve(base,relative.replace(/^\/+/,''));return resolved===base||resolved.startsWith(base+path.sep)?resolved:null}
 const server=http.createServer((request,response)=>{
   const url=new URL(request.url,'http://127.0.0.1');
