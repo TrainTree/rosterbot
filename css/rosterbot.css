@@ -2288,3 +2288,143 @@ html.rb-booting .app-startup{display:grid;min-height:100dvh;place-items:center;p
 .recovery-preserve-note{margin:16px 0 0;padding:11px 13px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface));font-size:.82rem;line-height:1.45}.recovery-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:18px}.recovery-actions button{min-height:44px}.recovery-actions .danger{border-color:#a84a4a;background:#7a2424;color:#fff}.recovery-actions .danger:disabled{opacity:.45}.recovery-confirm{flex-basis:100%;display:flex;align-items:flex-start;gap:9px;max-width:680px;margin-top:6px;color:var(--muted);font-size:.82rem;line-height:1.4}.recovery-confirm input{margin-top:2px}.recovery-status{min-height:1.4em;margin:14px 0 0;color:var(--muted);font-size:.83rem;font-weight:750}.recovery-status.success{color:var(--success,#3f9b66)}.recovery-status.error{color:#d77862}.recovery-technical{margin-top:20px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}.recovery-technical summary{cursor:pointer;font-size:.82rem;font-weight:850}.recovery-technical p{color:var(--muted);font-size:.78rem;line-height:1.45}.recovery-technical pre{max-height:260px;overflow:auto;margin:10px 0 0;padding:12px;border-radius:8px;background:var(--surface-2);color:var(--text);font-size:.72rem;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:680px){.recovery-copies{grid-template-columns:1fr}.recovery-actions{align-items:stretch;flex-direction:column}.recovery-actions button{width:100%}.recovery-copy dl div{grid-template-columns:105px minmax(0,1fr)}}
 html[data-theme="7"] .recovery-copy,html[data-theme="7"] .recovery-technical,html[data-theme="7"] .recovery-copy-head span,html[data-theme="7"] .recovery-technical pre{border-radius:0!important;box-shadow:none!important}
+
+/* ==========================================================================
+   v0.31 Phase 6 — iOS/iPadOS standalone viewport and touch contract
+
+   Safe-area values are applied at the edge that owns them. Existing content
+   gutters remain unchanged on ordinary browsers, while landscape notches and
+   the Home indicator cannot cover controls in standalone mode.
+   ========================================================================== */
+:root{
+  --rb-safe-top:env(safe-area-inset-top,0px);
+  --rb-safe-right:env(safe-area-inset-right,0px);
+  --rb-safe-bottom:env(safe-area-inset-bottom,0px);
+  --rb-safe-left:env(safe-area-inset-left,0px);
+  --rb-touch-target:44px;
+}
+
+html,body{min-height:100%}
+body{
+  min-height:100vh;
+  min-height:100svh;
+  min-height:100dvh;
+  overscroll-behavior-y:none;
+}
+
+/* A shell already has a 14px viewport gutter. Add only the unserved portion
+   of a larger landscape safe area so padding does not stack. */
+.shell{
+  padding-left:max(0px,calc(var(--rb-safe-left) - 14px));
+  padding-right:max(0px,calc(var(--rb-safe-right) - 14px));
+}
+.v27-topbar{padding-top:var(--rb-safe-top)}
+html.rb-standalone .v27-header-shell{padding-top:max(16px,2.1vh)}
+
+/* Native form controls follow the active app colour mode. The explicit rules
+   prevent WebKit inheriting the initial dark scheme after light mode loads. */
+input,select,textarea,button{color-scheme:inherit}
+html[data-color-mode="light"] input,
+html[data-color-mode="light"] select,
+html[data-color-mode="light"] textarea{color-scheme:light}
+html[data-color-mode="dark"] input,
+html[data-color-mode="dark"] select,
+html[data-color-mode="dark"] textarea{color-scheme:dark}
+
+/* The modal overlay owns viewport and safe-area spacing. Dialogs own their
+   internal scrolling, so browser chrome, rotation and the keyboard can resize
+   the visual viewport without moving the close control out of reach. */
+body.feedback-modal-open{overscroll-behavior:none}
+.feedback-modal{
+  min-height:100vh;
+  min-height:100dvh;
+  max-height:100dvh;
+  overflow:hidden;
+  overscroll-behavior:contain;
+  padding-top:max(10px,var(--rb-safe-top));
+  padding-right:max(10px,var(--rb-safe-right));
+  padding-bottom:max(10px,var(--rb-safe-bottom));
+  padding-left:max(10px,var(--rb-safe-left));
+}
+.feedback-dialog{
+  max-height:calc(100dvh - max(20px,var(--rb-safe-top)) - max(20px,var(--rb-safe-bottom)));
+  overflow:auto;
+  overscroll-behavior:contain;
+  scroll-padding-top:76px;
+  scroll-padding-bottom:calc(88px + var(--rb-safe-bottom));
+  -webkit-overflow-scrolling:touch;
+}
+.feedback-dialog-header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.feedback-close-btn{width:var(--rb-touch-target);min-width:var(--rb-touch-target);min-height:var(--rb-touch-target)}
+.feedback-dialog :is(input,select,textarea,button){scroll-margin-top:82px;scroll-margin-bottom:calc(96px + var(--rb-safe-bottom))}
+
+/* The day editor remains a drawer/sheet, but is bounded by the dynamic visual
+   viewport and every safe edge instead of the layout viewport. */
+#dayEditorModal.feedback-modal{
+  padding-top:var(--rb-safe-top);
+  padding-right:var(--rb-safe-right);
+  padding-bottom:var(--rb-safe-bottom);
+  padding-left:var(--rb-safe-left);
+}
+#dayEditorModal .day-editor-dialog{
+  height:calc(100dvh - var(--rb-safe-top) - var(--rb-safe-bottom));
+  max-height:calc(100dvh - var(--rb-safe-top) - var(--rb-safe-bottom));
+  max-width:calc(100vw - var(--rb-safe-left) - var(--rb-safe-right));
+}
+#dayEditorModal .day-editor-dialog>.actions{bottom:0}
+
+/* Fixed mobile navigation owns the Home-indicator inset. Side padding keeps
+   the first and last actions clear of landscape sensor housing. */
+@media(max-width:760px){
+  html.v29-app-ready body{padding-bottom:calc(78px + var(--rb-safe-bottom))}
+  .v29-primary-nav-shell{padding-right:var(--rb-safe-right);padding-left:var(--rb-safe-left)}
+  .v29-primary-nav{padding-right:5px;padding-bottom:calc(6px + var(--rb-safe-bottom));padding-left:5px}
+  input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px}
+  :is(input,select,textarea):focus{scroll-margin-bottom:calc(104px + var(--rb-safe-bottom))}
+  .quick-calendar{
+    left:max(12px,var(--rb-safe-left));
+    right:max(12px,var(--rb-safe-right));
+    bottom:max(12px,var(--rb-safe-bottom));
+    max-height:calc(100dvh - max(24px,var(--rb-safe-top)) - max(24px,var(--rb-safe-bottom)));
+  }
+  #dayEditorModal .day-editor-dialog{
+    width:100%;
+    height:calc(100dvh - var(--rb-safe-top) - var(--rb-safe-bottom))!important;
+    max-height:calc(100dvh - var(--rb-safe-top) - var(--rb-safe-bottom))!important;
+  }
+}
+
+/* Critical mobile actions expose a full finger-sized hit target without
+   enlarging their visual glyphs. */
+.roster-view-toggle button,
+.history-year-btn,
+.quick-calendar-head button,
+.quick-calendar-day,
+.week-change-btn,
+.day-save-close,
+.calendar-file-row button,
+.calendar-file-actions button,
+.calendar-bundle-actions button,
+.v27-segment button,
+.pay-issues-head button{min-height:var(--rb-touch-target);min-width:var(--rb-touch-target)}
+.leave-chip button{width:var(--rb-touch-target);min-width:var(--rb-touch-target);min-height:var(--rb-touch-target)}
+.week-actions-menu button,.search-result{min-height:var(--rb-touch-target)}
+
+@media(max-width:560px){
+  .feedback-modal{align-items:start;padding-top:max(8px,var(--rb-safe-top));padding-bottom:max(8px,var(--rb-safe-bottom))}
+  .feedback-dialog{width:100%;max-height:calc(100dvh - max(16px,var(--rb-safe-top)) - max(16px,var(--rb-safe-bottom)))}
+}
+
+@media(orientation:landscape) and (max-height:560px){
+  .v27-topbar{padding-left:var(--rb-safe-left);padding-right:var(--rb-safe-right)}
+  .v27-header-shell{padding-top:10px;padding-bottom:9px}
+  .feedback-modal{padding-top:max(6px,var(--rb-safe-top));padding-bottom:max(6px,var(--rb-safe-bottom))}
+  .feedback-dialog{max-height:calc(100dvh - max(12px,var(--rb-safe-top)) - max(12px,var(--rb-safe-bottom)))}
+}

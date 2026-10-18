@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/02-canonical-state.js','rb-build:f9c4304bb1dfac70b3c92378a1e00a03e89907406b7b7ef70e0e85cb3d0d2654')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/02-canonical-state.js','rb-build:3e1538bab65a611c9762cda96eb9dffa0e32eaad5118cb38b6e5c906f02e82e9')}catch(error){throw error}
 try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('02-canonical-state','RosterBotCanonicalPersistence',document.currentScript?.src||'js/02-canonical-state.js')}catch(_){}
 (function(root,factory){
   'use strict';
