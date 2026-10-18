@@ -65,7 +65,7 @@ test('every Phase 2 resource is classified once in the authoritative build inven
   const manifestResources=['manifest.webmanifest',...manifest.icons.map(icon=>icon.src),'assets/icons/apple-touch-icon.png'];
   for(const relative of new Set(manifestResources)){assert(INSTALLABILITY_ASSETS.includes(relative),relative);assert(RUNTIME_SOURCE_ASSETS.includes(relative),relative)}
   for(const relative of ['favicon.ico','assets/icons/favicon-16.png','assets/icons/favicon-32.png']){assert(COSMETIC_ASSETS.includes(relative));assert(RUNTIME_SOURCE_ASSETS.includes(relative))}
-  assert.deepEqual(PRESENTATION_SCRIPT_ASSETS,['js/00-display-mode.js','js/90-service-worker-registration.js']);
+  assert.deepEqual(PRESENTATION_SCRIPT_ASSETS,['js/00-display-mode.js','js/90-service-worker-registration.js','js/91-update-lifecycle.js']);
   assert.equal(assetCriticality('js/00-display-mode.js'),'installability-critical');
   assert.equal(assetCriticality('js/90-service-worker-registration.js'),'installability-critical');
   for(const relative of manifestResources)assert.notEqual(assetCriticality(relative),'startup-critical',relative);
@@ -81,10 +81,11 @@ test('standalone detection supports browser, media-query, iOS, and unsupported e
   assert.deepEqual(displayMode.detect({navigator:{},matchMedia(){throw new Error('unsupported')}}),{mode:'browser',installed:false,source:'unsupported'});
 });
 
-test('service-worker registration is isolated to its optional module and window runtime never touches Cache Storage',()=>{
+test('service-worker registration and complete-marker validation stay isolated to PWA runtime modules',()=>{
   const runtimeJavaScript=RUNTIME_SOURCE_ASSETS.filter(relative=>relative.endsWith('.js')).map(readSource).join('\n');
   assert.equal((runtimeJavaScript.match(/serviceWorker\s*\.\s*register\s*\(/g)||[]).length,1);
-  assert.doesNotMatch(runtimeJavaScript,/(?:window\s*\.\s*)?caches\s*\.\s*(?:open|match|keys|delete)\s*\(/);
+  const ordinaryJavaScript=RUNTIME_SOURCE_ASSETS.filter(relative=>relative.endsWith('.js')&&!['js/90-service-worker-registration.js','js/91-update-lifecycle.js'].includes(relative)).map(readSource).join('\n');
+  assert.doesNotMatch(ordinaryJavaScript,/(?:window\s*\.\s*)?caches\s*\.\s*(?:open|match|keys|delete)\s*\(/);
   const source=readSource('js/00-display-mode.js');
   assert.doesNotMatch(source,/localStorage|sessionStorage|indexedDB|RosterBotPersistence|RosterBotCloud/);
   const registration=readSource('js/90-service-worker-registration.js');

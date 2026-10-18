@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:994c4f6b3afdc8d068d65d544b1ca2cd2db1cc7c6ce69c16a66b793a78bf3d73">
+  <meta name="rosterbot-build-id" content="rb-build:f9c4304bb1dfac70b3c92378a1e00a03e89907406b7b7ef70e0e85cb3d0d2654">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -100,6 +100,10 @@
   </div>
   <div id="fatalError" hidden style="max-width:1180px;margin:12px auto;padding:12px 14px;background:#5b1e1e;color:#fff;border:1px solid #a84a4a;border-radius:10px;font-family:system-ui,sans-serif"></div>
   <noscript><style>#appStartup{display:none!important}</style><div style="max-width:1180px;margin:12px auto;padding:12px 14px;background:#5b1e1e;color:#fff;border-radius:10px;font-family:system-ui,sans-serif">JavaScript is disabled. RosterBot needs JavaScript enabled in this browser.</div></noscript>
+  <aside id="pwaUpdateNotice" class="pwa-update-notice" hidden aria-live="polite" aria-label="Application update">
+    <div><strong>A new version of RosterBot is ready</strong><span id="pwaUpdateVersion"></span><small id="pwaUpdateStatus">Update when it suits you. Your saved roster stays on this device.</small></div>
+    <div class="pwa-update-actions"><button id="pwaUpdateNow" type="button">Update now</button><button id="pwaUpdateDismiss" class="secondary" type="button">Not now</button></div>
+  </aside>
   <header class="topbar v27-topbar">
     <div class="shell v27-header-shell">
       <div class="v27-brand-row">
@@ -1242,5 +1246,6 @@
 <script src="js/03-schema5-migration.js"></script>
 <script src="js/03-persistence-bootstrap.js"></script>
 <script src="js/90-service-worker-registration.js"></script>
+<script src="js/91-update-lifecycle.js"></script>
 </body>
 </html>

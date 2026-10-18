@@ -29,8 +29,8 @@ class MemoryCaches{
 
 function fixtureBytes(relative){return fs.readFileSync(path.join(root,relative))}
 function workerHarness({faults=new Map(),caches=new MemoryCaches()}={}){
-  const handlers=new Map(),fetches=[],personal={reads:0,writes:0},clients={claims:0,async claim(){this.claims++}};
-  const self={registration:{scope},clients,addEventListener(type,handler){handlers.set(type,handler)}};
+  const handlers=new Map(),fetches=[],personal={reads:0,writes:0},messages=[],clients={claims:0,async claim(){this.claims++},async matchAll(){return []}};
+  const self={registration:{scope},clients,skipWaitingCalls:0,async skipWaiting(){this.skipWaitingCalls++},addEventListener(type,handler){handlers.set(type,handler)}};
   const fetch=async request=>{
     const url=new URL(typeof request==='string'?request:request.url),relative=url.pathname.slice(1),fault=faults.get(relative);fetches.push(relative);
     if(fault?.type==='timeout')throw new TypeError('Synthetic network timeout');
@@ -43,7 +43,8 @@ function workerHarness({faults=new Map(),caches=new MemoryCaches()}={}){
   vm.runInContext(serviceWorkerSource(manifest),vm.createContext(sandbox),{filename:'service-worker.js'});
   async function dispatchLifecycle(type){let promise;handlers.get(type)({waitUntil(value){promise=Promise.resolve(value)}});assert(promise,`${type} did not call waitUntil`);return promise}
   async function dispatchFetch(request){let responsePromise=null;handlers.get('fetch')({request,respondWith(value){responsePromise=Promise.resolve(value)}});return responsePromise?{handled:true,response:await responsePromise}:{handled:false,response:null}}
-  return {handlers,caches,fetches,personal,clients,self,dispatchLifecycle,dispatchFetch};
+  async function dispatchMessage(data){let promise,response=null;handlers.get('message')({data,ports:[{postMessage(value){response=value}}],waitUntil(value){promise=Promise.resolve(value)}});if(promise)await promise;messages.push({data,response});return response}
+  return {handlers,caches,fetches,personal,clients,self,messages,dispatchLifecycle,dispatchFetch,dispatchMessage};
 }
 
 async function writeMarker(cache,{cacheName,buildId,installedAt=1,offlineSetDigest='old-digest',requiredCount=1,manifestFormat=2,completeBuildMarker=`rosterbot-complete-${buildId.slice('rb-build:'.length)}`}={}){
@@ -54,8 +55,23 @@ async function writeMarker(cache,{cacheName,buildId,installedAt=1,offlineSetDige
 test('generated worker is exact-build stamped and derives its offline set from manifest classifications',async()=>{
   const verified=await verifyServiceWorker(root,{manifest});assert.equal(verified.contract.buildId,manifest.buildId);assert.equal(verified.contract.cacheName,manifest.cacheNamespace);assert.equal(verified.contract.manifestFormat,2);
   assert.deepEqual(contract.required.map(asset=>asset.url),manifest.assets.filter(asset=>isOfflineRequired(asset.url)).map(asset=>asset.url));
-  assert.equal(contract.required.length,44);assert.equal(contract.cosmetic.length,3);
-  assert.match(readSource('service-worker.js'),new RegExp(manifest.buildId));assert.doesNotMatch(readSource('service-worker.js'),/skipWaiting\s*\(/);
+  assert.equal(contract.required.length,45);assert.equal(contract.cosmetic.length,3);
+  assert.match(readSource('service-worker.js'),new RegExp(manifest.buildId));assert.equal((readSource('service-worker.js').match(/skipWaiting\s*\(/g)||[]).length,1);assert.match(readSource('service-worker.js'),/ACTIVATE_THIS_COMPLETE_BUILD/);
+});
+
+test('waiting worker invokes skipWaiting only for an exact explicit verified-build activation request',async()=>{
+  const harness=workerHarness();await harness.dispatchLifecycle('install');assert.equal(harness.self.skipWaitingCalls,0);
+  const wrong=await harness.dispatchMessage({type:'ACTIVATE_THIS_COMPLETE_BUILD',buildId:`rb-build:${'f'.repeat(64)}`});assert.equal(wrong.ok,false);assert.equal(harness.self.skipWaitingCalls,0);
+  const accepted=await harness.dispatchMessage({type:'ACTIVATE_THIS_COMPLETE_BUILD',buildId:contract.buildId,fromBuildId:`rb-build:${'a'.repeat(64)}`});assert.equal(accepted.ok,true);assert.equal(harness.self.skipWaitingCalls,1);
+  const cache=await harness.caches.open(contract.cacheName),activation=await cache.match(`${scope}.rosterbot/update/${contract.buildId.slice('rb-build:'.length)}.json`);assert.equal((await activation.json()).provenReady,false);
+});
+
+test('new build retains the previous known-good cache until coherent application-ready proof',async()=>{
+  const caches=new MemoryCaches(),harness=workerHarness({caches}),previousBuild=`rb-build:${'a'.repeat(64)}`,previousName=`rosterbot-app-${'a'.repeat(64)}`,oldBuild=`rb-build:${'d'.repeat(64)}`,oldName=`rosterbot-app-${'d'.repeat(64)}`;
+  await writeMarker(await caches.open(previousName),{cacheName:previousName,buildId:previousBuild,installedAt:20});await writeMarker(await caches.open(oldName),{cacheName:oldName,buildId:oldBuild,installedAt:5});await harness.dispatchLifecycle('install');
+  await harness.dispatchMessage({type:'ACTIVATE_THIS_COMPLETE_BUILD',buildId:contract.buildId,fromBuildId:previousBuild});assert((await caches.keys()).includes(previousName));assert((await caches.keys()).includes(oldName));
+  await harness.dispatchLifecycle('activate');await harness.dispatchMessage({type:'ROSTERBOT_BUILD_READY',buildId:contract.buildId,coherent:true});const status=await harness.dispatchMessage({type:'ROSTERBOT_OFFLINE_STATUS'});
+  assert.equal(status.activation.provenReady,true);assert((await caches.keys()).includes(contract.cacheName));assert((await caches.keys()).includes(previousName));assert(!(await caches.keys()).includes(oldName));assert.deepEqual(harness.personal,{reads:0,writes:0});
 });
 
 test('successful install validates every required asset and writes the complete marker last',async()=>{

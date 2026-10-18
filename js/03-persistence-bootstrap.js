@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/03-persistence-bootstrap.js','rb-build:994c4f6b3afdc8d068d65d544b1ca2cd2db1cc7c6ce69c16a66b793a78bf3d73')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/03-persistence-bootstrap.js','rb-build:f9c4304bb1dfac70b3c92378a1e00a03e89907406b7b7ef70e0e85cb3d0d2654')}catch(error){throw error}
 try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03-persistence-bootstrap','RosterBotRecovery',document.currentScript?.src||'js/03-persistence-bootstrap.js')}catch(_){}
 (function(){
   'use strict';
@@ -41,7 +41,21 @@ try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03
     if(featureLoading){featureWritePending=true;return projectionSync}
     projectionSync=projectionSync.catch(()=>{}).then(()=>new Promise(resolve=>setTimeout(resolve,40))).then(()=>syncProjectionNow(`write:${key}`));return projectionSync;
   }
-  window.RosterBotSchema5Persistence=Object.freeze({notifyPersonalChange,syncNow:reason=>{projectionSync=projectionSync.catch(()=>{}).then(()=>syncProjectionNow(reason));return projectionSync},isReady:()=>schema5Ready});
+  async function quiesceForApplicationUpdate({timeoutMs=10000}={}){
+    const deadline=Date.now()+Math.max(250,Number(timeoutMs)||10000);
+    while((recoveryBusy||safety.isReplacementInProgress?.())&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,25));
+    if(recoveryBusy||safety.isReplacementInProgress?.())return {ok:false,reason:'persistence-transaction-busy'};
+    await projectionSync.catch(()=>{});
+    const result=await syncProjectionNow('application-update-quiescence',{preserveExplicitClear:true});
+    await projectionSync;
+    // startupAllowed is the authoritative gate. Some completed reconciliations
+    // retain userChoiceRequired as audit history after the chosen replacement;
+    // that historical flag must not make an application-ready page permanently
+    // un-updatable.
+    if(!applicationReady||state?.startupAllowed===false)return {ok:false,reason:'recovery-or-migration-incomplete',issueType:state?.issueType||null};
+    return {ok:true,reason:'persistence-committed',changed:result?.changed===true,generation:result?.envelope?.generation?.number??null};
+  }
+  window.RosterBotSchema5Persistence=Object.freeze({notifyPersonalChange,syncNow:reason=>{projectionSync=projectionSync.catch(()=>{}).then(()=>syncProjectionNow(reason));return projectionSync},quiesceForApplicationUpdate,isReady:()=>schema5Ready,isBusy:()=>recoveryBusy||safety.isReplacementInProgress?.()===true});
 
   function currentLocalValues(){
     const result={};

@@ -9,6 +9,7 @@
     "test:pwa-structure": "node tests/browser/phase2-pwa-structure.mjs",
     "test:pwa-offline": "node tests/browser/phase3-offline-shell.mjs",
     "test:offline-reconnect": "node tests/browser/phase4-offline-reconnect.mjs",
+    "test:pwa-update": "node tests/browser/phase5-pwa-update.mjs",
     "check:syntax": "node --check js/*.js && node --check scripts/*.mjs && node --check tests/persistence/*.mjs && node --check tests/browser/*.mjs && node --check supabase/tests/*.mjs",
     "report:persistence": "node tests/persistence/report.mjs"
   }

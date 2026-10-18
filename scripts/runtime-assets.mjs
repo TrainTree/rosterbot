@@ -50,7 +50,8 @@ export const FEATURE_ASSETS=Object.freeze([
 export const STYLE_ASSETS=Object.freeze(['css/rosterbot.css']);
 export const PRESENTATION_SCRIPT_ASSETS=Object.freeze([
   'js/00-display-mode.js',
-  'js/90-service-worker-registration.js'
+  'js/90-service-worker-registration.js',
+  'js/91-update-lifecycle.js'
 ]);
 export const INSTALLABILITY_ASSETS=Object.freeze([
   'manifest.webmanifest',

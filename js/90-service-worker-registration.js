@@ -1,11 +1,11 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/90-service-worker-registration.js','rb-build:994c4f6b3afdc8d068d65d544b1ca2cd2db1cc7c6ce69c16a66b793a78bf3d73')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/90-service-worker-registration.js','rb-build:f9c4304bb1dfac70b3c92378a1e00a03e89907406b7b7ef70e0e85cb3d0d2654')}catch(error){throw error}
 (function(root,factory){
   const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)Object.defineProperty(root,'RosterBotOfflineShell',{value:api,writable:false,configurable:false,enumerable:true});
 })(typeof window!=='undefined'?window:null,function(root){
   'use strict';
-  const listeners=new Set();let registration=null,started=false,refreshSequence=0;
+  const listeners=new Set();let registration=null,started=false,refreshSequence=0,lastUpdateCheck=0;
   let status=Object.freeze({phase:'idle',available:false,cacheComplete:false,buildId:root?.RosterBotBuild?.buildId||null,workerBuildId:null,reason:'not-started'});
 
   function publicError(error){return String(error?.name||error?.code||'registration-failed').slice(0,80)}
@@ -34,6 +34,27 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
       try{worker.postMessage({type:'ROSTERBOT_OFFLINE_STATUS'},[channel.port2])}catch(_){clearTimeout(timer);resolve(null)}
     });
   }
+  function markerMatches(marker,detail){return !!marker&&marker.format==='rosterbot-complete-build'&&marker.manifestFormat===detail.manifestFormat&&marker.buildId===detail.buildId&&marker.cacheName===detail.cacheName&&marker.completeBuildMarker===detail.completeBuildMarker&&marker.offlineSetDigest===detail.offlineSetDigest&&marker.requiredCount===detail.offlineRequiredCount}
+  async function verifyWaitingBuild(){
+    if(!registration)registration=await root.navigator.serviceWorker.getRegistration?.('/');
+    const worker=registration?.waiting;if(!worker)return {ok:false,reason:'no-waiting-worker'};
+    const detail=await requestWorkerStatus(worker);if(!detail?.buildId)return {ok:false,reason:'waiting-worker-unresponsive'};
+    if(detail.cacheComplete!==true||detail.lifecycle!=='installed')return {ok:false,reason:'waiting-build-incomplete',detail};
+    if(detail.manifestFormat!==root?.RosterBotBuild?.assetManifestVersion)return {ok:false,reason:'unsupported-build-manifest',detail};
+    try{
+      if(!(await caches.keys()).includes(detail.cacheName))return {ok:false,reason:'waiting-cache-missing',detail};
+      const cache=await caches.open(detail.cacheName),response=await cache.match(new URL(detail.markerPath,registration.scope).href);
+      const marker=response?.ok?await response.json():null;
+      if(!markerMatches(marker,detail))return {ok:false,reason:'waiting-marker-invalid',detail};
+      return {ok:true,reason:'verified-complete-waiting-build',worker,detail,marker};
+    }catch(error){return {ok:false,reason:publicError(error),detail}}
+  }
+  async function activateWaitingBuild(expectedBuildId,fromBuildId){
+    const verified=await verifyWaitingBuild();if(!verified.ok)return verified;
+    if(verified.detail.buildId!==expectedBuildId)return {ok:false,reason:'activation-build-mismatch',detail:verified.detail};
+    if(typeof MessageChannel!=='function')return {ok:false,reason:'activation-message-channel-unavailable',detail:verified.detail};
+    return new Promise(resolve=>{const channel=new MessageChannel(),timer=setTimeout(()=>resolve({ok:false,reason:'activation-worker-timeout',detail:verified.detail}),4000);channel.port1.onmessage=event=>{clearTimeout(timer);resolve({...event.data,detail:verified.detail})};try{verified.worker.postMessage({type:'ACTIVATE_THIS_COMPLETE_BUILD',buildId:expectedBuildId,fromBuildId:fromBuildId||root?.RosterBotBuild?.buildId||null},[channel.port2])}catch(error){clearTimeout(timer);resolve({ok:false,reason:publicError(error),detail:verified.detail})}});
+  }
   async function refresh(){
     if(!registration)return getStatus();
     const sequence=++refreshSequence,base=stateFromRegistration(registration);
@@ -55,18 +76,20 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     if(!supported(root))return publish({phase:'unsupported',available:false,cacheComplete:false,reason:'service-worker-unavailable'});
     publish({phase:'registering',available:false,cacheComplete:false,reason:'registration-started'});
     try{
-      registration=await root.navigator.serviceWorker.register('/service-worker.js',{scope:'/',updateViaCache:'none'});
+      registration=await root.navigator.serviceWorker.register('/service-worker.js',{scope:'/',updateViaCache:'none'});lastUpdateCheck=Date.now();
       observeRegistration(registration);
       root.navigator.serviceWorker.addEventListener?.('controllerchange',()=>{refresh().catch(()=>{})});
       return await refresh();
     }catch(error){return publish({phase:'failed',available:false,cacheComplete:false,reason:publicError(error)})}
   }
+  async function checkForUpdate({force=false}={}){if(!registration)return getStatus();if(!force&&Date.now()-lastUpdateCheck<6*60*60*1000)return refresh();lastUpdateCheck=Date.now();publish({phase:'checking',available:true,reason:'update-check'});try{await registration.update();return refresh()}catch(error){return publish({phase:'failed',available:true,reason:publicError(error)})}}
   function startWhenReady(){
     if(!root)return;
     const start=()=>{register().catch(error=>publish({phase:'failed',available:false,cacheComplete:false,reason:publicError(error)}))};
     if(root.__rosterbotApplicationReady===true)setTimeout(start,0);
     else root.addEventListener?.('rosterbot:application-ready',start,{once:true});
+    root.addEventListener?.('focus',()=>{checkForUpdate().catch(()=>{})});
   }
   startWhenReady();
-  return Object.freeze({getStatus,subscribe,supported,register,refresh});
+  return Object.freeze({getStatus,subscribe,supported,register,refresh,checkForUpdate,requestWorkerStatus,verifyWaitingBuild,activateWaitingBuild});
 });
