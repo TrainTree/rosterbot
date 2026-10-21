@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/70-navigation.js','rb-build:d9b23b515f9e586e7a4b603b8e73301bcf530db5ff53f2732f24ad057eed25b5')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/70-navigation.js','rb-build:d91aa0c876599cda1012204dc4b54bb23a35eeade4c6cc38c681cf173336d8b7')}catch(error){throw error}
 /* v0.27 dashboard/navigation prototype. Reads the existing roster/pay state and
    routes into existing tools; it does not replace the calculation engines. */
 (()=>{
@@ -35,37 +35,51 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   const drilldownClasses=['v27-drilldown-active','v27-view-week','v27-view-fortnight','v27-view-calendar','v27-view-month'];
   function clearDrilldown(){drilldownClasses.forEach(c=>document.documentElement.classList.remove(c));if($('outputEyebrow'))$('outputEyebrow').textContent='YOUR ROSTER'}
   function setDrilldown(mode){clearDrilldown();if(!mode)return;document.documentElement.classList.add('v27-drilldown-active',`v27-view-${mode}`);if($('outputEyebrow'))$('outputEyebrow').textContent=mode==='week'||mode==='fortnight'?'MY ROSTER':'CALENDAR';if($('outputTitle'))$('outputTitle').textContent=mode==='week'||mode==='fortnight'?'My roster':'Calendar'}
-  function applyOnboardingCopy(lookup=false){
-    const title=$('setup-title'),eye=$('setupEyebrow'),intro=$('v28OnboardingIntro'),lookupBanner=$('v28LookupBanner'),go=$('generateBtn');
-    if(title)title.textContent=lookup?'Roster Lookup':'Let’s set up your role & schedule';if(eye)eye.textContent=lookup?'ROSTER LOOKUP':'MY ROSTER';if(go)go.textContent=lookup?'Show roster':'Show my roster';
-    if(intro)intro.hidden=lookup;if(lookupBanner)lookupBanner.hidden=!lookup;
-    const startLabel=$('startDateLabel');if(startLabel)startLabel.textContent=lookup?'Starting date':'Starting date';
+  function applyOnboardingCopy(){
+    const title=$('setup-title'),eye=$('setupEyebrow'),intro=$('v28OnboardingIntro'),go=$('generateBtn');
+    if(title)title.textContent='Set up my roster';if(eye)eye.textContent='MANUAL ROSTER SETUP';if(go)go.textContent='Show my roster';if(intro)intro.hidden=false;
+    const startLabel=$('startDateLabel');if(startLabel)startLabel.textContent='Starting date';
   }
   function resetOnboardingPreview(){document.documentElement.classList.remove('v28-onboarding-preview');const c=$('v28PreviewConfirm');if(c)c.hidden=true;if($('outputSection'))$('outputSection').hidden=true}
   function setPrimaryNav(name='home'){qa('[data-v29-nav]').forEach(b=>b.classList.toggle('active',b.dataset.v29Nav===name))}
   function clearHubViews(){document.documentElement.classList.remove('v29-view-roster','v29-view-more')}
   function showRosterSurface(){if($('paybotPage')&&!$('paybotPage').hidden)$('rosterbotNavBtn')?.click()}
+  function setFirstRunHistory(view,mode='replace'){
+    if(mode==='none'||!history?.[`${mode}State`])return;
+    history[`${mode}State`]({...history.state,rosterbotView:view},'',location.href);
+  }
+  function clearFirstRunViews(){
+    document.documentElement.classList.remove('v32-front-door-active','v32-demo-active','v28-onboarding-active','v28-onboarding-preview','v28-lookup-active');
+    if($('v32FrontDoor'))$('v32FrontDoor').hidden=true;if($('v32DemoPanel'))$('v32DemoPanel').hidden=true;
+  }
+  function focusFirstRun(id){requestAnimationFrame(()=>$(id)?.focus({preventScroll:true}))}
+  function showFrontDoor({historyMode='replace',focus=false}={}){
+    showRosterSurface();clearDrilldown();clearHubViews();clearFirstRunViews();document.documentElement.classList.remove('v29-app-ready','v27-dashboard-active');document.documentElement.classList.add('v32-front-door-active');
+    if($('v32FrontDoor'))$('v32FrontDoor').hidden=false;setFirstRunHistory('front-door',historyMode);window.scrollTo({top:0,behavior:focus?'smooth':'auto'});if(focus)focusFirstRun('v32FrontDoorTitle');
+  }
+  function showDemo({historyMode='push'}={}){
+    if(timeline().length){showDashboard();return}
+    showRosterSurface();clearDrilldown();clearHubViews();clearFirstRunViews();document.documentElement.classList.remove('v29-app-ready','v27-dashboard-active');document.documentElement.classList.add('v32-demo-active');
+    if($('v32DemoPanel'))$('v32DemoPanel').hidden=false;setFirstRunHistory('demo',historyMode);window.scrollTo({top:0,behavior:'smooth'});focusFirstRun('v32DemoTitle');
+  }
   function restorePersonalSetupAfterLookup(){if(document.documentElement.classList.contains('v28-lookup-active'))window.RosterBotUI?.restoreSession?.()}
   function preparePersonalSurface({persist=true}={}){
-    showRosterSurface();restorePersonalSetupAfterLookup();clearHubViews();document.documentElement.classList.remove('v28-onboarding-active','v28-onboarding-preview','v28-lookup-active');const confirm=$('v28PreviewConfirm');if(confirm)confirm.hidden=true;document.documentElement.classList.add('v29-app-ready');window.RosterBotUI?.setExperience?.('diary',{display:false,persist});
+    showRosterSurface();restorePersonalSetupAfterLookup();clearHubViews();clearFirstRunViews();const confirm=$('v28PreviewConfirm');if(confirm)confirm.hidden=true;document.documentElement.classList.add('v29-app-ready');window.RosterBotUI?.setExperience?.('diary',{display:false,persist});
   }
-  function showOnboarding({persist=true}={}){
-    showRosterSurface();restorePersonalSetupAfterLookup();clearDrilldown();clearHubViews();document.documentElement.classList.remove('v29-app-ready','v27-dashboard-active','v28-lookup-active','v28-onboarding-preview');document.documentElement.classList.add('v28-onboarding-active');
-    window.RosterBotUI?.setExperience?.('quick',{display:false,persist});const setup=$('setupPanel');if(setup)setup.hidden=false;resetOnboardingPreview();applyOnboardingCopy(false);window.scrollTo({top:0,behavior:'smooth'});
-  }
-  function showRosterLookup(){
-    showRosterSurface();clearDrilldown();clearHubViews();document.documentElement.classList.remove('v27-dashboard-active','v28-onboarding-preview');document.documentElement.classList.add('v28-onboarding-active','v28-lookup-active');window.RosterBotUI?.setExperience?.('quick',{display:false});const setup=$('setupPanel');if(setup)setup.hidden=false;resetOnboardingPreview();applyOnboardingCopy(true);const back=$('v28LookupBack');if(back)back.textContent=timeline().length?'← Back to Roster':'← Back to setup';window.scrollTo({top:0,behavior:'smooth'});
+  function showOnboarding({persist=true,historyMode='push'}={}){
+    showRosterSurface();restorePersonalSetupAfterLookup();clearDrilldown();clearHubViews();clearFirstRunViews();document.documentElement.classList.remove('v29-app-ready','v27-dashboard-active');document.documentElement.classList.add('v28-onboarding-active');
+    window.RosterBotUI?.setExperience?.('quick',{display:false,persist});const setup=$('setupPanel');if(setup)setup.hidden=false;resetOnboardingPreview();applyOnboardingCopy();if(!timeline().length)setFirstRunHistory('setup',historyMode);window.scrollTo({top:0,behavior:'smooth'});focusFirstRun('setup-title');
   }
   function showDashboard({persist=true}={}){
-    if(!timeline().length){showOnboarding({persist});return}
+    if(!timeline().length){const view=history.state?.rosterbotView;if(view==='demo')showDemo({historyMode:'none'});else if(view==='setup')showOnboarding({persist,historyMode:'none'});else showFrontDoor({historyMode:view==='front-door'?'none':'replace'});return}
     clearDrilldown();preparePersonalSurface({persist});document.documentElement.classList.add('v27-dashboard-active');setPrimaryNav('home');window.scrollTo({top:0,behavior:'smooth'});ensureCurrentCycle({persist});renderDashboard()
   }
   function showRosterHub(){
-    if(!timeline().length){showOnboarding();return}
+    if(!timeline().length){showFrontDoor({focus:true});return}
     clearDrilldown();preparePersonalSurface();document.documentElement.classList.remove('v27-dashboard-active');document.documentElement.classList.add('v29-view-roster');setPrimaryNav('roster');renderRosterCard();window.scrollTo({top:0,behavior:'smooth'})
   }
   function showMoreHub(){
-    if(!timeline().length){showOnboarding();return}
+    if(!timeline().length){showFrontDoor({focus:true});return}
     clearDrilldown();preparePersonalSurface();document.documentElement.classList.remove('v27-dashboard-active');document.documentElement.classList.add('v29-view-more');setPrimaryNav('more');renderSyncStatus();window.scrollTo({top:0,behavior:'smooth'})
   }
   function updateRosterDrilldown(){
@@ -83,7 +97,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   function preferredRosterPeriod(){try{return localStorage.getItem(ROSTER_PERIOD_KEY)==='week'?'week':'fortnight'}catch(_){return 'fortnight'}}
   function rememberRosterPeriod(mode){try{localStorage.setItem(ROSTER_PERIOD_KEY,mode)}catch(_){}}
   function openRoster(mode=preferredRosterPeriod(),nav='home'){
-    if(!timeline().length){showOnboarding();return}
+    if(!timeline().length){showFrontDoor({focus:true});return}
     mode=mode==='week'?'week':'fortnight';rememberRosterPeriod(mode);
     if(mode==='week')$('thisWeekView')?.click();else $('thisPayCycleView')?.click();
     showWorkbench('#outputSection',mode,nav);
@@ -99,12 +113,12 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     updateRosterDrilldown();
   }
   function returnRosterToToday(){if(document.documentElement.classList.contains('v27-view-week'))$('thisWeekView')?.click();else $('homeToday')?.click();updateRosterDrilldown()}
-  function openToday(){const today=localToday();if(!timeline().length){showOnboarding();return}setPrimaryNav('home');window.RosterBotDiary?.showDay?.(today)}
+  function openToday(){const today=localToday();if(!timeline().length){showFrontDoor({focus:true});return}setPrimaryNav('home');window.RosterBotDiary?.showDay?.(today)}
   function openWeek(){openRoster('week','home')}
   function openFortnight(){openRoster('fortnight','home')}
   function openMyRoster(){openRoster(preferredRosterPeriod(),'roster')}
-  function openCalendar(){if(!timeline().length){showOnboarding();return}$('thisPayCycleView')?.click();showWorkbench('#outputSection','calendar','calendar');setTimeout(()=>window.RosterBotCalendarSubscription?.openCalendar?.(),160)}
-  function openPay(){if(!timeline().length){showOnboarding();return}restorePersonalSetupAfterLookup();clearHubViews();document.documentElement.classList.remove('v28-onboarding-active','v28-onboarding-preview','v28-lookup-active','v27-dashboard-active');document.documentElement.classList.add('v29-app-ready');$('paybotNavBtn')?.click();setPrimaryNav('pay')}
+  function openCalendar(){if(!timeline().length){showFrontDoor({focus:true});return}$('thisPayCycleView')?.click();showWorkbench('#outputSection','calendar','calendar');setTimeout(()=>window.RosterBotCalendarSubscription?.openCalendar?.(),160)}
+  function openPay(){if(!timeline().length){showFrontDoor({focus:true});return}restorePersonalSetupAfterLookup();clearHubViews();clearFirstRunViews();document.documentElement.classList.remove('v27-dashboard-active');document.documentElement.classList.add('v29-app-ready');$('paybotNavBtn')?.click();setPrimaryNav('pay')}
   function renderToday(){const today=localToday(),x=dayEntry(today),d=detailsFor(x),job=$('dashTodayJob'),date=$('dashTodayDate'),times=$('dashTodayTimes'),card=$('dashTodayCard');if(date)date.textContent=shortDate(today);if(!timeline().length){if(job)job.textContent='Set up my roster';if(times)times.textContent='Choose your starting date, depot, roster and line';return}if(!d){if(job)job.textContent='Resolving roster…';if(times)times.textContent='';return}card?.classList.toggle('leave',d.kind==='leave');if(job)job.textContent=d.kind==='shift'?`${d.code}${d.start?` · ${d.start}`:''}`:d.label;if(times)times.textContent=d.kind==='shift'?`${d.start||'—'} → ${d.end||'—'}${d.duration?` · ${d.duration}`:''}`:(d.kind==='off'?'Rostered off':d.kind==='leave'?'Leave day':'')}
   function renderWeek(){const today=localToday(),start=weekStart(today),end=addDays(start,6);if($('dashWeekRange'))$('dashWeekRange').textContent=rangeShort(start,end);const strip=$('dashWeekDays');if(strip){strip.innerHTML=DAY_NAMES.map((name,i)=>{const date=addDays(start,i),kind=statusFor(dayEntry(date));return `<span class="v27-week-day ${kind==='off'?'off':kind==='leave'?'leave':''}${date===today?' today':''}" title="${esc(shortDate(date))}"><b>${name[0]}</b><i></i></span>`}).join('')}let next=null;for(let i=1;i<=6;i++){const date=addDays(today,i);if(date>end)break;const x=dayEntry(date),d=detailsFor(x);if(d?.kind==='shift'){next={date,d};break}}if($('dashWeekNext')){if(next){const dd=diffDays(today,next.date),prefix=dd===1?'Tomorrow':DAY_NAMES[isoDate(next.date).getUTCDay()];$('dashWeekNext').textContent=`Next · ${prefix} · ${next.d.code}${next.d.start?` · ${next.d.start}`:''}`}else $('dashWeekNext').textContent=timeline().length?'No more rostered work this week':'Set up your roster to see this week'}}
   function currentPayCheck(start){return readJson('rosterbot-pay-checks-v1',{})[start]||null}
@@ -142,9 +156,10 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   $('dashboardBrandHome')?.addEventListener('click',showDashboard);$('dashboardHomeBtn')?.addEventListener('click',showDashboard);$('v27BackHome')?.addEventListener('click',showDashboard);$('v27ClassicBackHome')?.addEventListener('click',showDashboard);
   $('dashRosterCard')?.addEventListener('click',()=>openRoster(preferredRosterPeriod(),'home'));$('dashTodayCard')?.addEventListener('click',openToday);$('dashVarianceCard')?.addEventListener('click',()=>{const checks=readJson('rosterbot-pay-checks-v1',{});if(Object.keys(checks).length)$('homeIssuesCard')?.click();else openPay()});$('dashMyRosterCard')?.addEventListener('click',showRosterHub);$('dashCalendarCard')?.addEventListener('click',openCalendar);$('dashViewerCard')?.addEventListener('click',openViewer);
   $('v29NavHome')?.addEventListener('click',showDashboard);$('v29NavRoster')?.addEventListener('click',showRosterHub);$('v29NavCalendar')?.addEventListener('click',openCalendar);$('v29NavPay')?.addEventListener('click',openPay);$('v29NavMore')?.addEventListener('click',showMoreHub);
-  $('v29ViewRosterBtn')?.addEventListener('click',openMyRoster);$('v31AddRosterChangeBtn')?.addEventListener('click',()=>window.RosterBotDiary?.showAdvanced?.({action:'change'}));$('v29RosterHistoryBtn')?.addEventListener('click',()=>window.RosterBotDiary?.showAdvanced?.());$('v29RosterLookupCard')?.addEventListener('click',showRosterLookup);$('v29OfficialViewerBtn')?.addEventListener('click',openViewer);
+  $('v29ViewRosterBtn')?.addEventListener('click',openMyRoster);$('v31AddRosterChangeBtn')?.addEventListener('click',()=>window.RosterBotDiary?.showAdvanced?.({action:'change'}));$('v29RosterHistoryBtn')?.addEventListener('click',()=>window.RosterBotDiary?.showAdvanced?.());$('v29RosterLookupCard')?.addEventListener('click',openViewer);$('v29OfficialViewerBtn')?.addEventListener('click',openViewer);
   $('v29EmploymentBtn')?.addEventListener('click',()=>window.RosterBotEmployment?.open?.());$('v28SourcesBtn')?.addEventListener('click',()=>window.RosterBotSources?.open?.());$('v29MoreDataBtn')?.addEventListener('click',()=>$('dataOpenBtn')?.click());$('v29MoreSettingsBtn')?.addEventListener('click',()=>{$('settingsOpenBtn')?.click()});$('v29MoreChangelogBtn')?.addEventListener('click',()=>$('changelogOpenBtn')?.click());$('v29MoreFeedbackBtn')?.addEventListener('click',()=>$('feedbackOpenBtn')?.click());
-  $('v28RosterLookupBtn')?.addEventListener('click',showRosterLookup);$('v28LookupBack')?.addEventListener('click',()=>timeline().length?showRosterHub():showOnboarding());$('v28ChangeSetupBtn')?.addEventListener('click',()=>{resetOnboardingPreview();$('setupPanel')?.scrollIntoView({behavior:'smooth',block:'start'})});$('v28UseRosterBtn')?.addEventListener('click',async()=>{const button=$('v28UseRosterBtn');if(button)button.disabled=true;let ok=false;try{ok=await window.RosterBotUI?.saveCurrentAsMyRoster?.()}finally{if(button)button.disabled=false}if(!ok){alert('RosterBot could not safely save that setup. Check the details and try again.');return}showDashboard()});
+  $('v32TryRosterBot')?.addEventListener('click',()=>showDemo());$('v32SetUpRoster')?.addEventListener('click',()=>showOnboarding());$('v32DemoSetUpRoster')?.addEventListener('click',()=>showOnboarding());$('v32BrowseRosters')?.addEventListener('click',openViewer);$('v32ExitDemo')?.addEventListener('click',()=>{if(history.state?.rosterbotView==='demo'&&history.length>1)history.back();else showFrontDoor({focus:true})});
+  $('v28ChangeSetupBtn')?.addEventListener('click',()=>{resetOnboardingPreview();$('setupPanel')?.scrollIntoView({behavior:'smooth',block:'start'})});$('v28UseRosterBtn')?.addEventListener('click',async()=>{const button=$('v28UseRosterBtn');if(button)button.disabled=true;let ok=false;try{ok=await window.RosterBotUI?.saveCurrentAsMyRoster?.()}finally{if(button)button.disabled=false}if(!ok){alert('RosterBot could not safely save that setup. Check the details and try again.');return}showDashboard()});
   $('v30ExistingCloudBtn')?.addEventListener('click',()=>{if(window.RosterBotDataUI?.showCloud)window.RosterBotDataUI.showCloud();else $('dataOpenBtn')?.click()});$('v30ExistingImportBtn')?.addEventListener('click',()=>{if(window.RosterBotDataUI?.beginImport)window.RosterBotDataUI.beginImport();else $('importDataFile')?.click()});
   ['startDate','startDepot','startRoster','startLine','hasSwap','swapDepot','swapRoster','swapLine'].forEach(id=>$(id)?.addEventListener('change',()=>{if(document.documentElement.classList.contains('v28-onboarding-active'))resetOnboardingPreview()}));
     $('settingsOpenBtn')?.addEventListener('click',()=>{refreshSettings();openModal('settingsModal')});$('settingsCloseBtn')?.addEventListener('click',()=>closeModal('settingsModal'));$('settingsThemeSelect')?.addEventListener('change',e=>{const legacy=$('styleSelect');if(legacy){legacy.value=e.target.value;legacy.dispatchEvent(new Event('change',{bubbles:true}));}refreshSettings();});$('settingsCalendarView')?.addEventListener('click',()=>{$('calendarViewBtn')?.click();refreshSettings()});$('settingsCompactView')?.addEventListener('click',()=>{$('compactViewBtn')?.click();refreshSettings()});
@@ -159,10 +174,11 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     try{prepareStartup()}finally{document.documentElement.classList.remove('rb-booting')}
     setTimeout(renderDashboard,250);
   }
-  window.addEventListener('storage',()=>setTimeout(()=>{if(timeline().length)renderDashboard()},60));window.addEventListener('rosterbot:application-starting',prepareStartup);window.addEventListener('rosterbot:application-ready',finishStartup);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&startupRendered){if(timeline().length)renderDashboard();else if(!document.documentElement.classList.contains('v28-onboarding-active'))showOnboarding()}});
+  window.addEventListener('storage',()=>setTimeout(()=>{if(timeline().length)renderDashboard()},60));window.addEventListener('rosterbot:application-starting',prepareStartup);window.addEventListener('rosterbot:application-ready',finishStartup);window.addEventListener('popstate',()=>{if(timeline().length){showDashboard();return}const view=history.state?.rosterbotView;if(view==='demo')showDemo({historyMode:'none'});else if(view==='setup')showOnboarding({historyMode:'none'});else showFrontDoor({historyMode:'none',focus:true})});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&startupRendered){if(timeline().length)renderDashboard();else if(!document.documentElement.matches('.v28-onboarding-active,.v32-front-door-active,.v32-demo-active'))showDashboard({persist:false})}});
   const statusObserver=new MutationObserver(renderSyncStatus);['cloudSyncHeadline','cloudAutoState','cloudStatePill'].forEach(id=>{const el=$(id);if(el)statusObserver.observe(el,{childList:true,subtree:true,characterData:true,attributes:true})});
   setInterval(()=>{if(document.documentElement.classList.contains('v27-dashboard-active'))renderDashboard()},12000);
 
   document.documentElement.dataset.colorMode='dark';if(window.__rosterbotApplicationStarting)prepareStartup();if(window.__rosterbotApplicationReady)finishStartup();
-  window.RosterBotDashboard={show:showDashboard,showRoster:showRosterHub,showLookup:showRosterLookup,showMore:showMoreHub,openCalendar,openPay,refresh:renderDashboard,openViewer};
+  window.RosterBotFirstRun={showFrontDoor,showDemo,showSetup:showOnboarding,openBrowse:openViewer,getMode:()=>document.documentElement.classList.contains('v32-demo-active')?'demo':document.documentElement.classList.contains('v32-front-door-active')?'front-door':document.documentElement.classList.contains('v28-onboarding-active')?'setup':'configured',sampleIsPersonalState:false};
+  window.RosterBotDashboard={show:showDashboard,showRoster:showRosterHub,showLookup:openViewer,showMore:showMoreHub,openCalendar,openPay,refresh:renderDashboard,openViewer};
 })();

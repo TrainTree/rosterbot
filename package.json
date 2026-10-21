@@ -11,6 +11,7 @@
     "test:offline-reconnect": "node tests/browser/phase4-offline-reconnect.mjs",
     "test:pwa-update": "node tests/browser/phase5-pwa-update.mjs",
     "test:mobile-standalone": "node tests/browser/phase6-mobile-standalone.mjs",
+    "test:value-first": "node tests/browser/phase2-value-first.mjs",
     "check:syntax": "node --check js/*.js && node --check scripts/*.mjs && node --check tests/persistence/*.mjs && node --check tests/browser/*.mjs && node --check supabase/tests/*.mjs",
     "report:persistence": "node tests/persistence/report.mjs"
   }

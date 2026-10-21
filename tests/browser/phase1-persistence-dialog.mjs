@@ -14,7 +14,7 @@ const browser=await chromium.launch({headless:true,executablePath});
 async function context(seed=null){const value=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'});value.on('request',request=>assert.equal(new URL(request.url()).origin,origin,`external request: ${request.url()}`));if(seed)value.addInitScript(values=>{if(localStorage.getItem('rosterbot-db-schema-v1')==null)for(const [key,item] of Object.entries(values))localStorage.setItem(key,typeof item==='string'?item:JSON.stringify(item))},seed);return value}
 async function ready(page){await page.goto(origin,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__rosterbotApplicationReady===true&&window.RosterBotSchema5Persistence?.isReady?.(),{timeout:30000})}
 async function generation(page){return page.evaluate(()=>JSON.parse(localStorage.getItem('rosterbot-personal-state-v1')).generation.number)}
-async function freshSetup(page){await ready(page);await page.locator('#startDate').fill('2026-09-27');await page.locator('#startRoleDate').fill('2026-09-27')}
+async function freshSetup(page){await ready(page);await page.locator('#v32SetUpRoster').click();await page.locator('#startDate').fill('2026-09-27');await page.locator('#startRoleDate').fill('2026-09-27')}
 
 const results={draft:[],confirmation:[],configured:[],dialog:{}};
 try{

@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:d9b23b515f9e586e7a4b603b8e73301bcf530db5ff53f2732f24ad057eed25b5">
+  <meta name="rosterbot-build-id" content="rb-build:d91aa0c876599cda1012204dc4b54bb23a35eeade4c6cc38c681cf173336d8b7">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -200,6 +200,84 @@
         <button id="homeIssuesCard" type="button"><span id="homeIssues"></span><small id="homeIssuesMeta"></small></button>
       </div>
     </section>
+    <section id="v32FrontDoor" class="v32-front-door" aria-labelledby="v32FrontDoorTitle" hidden>
+      <div class="v32-front-door-hero">
+        <div class="eyebrow">ROSTER, DIARY &amp; PAY</div>
+        <h1 id="v32FrontDoorTitle" tabindex="-1">Know what you’re working — and what you should be paid.</h1>
+        <p>Your roster, diary and expected pay together in one place, with your working copy available offline.</p>
+        <div class="v32-front-door-actions">
+          <button id="v32TryRosterBot" class="primary v32-try-action" type="button">Try RosterBot</button>
+          <button id="v32SetUpRoster" class="secondary" type="button">Set up my roster</button>
+        </div>
+        <p class="v32-try-note">See a realistic example first — no account or personal details needed.</p>
+      </div>
+
+      <div class="v32-front-door-secondary">
+        <button id="v32BrowseRosters" class="v32-browse-card" type="button" aria-haspopup="dialog" aria-controls="rosterViewerModal">
+          <span><strong>Browse rosters &amp; shifts</strong><small>Look through supplied master rosters and shift-book duties without setting up a personal roster.</small></span>
+          <span aria-hidden="true">›</span>
+        </button>
+
+        <div class="v32-trust-promise" aria-label="How RosterBot handles your information">
+          <strong>Your roster can stay on this device.</strong>
+          <p>No account is required for ordinary use. Cloud Sync is optional, nothing is uploaded just because you enter roster details, and RosterBot keeps working offline once it is installed.</p>
+        </div>
+
+        <details id="v32ReturningUser" class="v32-returning-user">
+          <summary>Already use RosterBot?</summary>
+          <p>Restore your existing data or sign in to Cloud Sync.</p>
+          <div class="v32-returning-actions">
+            <button id="v30ExistingCloudBtn" class="secondary" type="button">Sign in &amp; restore</button>
+            <button id="v30ExistingImportBtn" class="secondary" type="button">Restore a .rosterbot backup</button>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="v32DemoPanel" class="v32-demo" aria-labelledby="v32DemoTitle" hidden>
+      <div class="v32-demo-head">
+        <div>
+          <div class="eyebrow">TRY ROSTERBOT · EXAMPLE ROSTER</div>
+          <h1 id="v32DemoTitle" tabindex="-1">Here’s what your working fortnight could look like</h1>
+          <p>This is fictional sample information. Nothing here is your roster and nothing has been saved.</p>
+        </div>
+        <button id="v32ExitDemo" class="secondary" type="button">Exit example</button>
+      </div>
+
+      <div class="v32-demo-value-grid" aria-label="Example RosterBot dashboard">
+        <article class="v32-demo-card v32-demo-today">
+          <span class="v32-demo-label">TODAY</span>
+          <strong>8123 · 05:42</strong>
+          <span>05:42 → 13:50 · 8h08</span>
+          <small>Passenger service · Example only</small>
+        </article>
+        <article class="v32-demo-card">
+          <span class="v32-demo-label">TOMORROW</span>
+          <strong>Rostered off</strong>
+          <span>Next shift Wed · 14:18</span>
+          <small>Three rest days this fortnight</small>
+        </article>
+        <article class="v32-demo-card v32-demo-fortnight">
+          <div class="v32-demo-card-head"><span class="v32-demo-label">CURRENT FORTNIGHT</span><strong>$4,286 expected</strong></div>
+          <div class="v32-demo-week" aria-label="Example fortnight: work and rest days">
+            <span class="work"><b>S</b><i></i><small>05:42</small></span><span class="rest"><b>M</b><i></i><small>OR</small></span><span class="work"><b>T</b><i></i><small>14:18</small></span><span class="work"><b>W</b><i></i><small>06:11</small></span><span class="rest"><b>T</b><i></i><small>OR</small></span><span class="work"><b>F</b><i></i><small>15:02</small></span><span class="work"><b>S</b><i></i><small>07:05</small></span>
+          </div>
+          <span>76.0 hours recorded · estimated before tax</span>
+        </article>
+      </div>
+
+      <div class="v32-demo-benefits" aria-label="What RosterBot can help with">
+        <div><strong>Diary &amp; corrections</strong><span>Record what you actually worked when the roster changes.</span></div>
+        <div><strong>Pay checks</strong><span>Compare expected pay with your payslip.</span></div>
+        <div><strong>Calendar &amp; offline</strong><span>Prepare calendar events and check your saved roster without reception.</span></div>
+      </div>
+
+      <div class="v32-demo-convert">
+        <div><strong>Want RosterBot to show your roster?</strong><span>You’ll preview it before anything becomes your saved schedule.</span></div>
+        <button id="v32DemoSetUpRoster" class="primary" type="button">Set up my roster</button>
+      </div>
+    </section>
+
     <section id="experiencePanel" class="panel experience-panel" aria-labelledby="experience-title">
       <div class="section-heading"><div><div class="eyebrow">USE ROSTERBOT YOUR WAY</div><h2 id="experience-title">Quick tool or personal roster diary?</h2></div></div>
       <div class="experience-grid" role="group" aria-label="RosterBot experience">
@@ -240,16 +318,15 @@
     <section id="setupPanel" class="panel controls-panel" aria-labelledby="setup-title">
       <div class="section-heading">
         <div>
-          <div id="setupEyebrow" class="eyebrow">MY ROSTER</div>
-          <h2 id="setup-title">Let’s set up your role &amp; schedule</h2>
+          <div id="setupEyebrow" class="eyebrow">MANUAL ROSTER SETUP</div>
+          <h2 id="setup-title">Set up my roster</h2>
         </div>
         <div class="setup-heading-actions">
           <button id="advancedRosterBtn" class="secondary diary-only" type="button">Roster History &amp; Changes</button>
           <p class="muted">Choose a date in the week represented by the selected roster line.</p>
         </div>
       </div>
-      <div id="v28LookupBanner" class="v28-lookup-banner" hidden><div><strong>Roster Lookup</strong><small>Look at a roster without changing your saved personal roster.</small></div><button id="v28LookupBack" class="secondary" type="button">← Back</button></div>
-      <div id="v28OnboardingIntro" class="v28-onboarding-copy"><strong>Tell RosterBot your role and how your work is scheduled.</strong> We’ll show you the roster or work pattern first so you can check it looks right. Nothing becomes your saved schedule until you confirm it.<div class="v28-onboarding-secondary"><button id="v28RosterLookupBtn" class="secondary" type="button">Roster Lookup</button><small>Just looking? Browse a roster without saving it.</small></div><div id="v30ExistingUser" class="v30-existing-user"><div><strong>Already have a roster set up?</strong><small>Restore your existing RosterBot setup instead of creating another one.</small></div><div class="v30-existing-actions"><button id="v30ExistingCloudBtn" class="secondary" type="button">Sign in &amp; restore</button><button id="v30ExistingImportBtn" class="secondary" type="button">Upload .rosterbot file</button></div></div></div>
+      <div id="v28OnboardingIntro" class="v28-onboarding-copy"><strong>Tell RosterBot how your work is scheduled.</strong> This is the current manual setup path. RosterBot will show the roster or work pattern first so you can check it looks right. Nothing becomes your saved schedule until you choose <em>Use this as my roster</em>.</div>
       <div id="localDataNotice" class="local-data-notice">
         <strong>LOCAL DATA ONLY.</strong> Your roster diary and pay entries are stored in this browser, not in a RosterBot account or database. You are responsible for keeping a backup. <button id="openDataFromNotice" type="button" class="text-action">DATA / BACKUP</button>
       </div>
@@ -582,13 +659,8 @@
 
         <button id="v29RosterLookupCard" class="v29-hub-card featured wide" type="button">
           <div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/><path d="M7.5 10.5h6M10.5 7.5v6"/></svg></span><span class="v29-card-arrow">›</span></div>
-          <h3>Roster Lookup</h3><p>Quickly view another roster, line or alternating pair without changing your saved My Roster or diary.</p>
-          <span class="v29-lookup-safety">Temporary view · your personal roster stays untouched</span>
-        </button>
-
-        <button id="v29OfficialViewerBtn" class="v29-hub-card wide" type="button">
-          <div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 9v11M13 9v11M18 9v11"/></svg></span><span class="v29-card-arrow">›</span></div>
-          <h3>Browse official rosters &amp; shifts</h3><p>Inspect the full master rotation and look up supplied shift-book duties by shift number or sign-on time.</p>
+          <h3>Browse rosters &amp; shifts</h3><p>Inspect supplied master rotations and look up shift-book duties by shift number or sign-on time.</p>
+          <span class="v29-lookup-safety">Reference only · your personal roster stays untouched</span>
         </button>
       </div>
     </section>
