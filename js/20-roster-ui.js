@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/20-roster-ui.js','rb-build:eaba3e509f3f5d22e9daa35d3db2a07ce1883957b439dc82655338843c17aeb8')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/20-roster-ui.js','rb-build:d9b23b515f9e586e7a4b603b8e73301bcf530db5ff53f2732f24ad057eed25b5')}catch(error){throw error}
 (function () {
   'use strict';
 
@@ -124,6 +124,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     if(display){if(isDiaryMode()){if(hasSavedTimeline())setCurrentPayCycle(true,{persist});else{setupPanel.hidden=true;window.RosterBotDiary?.showAdvanced?.();}}else{if(!viewFromDate.value){const w=E.weekCommencing(startDate.value||localTodayIso());viewFromDate.value=w;viewToDate.value=E.addDays(w,13)}generateDisplay(false,{persist});}}
   }
   const MANUAL_DAY_KEYS=['sun','mon','tue','wed','thu','fri','sat'];
+  const SETUP_DRAFT_KEY='rosterbot-setup-draft-v1';
   let startManualPatternUpdatedAt='';
   function normalizeClock(v){return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||''))?String(v):''}
   function collectStartManualPattern(){
@@ -151,22 +152,28 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     if(st.hasSwap&&!validRosterSelection(st.startDate,st.swapDepot||st.startDepot||'SCS',st.swapRoster,st.swapLine))return false;
     return true;
   }
-  function ensureBasicTimeline(){
+  function buildBasicTimeline(){
     const existing=readJson('rosterbot-timeline-v1',[]);if(Array.isArray(existing)&&existing.length)return existing;
     const st=currentSettings();if(!validRosterSettings(st))return [];
     const manual=st.scheduleMode&&st.scheduleMode!=='official';
-    if(manual){window.RosterBotEmployment?.saveManualPattern?.(st.scheduleMode==='pattern'?st.manualPattern:{version:1,label:'No default pattern',days:Object.fromEntries(MANUAL_DAY_KEYS.map(k=>[k,{on:false,start:'',end:''}]))});}
     const base=manual?{id:'base-'+Date.now(),startWC:E.weekCommencing(st.startDate),mode:'manual',manualType:st.scheduleMode==='pattern'?'pattern':'adhoc',manualPattern:st.scheduleMode==='pattern'?st.manualPattern:null,trackA:{depot:'PERSONAL',roster:'MANUAL',line:1},trackB:null,createdAt:new Date().toISOString(),source:st.scheduleMode==='pattern'?'initial manual work pattern':'initial manual fortnight entry'}:{id:'base-'+Date.now(),startWC:E.weekCommencing(st.startDate),mode:st.hasSwap?'swap':'single',trackA:{depot:st.startDepot||'SCS',roster:st.startRoster,line:+st.startLine||1},trackB:st.hasSwap?{depot:st.swapDepot||st.startDepot||'SCS',roster:st.swapRoster,line:+st.swapLine||1}:null,createdAt:new Date().toISOString(),source:'basic setup migration'};
-    writeJson('rosterbot-timeline-v1',[base]);try{localStorage.setItem('rosterbot-db-schema-v1',String(window.RosterBotSchema5?.SCHEMA5_STORAGE_SCHEMA||4))}catch(_){};return [base];
+    return [base];
   }
-  function saveCurrentAsMyRoster(){
+  async function saveCurrentAsMyRoster(){
     const clearPreviewConfirmation=()=>{document.documentElement.classList.remove('v28-onboarding-preview');const confirm=$('v28PreviewConfirm');if(confirm)confirm.hidden=true};
-    if(hasSavedTimeline()){clearPreviewConfirmation();setExperience('diary',{display:false});return true}
-    const base=ensureBasicTimeline();if(!base.length)return false;
-    const st=currentSettings(),role=window.RosterBotEmployment?.parseRoleValue?.(st.startRole||'PB205:none')||{classification:'PB205',pdtScheme:'none'};window.RosterBotEmployment?.ensureInitial?.(st.roleStartDate||st.startDate,role.classification,role.pdtScheme);
+    if(hasSavedTimeline()){clearPreviewConfirmation();setExperience('diary',{display:false});await window.RosterBotSchema5Persistence?.syncNow?.('existing-roster-confirmation');return true}
+    const base=buildBasicTimeline();if(!base.length)return false;
+    const st=currentSettings(),role=window.RosterBotEmployment?.parseRoleValue?.(st.startRole||'PB205:none')||{classification:'PB205',pdtScheme:'none'},timestamp=new Date().toISOString();
+    const employment=window.RosterBotEmployment?.all?.()||[];if(!employment.length)employment.push({id:`role-${st.roleStartDate||st.startDate}-${role.classification}`,effectiveDate:st.roleStartDate||st.startDate,classification:role.pdtScheme==='legacy'?'VL014':role.classification,pdtScheme:role.pdtScheme,note:'Initial role from RosterBot setup',createdAt:timestamp});
     const onboarding=document.documentElement.classList.contains('v28-onboarding-active');
-    writeJson('rosterbot-diary-annual-leave-v1',onboarding?[]:(currentSettings().annualLeaveWeeks||[]));
-    clearPreviewConfirmation();setExperience('diary',{display:false});window.RosterBotDiary?.mirrorNow?.();return true;
+    const acceptedViewFrom=snapPayPeriodIso(localTodayIso()),acceptedViewTo=E.addDays(acceptedViewFrom,13);
+    const session={...st,experienceMode:'diary',displayWeeks:2,lastViewedFrom:acceptedViewFrom,lastViewedTo:acceptedViewTo},changes={
+      'rosterbot-timeline-v1':JSON.stringify(base),'rosterbot-employment-profile-v1':JSON.stringify(employment),'rosterbot-diary-annual-leave-v1':JSON.stringify(onboarding?[]:(st.annualLeaveWeeks||[])),'rosterbot-session-settings-v1':JSON.stringify(session)
+    };
+    if(st.scheduleMode&&st.scheduleMode!=='official'){const manual=st.scheduleMode==='pattern'?st.manualPattern:{version:1,label:'No default pattern',days:Object.fromEntries(MANUAL_DAY_KEYS.map(key=>[key,{on:false,start:'',end:''}]))};changes['rosterbot-manual-schedule-v1']=JSON.stringify({...manual,version:1,updatedAt:manual.updatedAt||timestamp})}
+    const result=await window.RosterBotSchema5Persistence?.commitPersonalChanges?.(changes,'accept-initial-roster');if(!result?.ok)return false;
+    try{localStorage.removeItem(SETUP_DRAFT_KEY);localStorage.setItem('rosterbot-experience-v1','diary')}catch(_){}
+    experienceMode='diary';updateExperienceUI();clearPreviewConfirmation();window.RosterBotDiary?.mirrorNow?.();return true;
   }
   function setViewRange(from,to,display=true,{preserveMonthFocus=false}={}){
     if(!from)return;if(!preserveMonthFocus){monthFocusFrom='';monthFocusTo=''}let a=from,b=to||from;if(E.compareIsoDates(b,a)<0)[a,b]=[b,a];viewFromDate.value=a;viewToDate.value=b;if(display)generateDisplay(false);
@@ -272,11 +279,12 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
 
   function saveRosterSession() {
     if(document.documentElement.classList.contains('v28-lookup-active')) return;
-    try { localStorage.setItem('rosterbot-session-settings-v1', JSON.stringify({ ...currentSettings(), experienceMode, displayWeeks:Math.min(5200,Math.max(1,Number.parseInt(displayWeeks.value,10)||1)), lastViewedFrom:viewFromDate?.value||'', lastViewedTo:viewToDate?.value||'' }));window.RosterBotSchema5Persistence?.notifyPersonalChange?.('rosterbot-session-settings-v1'); } catch (_) {}
+    const value={ ...currentSettings(), experienceMode, displayWeeks:Math.min(5200,Math.max(1,Number.parseInt(displayWeeks.value,10)||1)), lastViewedFrom:viewFromDate?.value||'', lastViewedTo:viewToDate?.value||'' };
+    try {const draft=document.documentElement.classList.contains('v28-onboarding-active')&&!hasSavedTimeline();if(draft)localStorage.setItem(SETUP_DRAFT_KEY,JSON.stringify(value));else{localStorage.setItem('rosterbot-session-settings-v1',JSON.stringify(value));window.RosterBotSchema5Persistence?.notifyPersonalChange?.('rosterbot-session-settings-v1')}} catch (_) {}
   }
 
   function restoreRosterSession() {
-    let saved=readJson('rosterbot-session-settings-v1',null)||readJson('rosterbot-shared-settings-v1',null);
+    let saved=(!hasSavedTimeline()?readJson(SETUP_DRAFT_KEY,null):null)||readJson('rosterbot-session-settings-v1',null)||readJson('rosterbot-shared-settings-v1',null);
     saved=saved?{...saved,roleStartDate:saved.roleStartDate||saved.startDate,scheduleMode:saved.scheduleMode||'official',manualPattern:saved.manualPattern||window.RosterBotEmployment?.manualPattern?.()||null}:saved;
     if(!saved || !validRosterSettings({...saved,startDepot:saved.startDepot||'SCS',swapDepot:saved.swapDepot||saved.startDepot||'SCS'})) return false;
     startDate.value=saved.startDate;if(startRole)startRole.value=saved.startRole||'PB205:none';if(startRoleDate)startRoleDate.value=saved.roleStartDate||saved.startDate;if(startScheduleMode)startScheduleMode.value=saved.scheduleMode||'official';if(saved.manualPattern)applyStartManualPattern(saved.manualPattern);updateScheduleModeUi(); populateDepotSelect(startDepot,saved.startDepot||'SCS',saved.startDate); populateRosterSelect(startRoster,saved.startRoster,startDepot.value,saved.startDate); populateLineSelect(startLine,startRoster.value,saved.startLine||1,startDepot.value,saved.startDate);
@@ -474,8 +482,8 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   }
   let checkingPayStart='';
   function updatePayCheckDifference(){const expected=Number(payCheckExpected?.dataset.value||0),raw=String(payCheckActual?.value??'').trim();if(!raw){payCheckDifference.textContent='—';payCheckDifference.className='';return}const actual=Number(raw);if(!Number.isFinite(actual)){payCheckDifference.textContent='—';payCheckDifference.className='';return}const diff=Math.round((actual-expected)*100)/100;payCheckDifference.textContent=`${diff>0?'+':''}${moneyAud(diff)}`;payCheckDifference.className=`pay-difference${diff<-.004?' negative':diff>.004?' positive':''}`}
-  function showPayCheck(start){const box=rosterOutput.querySelector(`[data-pay-preview="${start}"]`),expected=Number(box?.dataset.previewGross),check=payCheckMap()[start];if(!Number.isFinite(expected)){alert('Expected pay is not available for this fortnight yet.');return}checkingPayStart=start;payCheckPeriod.textContent=`${E.formatDateLong(start)} – ${E.formatDateLong(E.addDays(start,13))}`;payCheckExpected.textContent=moneyAud(expected);payCheckExpected.dataset.value=String(expected);payCheckActual.value=check?.actualGross!=null?String(check.actualGross):'';payCheckSave.textContent=check?'Update checked pay':'Mark pay checked';payCheckReopen.hidden=!check;updatePayCheckDifference();payCheckModal.hidden=false;document.body.classList.add('feedback-modal-open');setTimeout(()=>payCheckActual.focus(),0)}
-  function hidePayCheck(){payCheckModal.hidden=true;document.body.classList.remove('feedback-modal-open');checkingPayStart=''}
+  function showPayCheck(start){const box=rosterOutput.querySelector(`[data-pay-preview="${start}"]`),expected=Number(box?.dataset.previewGross),check=payCheckMap()[start];if(!Number.isFinite(expected)){alert('Expected pay is not available for this fortnight yet.');return}checkingPayStart=start;payCheckPeriod.textContent=`${E.formatDateLong(start)} – ${E.formatDateLong(E.addDays(start,13))}`;payCheckExpected.textContent=moneyAud(expected);payCheckExpected.dataset.value=String(expected);payCheckActual.value=check?.actualGross!=null?String(check.actualGross):'';payCheckSave.textContent=check?'Update checked pay':'Mark pay checked';payCheckReopen.hidden=!check;updatePayCheckDifference();window.RosterBotDialogs.open(payCheckModal,{invoker:document.activeElement,initialFocus:payCheckActual,onRequestClose:hidePayCheck})}
+  function hidePayCheck(){window.RosterBotDialogs.close(payCheckModal);checkingPayStart=''}
   function savePayCheck(){if(!checkingPayStart)return;const expected=Number(payCheckExpected.dataset.value),raw=String(payCheckActual.value??'').trim();if(!raw){alert('Enter the gross amount shown on the payslip.');return}const actual=Number(raw);if(!Number.isFinite(actual)||actual<0){alert('Enter the gross amount shown on the payslip.');return}const map=payCheckMap();map[checkingPayStart]={checkedAt:new Date().toISOString(),grossAtCheck:expected,actualGross:Math.round(actual*100)/100};writeJson('rosterbot-pay-checks-v1',map);hidePayCheck();refreshPayPreviews();updateHomeDashboard(window.ROSTERBOT_SHARED?.weeks||[]);window.RosterBotDiary?.mirrorNow?.()}
   function clearPayCheck(){if(!checkingPayStart)return;const map=payCheckMap();delete map[checkingPayStart];writeJson('rosterbot-pay-checks-v1',map);hidePayCheck();refreshPayPreviews();updateHomeDashboard(window.ROSTERBOT_SHARED?.weeks||[]);window.RosterBotDiary?.mirrorNow?.()}
 
@@ -1095,7 +1103,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     if(!viewFromDate.value){const w=E.weekCommencing(startDate.value);viewFromDate.value=w;viewToDate.value=E.addDays(w,13)}if(isDiaryMode()&&!hasSavedTimeline()){window.RosterBotDiary?.showAdvanced?.();return}generateDisplay(true);
   });
   quickModeBtn?.addEventListener('click',()=>setExperience('quick'));diaryModeBtn?.addEventListener('click',()=>setExperience('diary'));
-  convertQuickToDiaryBtn?.addEventListener('click',()=>{if(!saveCurrentAsMyRoster()){alert('Choose a valid start date and roster/work pattern first.');return}});
+  convertQuickToDiaryBtn?.addEventListener('click',async()=>{if(!await saveCurrentAsMyRoster()){alert('Choose a valid start date and roster/work pattern first.');return}});
   displayRangeBtn?.addEventListener('click',()=>{if(isDiaryMode()&&!hasSavedTimeline()){window.RosterBotDiary?.showAdvanced?.();return}generateDisplay(true)});
   thisWeekView?.addEventListener('click',()=>{setCurrentWeek(true);syncQuickCalendar(viewFromDate.value)});thisPayCycleView?.addEventListener('click',()=>setCurrentPayCycle(true));prevFortnightView?.addEventListener('click',()=>shiftViewPayCycle(-1));nextFortnightView?.addEventListener('click',()=>shiftViewPayCycle(1));
   $('homePrevFortnight')?.addEventListener('click',()=>shiftViewPayCycle(-1));$('homeNextFortnight')?.addEventListener('click',()=>shiftViewPayCycle(1));$('homeToday')?.addEventListener('click',()=>setCurrentPayCycle(true));$('homeCalendarView')?.addEventListener('click',()=>calendarViewBtn?.click());$('homeCompactView')?.addEventListener('click',()=>compactViewBtn?.click());$('homeHistory')?.addEventListener('click',()=>window.RosterBotDiary?.showAdvanced?.());

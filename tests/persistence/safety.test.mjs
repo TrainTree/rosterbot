@@ -203,5 +203,6 @@ test('startup does not load feature modules or write defaults while authoritativ
   assert(gate>=0&&replacement>gate&&load>replacement);
   assert(source.slice(gate,replacement).includes('return'));
   assert.match(source,/isBlocked:\(\)=>state\?\.startupAllowed===false\|\|state\?\.userChoiceRequired===true/);
-  assert.doesNotMatch(source,/localStorage\.setItem|localStorage\.removeItem/);
+  assert.doesNotMatch(source.slice(gate,replacement),/localStorage\.setItem|localStorage\.removeItem/);
+  assert.match(source,/migration\.commitPersonalChanges/);
 });

@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/01-persistence-registry.js','rb-build:eaba3e509f3f5d22e9daa35d3db2a07ce1883957b439dc82655338843c17aeb8')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/01-persistence-registry.js','rb-build:d9b23b515f9e586e7a4b603b8e73301bcf530db5ff53f2732f24ad057eed25b5')}catch(error){throw error}
 try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('01-persistence-registry','RosterBotPersistenceRegistry',document.currentScript?.src||'js/01-persistence-registry.js')}catch(_){}
 (function(root,factory){
   'use strict';
@@ -175,7 +175,9 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
     ['rosterbot-storage-guard-v1','internal','storageGuard','metadata',null],
     ['rosterbot-personal-state-v1','internal','jsonObject','sensitive',null],
     ['rosterbot-schema5-migration-journal-v1','internal','jsonObject','metadata',null],
+    ['rosterbot-schema5-personal-commit-v1','internal','jsonObject','sensitive',null],
     ['rosterbot-schema4-pre-migration-snapshot-v1','internal','jsonObject','sensitive',null],
+    ['rosterbot-setup-draft-v1','device','sessionSettings','none',null],
     ['rosterbot-cleared-v1','device','iso','none',null],
     ['rosterbot-theme-v1.9','device','theme','none',['rosterbot-theme-v1.8','rosterbot-theme-v1.7','rosterbot-theme']],
     ['rosterbot-theme-v1.8','device','string','none',null,'rosterbot-theme-v1.9'],

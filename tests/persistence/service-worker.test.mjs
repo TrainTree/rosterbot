@@ -55,7 +55,7 @@ async function writeMarker(cache,{cacheName,buildId,installedAt=1,offlineSetDige
 test('generated worker is exact-build stamped and derives its offline set from manifest classifications',async()=>{
   const verified=await verifyServiceWorker(root,{manifest});assert.equal(verified.contract.buildId,manifest.buildId);assert.equal(verified.contract.cacheName,manifest.cacheNamespace);assert.equal(verified.contract.manifestFormat,2);
   assert.deepEqual(contract.required.map(asset=>asset.url),manifest.assets.filter(asset=>isOfflineRequired(asset.url)).map(asset=>asset.url));
-  assert.equal(contract.required.length,45);assert.equal(contract.cosmetic.length,3);
+  assert.equal(contract.required.length,46);assert.equal(contract.cosmetic.length,3);
   assert.match(readSource('service-worker.js'),new RegExp(manifest.buildId));assert.equal((readSource('service-worker.js').match(/skipWaiting\s*\(/g)||[]).length,1);assert.match(readSource('service-worker.js'),/ACTIVATE_THIS_COMPLETE_BUILD/);
 });
 

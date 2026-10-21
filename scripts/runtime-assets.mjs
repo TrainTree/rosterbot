@@ -26,6 +26,7 @@ export const FEATURE_ASSETS=Object.freeze([
   'js/10-roster-official.js',
   'js/11-roster-engine.js',
   'js/12-roster-effective-dates.js',
+  'js/32-dialog-controller.js',
   'js/40-employment-profile.js',
   'js/20-roster-ui.js',
   'js/30-feedback.js',

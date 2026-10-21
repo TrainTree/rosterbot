@@ -71,6 +71,7 @@ test('every literal application persistence key is registered',()=>{
   keys.delete('rosterbot-storage-guard'); // Downgrade-guard format identifier; the persisted key has a -v1 suffix.
   keys.delete('rosterbot-personal-state'); // Schema-5 envelope format identifier; the persisted key has a -v1 suffix.
   keys.delete('rosterbot-schema5-migration-journal'); // Journal format identifier; the persisted key has a -v1 suffix.
+  keys.delete('rosterbot-schema5-personal-commit'); // Live commit-journal format identifier; the persisted key has a -v1 suffix.
   keys.delete('rosterbot-schema5-content-v1'); // Schema-5 checksum scope identifier.
   keys.delete('rosterbot-schema5-cloud-v1'); // Authenticated Cloud capability contract identifier.
   keys.delete('rosterbot-canonical-json-v1'); // Canonicalisation algorithm identifier.

@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/42-paybot.js','rb-build:eaba3e509f3f5d22e9daa35d3db2a07ce1883957b439dc82655338843c17aeb8')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/42-paybot.js','rb-build:d9b23b515f9e586e7a4b603b8e73301bcf530db5ff53f2732f24ad057eed25b5')}catch(error){throw error}
 (function(){
 'use strict';
 const PAYBOT_DATA=window.PAYBOT_DATA;
@@ -661,7 +661,10 @@ document.getElementById('pbFullEditorBtn')?.addEventListener('click',()=>setPayb
 document.getElementById('pbCompactEditorBtn')?.addEventListener('click',()=>setPaybotEditorMode('compact'));
 document.getElementById('pbAutoAdvance')?.addEventListener('change',e=>setPaybotAutoAdvance(e.target.checked));
 applyPaybotEditorModeUI();
-window.addEventListener('rosterbot:forecast',()=>{sharedWeeksCache=null;sharedSettingsCache=null;if(loadedEntryMode==='forecast'&&$('#entryMode').value==='forecast')buildFortnight();});
+// A roster render refreshes the derived preview but is not a PayBot edit. In
+// particular, onboarding preview must not materialise a canonical PayBot
+// snapshot before the user accepts their roster as one logical transaction.
+window.addEventListener('rosterbot:forecast',()=>{sharedWeeksCache=null;sharedSettingsCache=null;if(loadedEntryMode==='forecast'&&$('#entryMode').value==='forecast')buildFortnight({persist:false});});
 window.addEventListener('rosterbot:employment-change',()=>{updatePdtUI();if(dayState.length){renderEditor();calculate();}});
 function previewFortnight(anyDate){
   const start=snapPeriod(parseDate(anyDate||PAY_ANCHOR)),days=[];

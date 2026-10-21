@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/03-schema5-migration.js','rb-build:eaba3e509f3f5d22e9daa35d3db2a07ce1883957b439dc82655338843c17aeb8')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/03-schema5-migration.js','rb-build:d9b23b515f9e586e7a4b603b8e73301bcf530db5ff53f2732f24ad057eed25b5')}catch(error){throw error}
 try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03-schema5-migration','RosterBotSchema5Migration',document.currentScript?.src||'js/03-schema5-migration.js')}catch(_){}
 (function(root,factory){
   'use strict';
@@ -16,10 +16,12 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
 
   const KEYS=Object.freeze({
     marker:'rosterbot-db-schema-v1',guard:'rosterbot-storage-guard-v1',envelope:'rosterbot-personal-state-v1',
-    journal:'rosterbot-schema5-migration-journal-v1',snapshot:'rosterbot-schema4-pre-migration-snapshot-v1',clear:'rosterbot-cleared-v1'
+    journal:'rosterbot-schema5-migration-journal-v1',commit:'rosterbot-schema5-personal-commit-v1',snapshot:'rosterbot-schema4-pre-migration-snapshot-v1',clear:'rosterbot-cleared-v1'
   });
   const JOURNAL_FORMAT='rosterbot-schema5-migration-journal';
   const JOURNAL_VERSION=1;
+  const COMMIT_FORMAT='rosterbot-schema5-personal-commit';
+  const COMMIT_VERSION=1;
   const WRITER=Object.freeze({app:'RosterBotPayBot',version:'0.31.0',build:'v0.31.0-release'});
   const CHECKPOINT=Object.freeze(Object.fromEntries(schema5.JOURNAL_STATES.map((state,index)=>[state,index])));
   const appOwned=key=>/^(?:rosterbot|paybot)-/.test(String(key||''));
@@ -136,11 +138,67 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
     const verified=await verifyEnvelopeCopies({storage,indexedDbTarget,raw:copies.local,registry,canonical,cryptoImpl});if(!verified.ok)return {present:true,ok:false,...verified};
     return {present:true,ok:true,raw:copies.local,envelope:verified.envelope,checked:verified.checked};
   }
+  function parsePersonalCommit(raw){
+    const parsed=parse(raw),value=parsed.value;
+    if(!parsed.ok||!isObject(value)||value.format!==COMMIT_FORMAT||value.formatVersion!==COMMIT_VERSION||!iso(value.createdAt)||!iso(value.updatedAt)||!/^[a-f0-9]{64}$/.test(String(value.baseFingerprint||''))||!/^[a-f0-9]{64}$/.test(String(value.candidateFingerprint||''))||!/^[a-f0-9]{64}$/.test(String(value.projectionFingerprint||''))||typeof value.candidateRaw!=='string')return {ok:false,reason:parsed.ok?'Personal commit journal contract is invalid.':'Personal commit journal is not valid JSON.'};
+    return {ok:true,value,raw:String(raw)};
+  }
+  async function applyPreparedPersonalCommit({storage,indexedDbTarget,commit,registry=defaultRegistry,canonical=defaultCanonical,cryptoImpl=globalThis.crypto,interruptAt=null}={}){
+    const parsed=parse(commit.candidateRaw);if(!parsed.ok)return {ok:false,recoveryRequired:true,stage:'personal-commit-candidate-parse',reason:'The prepared personal generation is not valid JSON.'};
+    const checked=await schema5.validateSchema5Envelope(parsed.value,{registry,canonical,cryptoImpl});
+    if(!checked.ok||parsed.value.generation?.fingerprint!==commit.candidateFingerprint||parsed.value.generation?.predecessorFingerprint!==commit.baseFingerprint||parsed.value.compatibility?.projectionFingerprint!==commit.projectionFingerprint)return {ok:false,recoveryRequired:true,stage:'personal-commit-candidate-validation',reason:'The prepared personal generation failed validation.',errors:checked.errors};
+    try{
+      const envelopeWrite=await dualWriteRaw({storage,indexedDbTarget,key:KEYS.envelope,raw:commit.candidateRaw});if(!envelopeWrite.ok)throw Object.assign(envelopeWrite.error||new Error('Prepared envelope write failed'),{phase:'personal-envelope'});
+      interruption('personal-after-envelope',interruptAt);
+      const projectionWrite=await dualProjectionWrite({storage,indexedDbTarget,projection:checked.projection,registry});if(!projectionWrite.ok)throw Object.assign(projectionWrite.error||new Error('Prepared projection write failed'),{phase:'personal-projection'});
+      storage.removeItem(KEYS.clear);
+      interruption('personal-after-projection',interruptAt);
+      const guardRaw=JSON.stringify(makeGuard({migrationId:`personal-commit:${commit.candidateFingerprint}`,source:{fingerprint:commit.baseFingerprint}},parsed.value,commit.updatedAt)),guard=await dualWriteRaw({storage,indexedDbTarget,key:KEYS.guard,raw:guardRaw});if(!guard.ok)throw Object.assign(guard.error||new Error('Prepared generation guard failed'),{phase:'personal-guard'});
+      const marker=await dualWriteRaw({storage,indexedDbTarget,key:KEYS.marker,raw:'5'});if(!marker.ok)throw Object.assign(marker.error||new Error('Prepared generation marker failed'),{phase:'personal-marker'});
+      interruption('personal-before-final-verification',interruptAt);
+      const finalEnvelope=await existingSchema5({storage,indexedDbTarget,registry,canonical,cryptoImpl}),finalProjection=await verifyProjection({storage,indexedDbTarget,expectedFingerprint:commit.projectionFingerprint,registry,canonical,cryptoImpl});
+      if(!finalEnvelope.ok||finalEnvelope.envelope.generation.fingerprint!==commit.candidateFingerprint||!finalProjection.ok)throw Object.assign(new Error('Prepared personal commit final verification failed'),{phase:'personal-final-verification'});
+      storage.removeItem(KEYS.commit);
+      return {ok:true,stage:'verified',changed:true,resumed:true,envelope:parsed.value,compatibilityProjection:checked.projection,fingerprint:checked.fingerprint};
+    }catch(error){
+      if(error.interrupted)throw error;
+      return {ok:false,recoveryRequired:true,stage:error.phase||'personal-commit-apply',reason:error.message||String(error),error};
+    }
+  }
+  async function resumePersonalCommit(options={}){
+    const raw=options.storage?.getItem(KEYS.commit);if(raw==null)return {ok:true,resumed:false};
+    const parsed=parsePersonalCommit(raw);if(!parsed.ok)return {ok:false,recoveryRequired:true,stage:'personal-commit-journal',reason:parsed.reason};
+    return applyPreparedPersonalCommit({...options,commit:parsed.value});
+  }
+  async function commitPersonalChanges({storage,indexedDbTarget,changes={},source='personal-ui-commit',registry=defaultRegistry,canonical=defaultCanonical,cryptoImpl=globalThis.crypto,now=new Date().toISOString(),writer=WRITER,interruptAt=null}={}){
+    if(!storage||!indexedDbTarget)return {ok:false,stage:'personal-commit-target',reason:'A local and IndexedDB target are required.'};
+    if(storage.getItem(KEYS.commit)!=null){const resumed=await resumePersonalCommit({storage,indexedDbTarget,registry,canonical,cryptoImpl});if(!resumed.ok)return resumed}
+    const current=await existingSchema5({storage,indexedDbTarget,registry,canonical,cryptoImpl});if(!current.ok)return {ok:false,stage:'current-schema5-validation',reason:current.reason||'A verified schema-5 generation is required.'};
+    const projection={...current.checked.projection.storage};
+    for(const [key,raw] of Object.entries(changes||{})){
+      const item=registry.get(key);if(!item||item.category!=='personal'||item.aliasFor)return {ok:false,stage:'personal-change-validation',reason:`${key} is not a canonical personal key.`};
+      if(raw==null)delete projection[key];else projection[key]=String(raw);
+    }
+    const candidate=canonical.fromLocalStorage(projection,{registry}),candidateHash=await canonical.fingerprint(candidate,{cryptoImpl});
+    if(!candidateHash.ok)return {ok:false,stage:'personal-candidate-validation',reason:candidateHash.reason,problems:candidate.problems};
+    if(candidateHash.value===current.envelope.compatibility.projectionFingerprint)return {ok:true,stage:'unchanged',changed:false,envelope:current.envelope,compatibilityProjection:current.checked.projection};
+    const timestamp=new Date(now).toISOString(),built=await schema5.migrateSchema4To5(candidate,{migrationTimestamp:timestamp,writer,source,kind:'state',generationNumber:current.envelope.generation.number+1,registry,canonical,cryptoImpl});
+    if(!built.ok)return {ok:false,stage:'personal-candidate-build',reason:'The personal generation could not be built.',migration:built};
+    built.envelope.generation.predecessorFingerprint=current.envelope.generation.fingerprint;
+    built.envelope.previousGeneration={storageSchemaVersion:5,number:current.envelope.generation.number,fingerprint:current.envelope.generation.fingerprint};
+    const checked=await schema5.validateSchema5Envelope(built.envelope,{registry,canonical,cryptoImpl});if(!checked.ok)return {ok:false,stage:'personal-candidate-validation',errors:checked.errors};
+    const prepared={format:COMMIT_FORMAT,formatVersion:COMMIT_VERSION,source,baseFingerprint:current.envelope.generation.fingerprint,candidateFingerprint:built.envelope.generation.fingerprint,projectionFingerprint:built.envelope.compatibility.projectionFingerprint,candidateRaw:JSON.stringify(built.envelope),createdAt:timestamp,updatedAt:timestamp};
+    storage.setItem(KEYS.commit,JSON.stringify(prepared));
+    interruption('personal-after-journal',interruptAt);
+    const applied=await applyPreparedPersonalCommit({storage,indexedDbTarget,commit:prepared,registry,canonical,cryptoImpl,interruptAt});
+    return {...applied,resumed:false};
+  }
   async function run(options={}){
     const {storage,indexedDbTarget}=options,registry=options.registry||defaultRegistry,canonical=options.canonical||defaultCanonical,cryptoImpl=options.cryptoImpl||globalThis.crypto,interruptAt=options.interruptAt||null;
     const now=new Date(options.now||new Date()).toISOString(),writer=options.writer||WRITER;
     if(!storage||!indexedDbTarget)throw new TypeError('Schema-5 migration requires local and IndexedDB targets.');
     try{
+      const liveCommit=await resumePersonalCommit({storage,indexedDbTarget,registry,canonical,cryptoImpl,interruptAt});if(!liveCommit.ok)return liveCommit;
       const journalPair=await readJournalPair({storage,indexedDbTarget});if(!journalPair.ok)return {ok:false,recoveryRequired:true,stage:'journal-read',reason:journalPair.reason};
       let journal=journalPair.journal;
       const existing=await existingSchema5({storage,indexedDbTarget,registry,canonical,cryptoImpl});
@@ -148,7 +206,7 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
       if(existing.ok&&journal?.state==='complete'){
         const projection=await verifyProjection({storage,indexedDbTarget,expectedFingerprint:existing.envelope.compatibility.projectionFingerprint,registry,canonical,cryptoImpl}),markers=await readBoth(indexedDbTarget,storage,KEYS.marker),guards=await readBoth(indexedDbTarget,storage,KEYS.guard);
         if(!projection.ok||markers.local!=='5'||markers.indexed!=='5'||guards.local==null||guards.local!==guards.indexed)return {ok:false,recoveryRequired:true,stage:'schema5-startup-verification',reason:'Committed schema 5 or its compatibility evidence does not verify.'};
-        return {ok:true,status:'already-complete',envelope:existing.envelope,journal,migrated:false};
+        return {ok:true,status:'already-complete',envelope:existing.envelope,compatibilityProjection:existing.checked.projection,journal,migrated:false};
       }
       if(existing.ok&&!journal)return {ok:false,recoveryRequired:true,stage:'orphan-schema5',reason:'A valid schema-5 envelope exists without its migration journal.'};
 
@@ -219,7 +277,7 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
       const markerWrite=await dualWriteRaw({storage,indexedDbTarget,key:KEYS.marker,raw:'5'});if(!markerWrite.ok)return {ok:false,recoveryRequired:!markerWrite.rollbackVerified,stage:'marker-write',...markerWrite};
       interruption('after-final-commit',interruptAt);
       journal=await writeJournal({storage,indexedDbTarget,journal,state:'complete',now,patch:{verification:{localStorage:{snapshot:true,schema5:true,projection:true,marker:true},indexedDb:{snapshot:true,schema5:true,projection:true,marker:true}},lastError:null}});
-      return {ok:true,status:'complete',migrated:true,envelope:parsedEnvelope,journal,snapshotRetained:true,cloudSchema5UploadAllowed:false};
+      return {ok:true,status:'complete',migrated:true,envelope:parsedEnvelope,compatibilityProjection:envelopeVerified.checked.projection,journal,snapshotRetained:true,cloudSchema5UploadAllowed:false};
     }catch(error){
       if(error.interrupted)return {ok:false,interrupted:true,interruptAt:error.interruptAt,stage:'interrupted'};
       return {ok:false,recoveryRequired:true,stage:'unexpected',reason:error?.message||String(error),error};
@@ -301,10 +359,10 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
       const restored=await dualProjectionWrite({storage,indexedDbTarget,projection:current.checked.projection,registry});
       return restored.ok?{ok:true,stage:'explicit-clear-preserved',changed:false,envelope:current.envelope,restored:true}:{ok:false,stage:'explicit-clear-projection-restore',...restored};
     }
-    const values={};for(const key of registry.surfaceKeys('backup')){const raw=storage.getItem(key);if(raw!=null)values[key]=raw}
-    return replaceFromSchema4Storage({storage,indexedDbTarget,schema4Storage:values,source:'local-schema5-projection-update',registry,canonical,cryptoImpl,now,writer}).then(result=>({...result,changed:result.ok}));
+    const changes={};for(const key of canonical.stateKeys(registry))changes[key]=storage.getItem(key);
+    return commitPersonalChanges({storage,indexedDbTarget,changes,source:'local-schema5-projection-update',registry,canonical,cryptoImpl,now,writer});
   }
   function unknownAppKeys(values,{registry=defaultRegistry}={}){return Object.keys(values||{}).filter(key=>appOwned(key)&&!registry.get(key)).sort()}
-  return Object.freeze({KEYS,JOURNAL_FORMAT,JOURNAL_VERSION,WRITER,CHECKPOINT,run,replaceFromSchema4Storage,replaceFromSchema5Envelope,syncProjection,existingSchema5,verifyProjection,snapshotCheck,readJournalPair,rollbackFromSnapshot,unknownAppKeys,dualWriteRaw,dualProjectionWrite});
+  return Object.freeze({KEYS,JOURNAL_FORMAT,JOURNAL_VERSION,COMMIT_FORMAT,COMMIT_VERSION,WRITER,CHECKPOINT,run,replaceFromSchema4Storage,replaceFromSchema5Envelope,commitPersonalChanges,resumePersonalCommit,syncProjection,existingSchema5,verifyProjection,snapshotCheck,readJournalPair,rollbackFromSnapshot,unknownAppKeys,dualWriteRaw,dualProjectionWrite});
 });
 try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.complete('03-schema5-migration','RosterBotSchema5Migration',document.currentScript?.src||'js/03-schema5-migration.js')}catch(_){}
