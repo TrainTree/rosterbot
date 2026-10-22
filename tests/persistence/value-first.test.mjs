@@ -12,7 +12,8 @@ function between(source,start,end){return source.slice(source.indexOf(start),sou
 
 test('fresh-user front door leads with outcomes and one low-commitment sample action',()=>{
   const front=between(html,'<section id="v32FrontDoor"','<section id="v32DemoPanel"');
-  assert.match(front,/Know what you’re working — and what you should be paid/);
+  assert.match(front,/Know what you’re working and what you should be paid/);
+  assert.doesNotMatch(front,/Know what you’re working\s*[—–-]\s*and what you should be paid/);
   assert.match(front,/Try RosterBot/);assert.match(front,/Set up my roster/);assert.match(front,/Browse rosters &amp; shifts/);
   assert(front.indexOf('Try RosterBot')<front.indexOf('Set up my roster'));
   assert.match(front,/no account or personal details needed/i);
@@ -28,7 +29,25 @@ test('sample is explicit, fictional and contains no form controls or identity',(
   const demo=between(html,'<section id="v32DemoPanel"','<section id="experiencePanel"');
   assert.match(demo,/fictional sample information/i);assert.match(demo,/Nothing here is your roster/i);assert.match(demo,/Example only/i);
   assert.doesNotMatch(demo,/<(?:input|select|textarea|form)\b/i);
-  for(const value of ['TODAY','TOMORROW','CURRENT FORTNIGHT','expected','Diary &amp; corrections','Pay checks','Calendar &amp; offline'])assert.match(demo,new RegExp(value,'i'));
+  for(const value of ['TODAY','TOMORROW','NEXT TWO CALENDAR WEEKS','expected','Diary &amp; corrections','Pay checks','Calendar &amp; offline'])assert.match(demo,new RegExp(value,'i'));
+  assert.match(demo,/id="v32DemoCalendar"/);assert.doesNotMatch(demo,/v32-demo-week[^-]/);
+});
+
+test('sample cards use the configured Home theme tokens rather than a parallel palette',()=>{
+  const card=css.match(/\.v32-demo-card\{([^}]*)\}/)?.[1]||'';
+  for(const declaration of ['border:1px solid var(--border)','background:var(--surface-2)','color:var(--text)'])assert(card.includes(declaration),declaration);
+  assert.match(css,/\.v32-demo-label\{color:var\(--accent\)/);
+  assert.match(css,/\.v32-demo-card>small\{[^}]*color:var\(--muted\)/);
+  assert.doesNotMatch(card,/--v27-card|--v27-ink|#[a-f0-9]{3,8}/i);
+});
+
+test('sample forward roster is two Monday-to-Sunday calendar weeks with visible dates',()=>{
+  const preview=between(navigation,'function renderDemoPreview','function showFrontDoor');
+  assert.match(preview,/const names=\['Mon','Tue','Wed','Thu','Fri','Sat','Sun'\]/);
+  assert.match(preview,/\[0,1\]\.map\(week=>/);
+  assert.match(preview,/<time datetime=/);
+  assert.match(preview,/week\*7\+index/);
+  assert.doesNotMatch(preview,/payStartFor\(/);
 });
 
 test('demo transitions are runtime-only and do not call persistence, Cloud or account APIs',()=>{

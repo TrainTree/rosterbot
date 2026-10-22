@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/70-navigation.js','rb-build:d91aa0c876599cda1012204dc4b54bb23a35eeade4c6cc38c681cf173336d8b7')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/70-navigation.js','rb-build:2728bcf33cf6cbf956a12acfdcbe2b9809a16dba23e3c947049eaeb869171404')}catch(error){throw error}
 /* v0.27 dashboard/navigation prototype. Reads the existing roster/pay state and
    routes into existing tools; it does not replace the calculation engines. */
 (()=>{
@@ -53,6 +53,12 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     if($('v32FrontDoor'))$('v32FrontDoor').hidden=true;if($('v32DemoPanel'))$('v32DemoPanel').hidden=true;
   }
   function focusFirstRun(id){requestAnimationFrame(()=>$(id)?.focus({preventScroll:true}))}
+  function renderDemoPreview(){
+    const host=$('v32DemoCalendar');if(!host)return;
+    const today=localToday(),todayDate=isoDate(today),monday=addDays(today,-((todayDate.getUTCDay()+6)%7));
+    const names=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],pattern=[['work','06:11'],['rest','Rest'],['work','14:18'],['work','05:42'],['rest','Rest'],['work','15:02'],['work','07:05'],['rest','Rest'],['work','04:58'],['work','13:36'],['rest','Rest'],['work','06:24'],['work','14:46'],['rest','Rest']];
+    host.innerHTML=[0,1].map(week=>{const start=addDays(monday,week*7),end=addDays(start,6),days=names.map((name,index)=>{const date=addDays(start,index),offset=diffDays(today,date);let sample=pattern[week*7+index];if(offset===0)sample=['work','05:42'];else if(offset===1)sample=['rest','Rest'];else if(offset===2)sample=['work','14:18'];const [kind,status]=sample,display=isoDate(date).toLocaleDateString('en-AU',{timeZone:'UTC',day:'numeric',month:'short'});return `<span class="v32-demo-day ${kind}${date===today?' today':''}"><b>${name}</b><time datetime="${date}">${esc(display)}</time><small>${esc(status)}</small></span>`}).join('');return `<section class="v32-demo-calendar-week" aria-label="${week?'Next':'Current'} calendar week, ${esc(rangeShort(start,end))}"><div class="v32-demo-week-head"><strong>${week?'Next week':'This week'}</strong><span>${esc(rangeShort(start,end))}</span></div><div class="v32-demo-days">${days}</div></section>`}).join('');
+  }
   function showFrontDoor({historyMode='replace',focus=false}={}){
     showRosterSurface();clearDrilldown();clearHubViews();clearFirstRunViews();document.documentElement.classList.remove('v29-app-ready','v27-dashboard-active');document.documentElement.classList.add('v32-front-door-active');
     if($('v32FrontDoor'))$('v32FrontDoor').hidden=false;setFirstRunHistory('front-door',historyMode);window.scrollTo({top:0,behavior:focus?'smooth':'auto'});if(focus)focusFirstRun('v32FrontDoorTitle');
@@ -60,7 +66,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   function showDemo({historyMode='push'}={}){
     if(timeline().length){showDashboard();return}
     showRosterSurface();clearDrilldown();clearHubViews();clearFirstRunViews();document.documentElement.classList.remove('v29-app-ready','v27-dashboard-active');document.documentElement.classList.add('v32-demo-active');
-    if($('v32DemoPanel'))$('v32DemoPanel').hidden=false;setFirstRunHistory('demo',historyMode);window.scrollTo({top:0,behavior:'smooth'});focusFirstRun('v32DemoTitle');
+    renderDemoPreview();if($('v32DemoPanel'))$('v32DemoPanel').hidden=false;setFirstRunHistory('demo',historyMode);window.scrollTo({top:0,behavior:'smooth'});focusFirstRun('v32DemoTitle');
   }
   function restorePersonalSetupAfterLookup(){if(document.documentElement.classList.contains('v28-lookup-active'))window.RosterBotUI?.restoreSession?.()}
   function preparePersonalSurface({persist=true}={}){

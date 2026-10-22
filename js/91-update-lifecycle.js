@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/91-update-lifecycle.js','rb-build:d91aa0c876599cda1012204dc4b54bb23a35eeade4c6cc38c681cf173336d8b7')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/91-update-lifecycle.js','rb-build:2728bcf33cf6cbf956a12acfdcbe2b9809a16dba23e3c947049eaeb869171404')}catch(error){throw error}
 (function(root,factory){
   const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;

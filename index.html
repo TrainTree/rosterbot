@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:d91aa0c876599cda1012204dc4b54bb23a35eeade4c6cc38c681cf173336d8b7">
+  <meta name="rosterbot-build-id" content="rb-build:2728bcf33cf6cbf956a12acfdcbe2b9809a16dba23e3c947049eaeb869171404">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -203,7 +203,7 @@
     <section id="v32FrontDoor" class="v32-front-door" aria-labelledby="v32FrontDoorTitle" hidden>
       <div class="v32-front-door-hero">
         <div class="eyebrow">ROSTER, DIARY &amp; PAY</div>
-        <h1 id="v32FrontDoorTitle" tabindex="-1">Know what you’re working — and what you should be paid.</h1>
+        <h1 id="v32FrontDoorTitle" tabindex="-1">Know what you’re working and what you should be paid.</h1>
         <p>Your roster, diary and expected pay together in one place, with your working copy available offline.</p>
         <div class="v32-front-door-actions">
           <button id="v32TryRosterBot" class="primary v32-try-action" type="button">Try RosterBot</button>
@@ -238,7 +238,7 @@
       <div class="v32-demo-head">
         <div>
           <div class="eyebrow">TRY ROSTERBOT · EXAMPLE ROSTER</div>
-          <h1 id="v32DemoTitle" tabindex="-1">Here’s what your working fortnight could look like</h1>
+          <h1 id="v32DemoTitle" tabindex="-1">Here’s what your roster could look like</h1>
           <p>This is fictional sample information. Nothing here is your roster and nothing has been saved.</p>
         </div>
         <button id="v32ExitDemo" class="secondary" type="button">Exit example</button>
@@ -254,15 +254,13 @@
         <article class="v32-demo-card">
           <span class="v32-demo-label">TOMORROW</span>
           <strong>Rostered off</strong>
-          <span>Next shift Wed · 14:18</span>
+          <span>Next shift in 2 days · 14:18</span>
           <small>Three rest days this fortnight</small>
         </article>
-        <article class="v32-demo-card v32-demo-fortnight">
-          <div class="v32-demo-card-head"><span class="v32-demo-label">CURRENT FORTNIGHT</span><strong>$4,286 expected</strong></div>
-          <div class="v32-demo-week" aria-label="Example fortnight: work and rest days">
-            <span class="work"><b>S</b><i></i><small>05:42</small></span><span class="rest"><b>M</b><i></i><small>OR</small></span><span class="work"><b>T</b><i></i><small>14:18</small></span><span class="work"><b>W</b><i></i><small>06:11</small></span><span class="rest"><b>T</b><i></i><small>OR</small></span><span class="work"><b>F</b><i></i><small>15:02</small></span><span class="work"><b>S</b><i></i><small>07:05</small></span>
-          </div>
-          <span>76.0 hours recorded · estimated before tax</span>
+        <article class="v32-demo-card v32-demo-forward">
+          <div class="v32-demo-card-head"><span class="v32-demo-label">NEXT TWO CALENDAR WEEKS</span><strong>Roster at a glance</strong></div>
+          <div id="v32DemoCalendar" class="v32-demo-calendar" aria-label="Example roster for this calendar week and next calendar week"></div>
+          <div class="v32-demo-pay"><span>76.0 hours this pay fortnight</span><strong>$4,286 expected</strong><small>Estimated before tax</small></div>
         </article>
       </div>
 
