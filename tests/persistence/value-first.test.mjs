@@ -31,6 +31,7 @@ test('sample is explicit, fictional and contains no form controls or identity',(
   assert.doesNotMatch(demo,/<(?:input|select|textarea|form)\b/i);
   for(const value of ['TODAY','TOMORROW','NEXT TWO CALENDAR WEEKS','expected','Diary &amp; corrections','Pay checks','Calendar &amp; offline'])assert.match(demo,new RegExp(value,'i'));
   assert.match(demo,/id="v32DemoCalendar"/);assert.doesNotMatch(demo,/v32-demo-week[^-]/);
+  assert.match(demo,/Off Roster/);assert.doesNotMatch(demo,/\bRest(?: day| days)?\b/i);
 });
 
 test('sample cards use the configured Home theme tokens rather than a parallel palette',()=>{
@@ -48,6 +49,20 @@ test('sample forward roster is two Monday-to-Sunday calendar weeks with visible 
   assert.match(preview,/<time datetime=/);
   assert.match(preview,/week\*7\+index/);
   assert.doesNotMatch(preview,/payStartFor\(/);
+  assert.match(preview,/class="v32-demo-day/);assert.match(preview,/class="v32-demo-sign-on"/);assert.match(preview,/:\s*'OR'/);
+  assert.doesNotMatch(preview,/['"]rest['"]/i);
+});
+
+test('sample day glance uses the shared dialog controller and exposes no editing surface',()=>{
+  const modal=between(html,'<div id="v32DemoDayModal"','<div id="employmentModal"');
+  assert.match(modal,/role="dialog"/);assert.match(modal,/aria-modal="true"/);assert.match(modal,/FICTIONAL EXAMPLE DUTY/);assert.match(modal,/Off Roster/);
+  assert.doesNotMatch(modal,/<(?:input|select|textarea|form)\b/i);
+  for(const excluded of ['Pay editing','Diary editing','Actual worked','Cloud Sync','Employment'])assert.doesNotMatch(modal,new RegExp(excluded,'i'));
+  const opener=between(navigation,'function openDemoDay','function showFrontDoor');
+  assert.match(opener,/RosterBotDialogs\.open/);assert.match(opener,/initialFocus:\$\('v32DemoDayClose'\)/);assert.match(opener,/RosterBotDialogs\.close/);
+  for(const forbidden of ['localStorage','indexedDB','notifyPersonalChange','syncNow','Cloud'])assert.doesNotMatch(opener,new RegExp(forbidden,'i'));
+  assert.match(navigation,/\$\('v32DemoToday'\)\?\.addEventListener\('click'/);
+  assert.match(navigation,/\$\('v32DemoCalendar'\)\?\.addEventListener\('click'/);
 });
 
 test('demo transitions are runtime-only and do not call persistence, Cloud or account APIs',()=>{

@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/20-roster-ui.js','rb-build:2728bcf33cf6cbf956a12acfdcbe2b9809a16dba23e3c947049eaeb869171404')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/20-roster-ui.js','rb-build:cd16c0c6e9b0c84b5e29fb64152524a531b32e4246a6fb4c515488816a19f6af')}catch(error){throw error}
 (function () {
   'use strict';
 

@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/70-navigation.js','rb-build:2728bcf33cf6cbf956a12acfdcbe2b9809a16dba23e3c947049eaeb869171404')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/70-navigation.js','rb-build:cd16c0c6e9b0c84b5e29fb64152524a531b32e4246a6fb4c515488816a19f6af')}catch(error){throw error}
 /* v0.27 dashboard/navigation prototype. Reads the existing roster/pay state and
    routes into existing tools; it does not replace the calculation engines. */
 (()=>{
@@ -10,6 +10,19 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   const ROSTER_PERIOD_KEY='rosterbot-roster-period-v1';
   const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const PAY_ANCHOR='2026-06-14';
+  const DEMO_DUTIES=Object.freeze([
+    {kind:'work',code:'8041',start:'06:11',end:'14:19',detail:'Sign on at Southern Cross, prepare the train, then work fictional passenger services to Watergardens and return before sign-off.'},
+    {kind:'or'},{kind:'work',code:'8246',start:'14:18',end:'22:26',detail:'Sign on at Southern Cross, work fictional afternoon passenger services to Pakenham and return, then stable the train before sign-off.'},
+    {kind:'work',code:'8123',start:'05:42',end:'13:50',detail:'Sign on at Southern Cross, prepare the train, then work fictional morning passenger services to Werribee and return before sign-off.'},
+    {kind:'or'},{kind:'work',code:'8315',start:'15:02',end:'23:10',detail:'Sign on at Southern Cross, work fictional evening passenger services to Sunbury and return, then complete disposal before sign-off.'},
+    {kind:'work',code:'8075',start:'07:05',end:'15:13',detail:'Sign on at Southern Cross, work fictional passenger services to Craigieburn and return, then complete handover before sign-off.'},
+    {kind:'or'},{kind:'work',code:'7984',start:'04:58',end:'13:06',detail:'Sign on at Southern Cross, prepare the train, then work fictional early passenger services to Frankston and return before sign-off.'},
+    {kind:'work',code:'8198',start:'13:36',end:'21:44',detail:'Sign on at Southern Cross, work fictional afternoon passenger services to Belgrave and return before sign-off.'},
+    {kind:'or'},{kind:'work',code:'8056',start:'06:24',end:'14:32',detail:'Sign on at Southern Cross, prepare the train, then work fictional passenger services to Upfield and return before sign-off.'},
+    {kind:'work',code:'8262',start:'14:46',end:'22:54',detail:'Sign on at Southern Cross, work fictional evening passenger services to Cranbourne and return, then complete disposal before sign-off.'},
+    {kind:'or'}
+  ]);
+  const demoDayDetails=new Map();
   const leaveLabels={annual:'Annual leave',personal:'Personal leave',unpaid:'Unpaid leave',ph_credit:'PH Days Leave',alr:'ALR'};
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function isoDate(iso){const [y,m,d]=String(iso||'').split('-').map(Number);return new Date(Date.UTC(y,m-1,d))}
@@ -53,11 +66,21 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     if($('v32FrontDoor'))$('v32FrontDoor').hidden=true;if($('v32DemoPanel'))$('v32DemoPanel').hidden=true;
   }
   function focusFirstRun(id){requestAnimationFrame(()=>$(id)?.focus({preventScroll:true}))}
+  function demoDuty(date,index,today){
+    const offset=diffDays(today,date);if(offset===0)return DEMO_DUTIES[3];if(offset===1)return DEMO_DUTIES[1];if(offset===2)return DEMO_DUTIES[2];return DEMO_DUTIES[index];
+  }
   function renderDemoPreview(){
     const host=$('v32DemoCalendar');if(!host)return;
     const today=localToday(),todayDate=isoDate(today),monday=addDays(today,-((todayDate.getUTCDay()+6)%7));
-    const names=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],pattern=[['work','06:11'],['rest','Rest'],['work','14:18'],['work','05:42'],['rest','Rest'],['work','15:02'],['work','07:05'],['rest','Rest'],['work','04:58'],['work','13:36'],['rest','Rest'],['work','06:24'],['work','14:46'],['rest','Rest']];
-    host.innerHTML=[0,1].map(week=>{const start=addDays(monday,week*7),end=addDays(start,6),days=names.map((name,index)=>{const date=addDays(start,index),offset=diffDays(today,date);let sample=pattern[week*7+index];if(offset===0)sample=['work','05:42'];else if(offset===1)sample=['rest','Rest'];else if(offset===2)sample=['work','14:18'];const [kind,status]=sample,display=isoDate(date).toLocaleDateString('en-AU',{timeZone:'UTC',day:'numeric',month:'short'});return `<span class="v32-demo-day ${kind}${date===today?' today':''}"><b>${name}</b><time datetime="${date}">${esc(display)}</time><small>${esc(status)}</small></span>`}).join('');return `<section class="v32-demo-calendar-week" aria-label="${week?'Next':'Current'} calendar week, ${esc(rangeShort(start,end))}"><div class="v32-demo-week-head"><strong>${week?'Next week':'This week'}</strong><span>${esc(rangeShort(start,end))}</span></div><div class="v32-demo-days">${days}</div></section>`}).join('');
+    const names=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];demoDayDetails.clear();
+    host.innerHTML=[0,1].map(week=>{const start=addDays(monday,week*7),end=addDays(start,6),days=names.map((name,index)=>{const date=addDays(start,index),duty=demoDuty(date,week*7+index,today),display=String(isoDate(date).getUTCDate()),fullDisplay=isoDate(date).toLocaleDateString('en-AU',{timeZone:'UTC',day:'numeric',month:'short'}),work=duty.kind==='work';demoDayDetails.set(date,duty);const state=work?`Duty ${duty.code}, sign on ${duty.start}, sign off ${duty.end}`:'Off Roster';return `<button class="v32-demo-day ${work?'work':'or'}${date===today?' today':''}" type="button" data-v32-demo-date="${date}" aria-label="${esc(`${name} ${fullDisplay}, ${state}. Open fictional example details`)}"><span class="v32-demo-day-date"><b>${name}</b><time datetime="${date}">${display}</time></span><strong class="v32-demo-sign-on">${work?esc(duty.start):'OR'}</strong><small>${work?`off ${esc(duty.end)}`:'Off Roster'}</small></button>`}).join('');return `<section class="v32-demo-calendar-week" aria-label="${week?'Next':'Current'} calendar week, ${esc(rangeShort(start,end))}"><div class="v32-demo-week-head"><strong>${week?'Next week':'This week'}</strong><span>${esc(rangeShort(start,end))}</span></div><div class="v32-demo-days">${days}</div></section>`}).join('');
+  }
+  function openDemoDay(duty,date,invoker){
+    if(!duty||!date)return;const off=duty.kind!=='work',label=shortDate(date),facts=$('v32DemoDutyFacts'),content=$('v32DemoDutyContent'),offRoster=$('v32DemoDutyOffRoster');
+    if($('v32DemoDayTitle'))$('v32DemoDayTitle').textContent=off?`${label} · Off Roster`:`${duty.code} · ${label}`;
+    if($('v32DemoDutyDate'))$('v32DemoDutyDate').textContent=label;if($('v32DemoDutyCode'))$('v32DemoDutyCode').textContent=duty.code||'—';if($('v32DemoDutyStart'))$('v32DemoDutyStart').textContent=duty.start||'—';if($('v32DemoDutyEnd'))$('v32DemoDutyEnd').textContent=duty.end||'—';if($('v32DemoDutyDuration'))$('v32DemoDutyDuration').textContent=off?'—':durationText(durationMinutes(duty.start,duty.end));
+    if(facts)facts.hidden=off;if(content){content.hidden=off;content.innerHTML=off?'':`<strong>Example shift content</strong><p>${esc(duty.detail||'Fictional passenger-service duty.')}</p>`}if(offRoster)offRoster.hidden=!off;
+    window.RosterBotDialogs.open($('v32DemoDayModal'),{invoker,initialFocus:$('v32DemoDayClose'),onRequestClose:()=>window.RosterBotDialogs.close($('v32DemoDayModal'))});
   }
   function showFrontDoor({historyMode='replace',focus=false}={}){
     showRosterSurface();clearDrilldown();clearHubViews();clearFirstRunViews();document.documentElement.classList.remove('v29-app-ready','v27-dashboard-active');document.documentElement.classList.add('v32-front-door-active');
@@ -164,7 +187,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   $('v29NavHome')?.addEventListener('click',showDashboard);$('v29NavRoster')?.addEventListener('click',showRosterHub);$('v29NavCalendar')?.addEventListener('click',openCalendar);$('v29NavPay')?.addEventListener('click',openPay);$('v29NavMore')?.addEventListener('click',showMoreHub);
   $('v29ViewRosterBtn')?.addEventListener('click',openMyRoster);$('v31AddRosterChangeBtn')?.addEventListener('click',()=>window.RosterBotDiary?.showAdvanced?.({action:'change'}));$('v29RosterHistoryBtn')?.addEventListener('click',()=>window.RosterBotDiary?.showAdvanced?.());$('v29RosterLookupCard')?.addEventListener('click',openViewer);$('v29OfficialViewerBtn')?.addEventListener('click',openViewer);
   $('v29EmploymentBtn')?.addEventListener('click',()=>window.RosterBotEmployment?.open?.());$('v28SourcesBtn')?.addEventListener('click',()=>window.RosterBotSources?.open?.());$('v29MoreDataBtn')?.addEventListener('click',()=>$('dataOpenBtn')?.click());$('v29MoreSettingsBtn')?.addEventListener('click',()=>{$('settingsOpenBtn')?.click()});$('v29MoreChangelogBtn')?.addEventListener('click',()=>$('changelogOpenBtn')?.click());$('v29MoreFeedbackBtn')?.addEventListener('click',()=>$('feedbackOpenBtn')?.click());
-  $('v32TryRosterBot')?.addEventListener('click',()=>showDemo());$('v32SetUpRoster')?.addEventListener('click',()=>showOnboarding());$('v32DemoSetUpRoster')?.addEventListener('click',()=>showOnboarding());$('v32BrowseRosters')?.addEventListener('click',openViewer);$('v32ExitDemo')?.addEventListener('click',()=>{if(history.state?.rosterbotView==='demo'&&history.length>1)history.back();else showFrontDoor({focus:true})});
+  $('v32TryRosterBot')?.addEventListener('click',()=>showDemo());$('v32SetUpRoster')?.addEventListener('click',()=>showOnboarding());$('v32DemoSetUpRoster')?.addEventListener('click',()=>showOnboarding());$('v32BrowseRosters')?.addEventListener('click',openViewer);$('v32ExitDemo')?.addEventListener('click',()=>{if(history.state?.rosterbotView==='demo'&&history.length>1)history.back();else showFrontDoor({focus:true})});$('v32DemoToday')?.addEventListener('click',event=>openDemoDay(DEMO_DUTIES[3],localToday(),event.currentTarget));$('v32DemoCalendar')?.addEventListener('click',event=>{const button=event.target.closest?.('[data-v32-demo-date]');if(!button)return;openDemoDay(demoDayDetails.get(button.dataset.v32DemoDate),button.dataset.v32DemoDate,button)});$('v32DemoDayClose')?.addEventListener('click',()=>window.RosterBotDialogs.close($('v32DemoDayModal')));
   $('v28ChangeSetupBtn')?.addEventListener('click',()=>{resetOnboardingPreview();$('setupPanel')?.scrollIntoView({behavior:'smooth',block:'start'})});$('v28UseRosterBtn')?.addEventListener('click',async()=>{const button=$('v28UseRosterBtn');if(button)button.disabled=true;let ok=false;try{ok=await window.RosterBotUI?.saveCurrentAsMyRoster?.()}finally{if(button)button.disabled=false}if(!ok){alert('RosterBot could not safely save that setup. Check the details and try again.');return}showDashboard()});
   $('v30ExistingCloudBtn')?.addEventListener('click',()=>{if(window.RosterBotDataUI?.showCloud)window.RosterBotDataUI.showCloud();else $('dataOpenBtn')?.click()});$('v30ExistingImportBtn')?.addEventListener('click',()=>{if(window.RosterBotDataUI?.beginImport)window.RosterBotDataUI.beginImport();else $('importDataFile')?.click()});
   ['startDate','startDepot','startRoster','startLine','hasSwap','swapDepot','swapRoster','swapLine'].forEach(id=>$(id)?.addEventListener('change',()=>{if(document.documentElement.classList.contains('v28-onboarding-active'))resetOnboardingPreview()}));
