@@ -27,11 +27,11 @@ test('early trust copy describes local ordinary use without implementation jargo
 
 test('sample is explicit, fictional and contains no form controls or identity',()=>{
   const demo=between(html,'<section id="v32DemoPanel"','<section id="experiencePanel"');
-  assert.match(demo,/fictional sample information/i);assert.match(demo,/Nothing here is your roster/i);assert.match(demo,/Example only/i);
+  assert.match(demo,/fictional sample information/i);assert.match(demo,/Nothing here is your roster/i);assert.match(demo,/TRY ROSTERBOT · EXAMPLE ROSTER/i);
   assert.doesNotMatch(demo,/<(?:input|select|textarea|form)\b/i);
   for(const value of ['TODAY','TOMORROW','NEXT TWO CALENDAR WEEKS','expected','Diary &amp; corrections','Pay checks','Calendar &amp; offline'])assert.match(demo,new RegExp(value,'i'));
   assert.match(demo,/id="v32DemoCalendar"/);assert.doesNotMatch(demo,/v32-demo-week[^-]/);
-  assert.match(demo,/Off Roster/);assert.doesNotMatch(demo,/\bRest(?: day| days)?\b/i);
+  assert.match(navigation,/Off Roster/);assert.doesNotMatch(demo,/\bRest(?: day| days)?\b/i);
 });
 
 test('sample cards use the configured Home theme tokens rather than a parallel palette',()=>{
@@ -42,14 +42,17 @@ test('sample cards use the configured Home theme tokens rather than a parallel p
   assert.doesNotMatch(card,/--v27-card|--v27-ink|#[a-f0-9]{3,8}/i);
 });
 
-test('sample forward roster is two Monday-to-Sunday calendar weeks with visible dates',()=>{
+test('sample forward roster is the real C60/C61 Sunday-to-Saturday fortnight with visible dates',()=>{
   const preview=between(navigation,'function renderDemoPreview','function showFrontDoor');
-  assert.match(preview,/const names=\['Mon','Tue','Wed','Thu','Fri','Sat','Sun'\]/);
+  assert.match(preview,/names=\['Sun','Mon','Tue','Wed','Thu','Fri','Sat'\]/);
+  assert.match(navigation,/DEMO_ROSTER=Object\.freeze\(\{depot:'SCS',roster:'C',lines:Object\.freeze\(\[60,61\]\),grade:'PB205'\}\)/);
+  assert.match(navigation,/RosterOfficial\?\.resolveCell/);assert.match(preview,/C · LINE \$\{line\}/);assert.match(preview,/WC \$\{/);
+  assert.match(preview,/PayBotCombined\?\.calculateDays/);assert.match(preview,/DEMO_ROSTER\.grade/);
   assert.match(preview,/\[0,1\]\.map\(week=>/);
   assert.match(preview,/<time datetime=/);
   assert.match(preview,/week\*7\+index/);
   assert.doesNotMatch(preview,/payStartFor\(/);
-  assert.match(preview,/class="v32-demo-day/);assert.match(preview,/class="v32-demo-sign-on"/);assert.match(preview,/:\s*'OR'/);
+  assert.match(preview,/class="v32-demo-day/);assert.match(preview,/class="v32-demo-sign-on"/);assert.match(navigation,/code:'OR'/);
   assert.doesNotMatch(preview,/['"]rest['"]/i);
 });
 
@@ -57,7 +60,7 @@ test('sample day glance uses the shared dialog controller and exposes no editing
   const modal=between(html,'<div id="v32DemoDayModal"','<div id="employmentModal"');
   assert.match(modal,/role="dialog"/);assert.match(modal,/aria-modal="true"/);assert.match(modal,/FICTIONAL EXAMPLE DUTY/);assert.match(modal,/Off Roster/);
   assert.match(modal,/Sign on \/ off/);assert.match(modal,/id="v32DemoDutyTimes"/);assert.doesNotMatch(modal,/id="v32DemoDuty(?:Start|End)"/);
-  assert.match(modal,/Shift details will appear here\./);assert.doesNotMatch(navigation,/fictional (?:morning|afternoon|evening|early)?\s*passenger services/i);
+  assert.match(navigation,/duty\.detail/);assert.match(navigation,/Shift details<\/strong>/);assert.match(navigation,/cell\.bookContents/);assert.doesNotMatch(navigation,/fictional (?:morning|afternoon|evening|early)?\s*passenger services/i);
   assert.doesNotMatch(modal,/<(?:input|select|textarea|form)\b/i);
   for(const excluded of ['Pay editing','Diary editing','Actual worked','Cloud Sync','Employment'])assert.doesNotMatch(modal,new RegExp(excluded,'i'));
   const opener=between(navigation,'function openDemoDay','function showFrontDoor');

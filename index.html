@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:b482256cd45fff82a59a3ead9b4866f085f9d5aed8876e3123e1d0ea25568437">
+  <meta name="rosterbot-build-id" content="rb-build:d140e049212dc46913a13345506580841c06f0f567a10ddc65110300057e84ea">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -247,20 +247,18 @@
       <div class="v32-demo-value-grid" aria-label="Example RosterBot dashboard">
         <button id="v32DemoToday" class="v32-demo-card v32-demo-today" type="button" aria-haspopup="dialog" aria-controls="v32DemoDayModal">
           <span class="v32-demo-label">TODAY</span>
-          <strong>8123 · 05:42</strong>
-          <span>05:42 → 13:50 · 8h08</span>
-          <small>Passenger service · Example only</small>
+          <strong id="v32DemoTodayDuty">Loading roster…</strong>
+          <span id="v32DemoTodayTimes">—</span>
         </button>
         <article class="v32-demo-card">
           <span class="v32-demo-label">TOMORROW</span>
-          <strong>Off Roster</strong>
-          <span>Next shift in 2 days · 14:18</span>
-          <small>Three Off Roster days this fortnight</small>
+          <strong id="v32DemoTomorrowDuty">Loading roster…</strong>
+          <span id="v32DemoTomorrowTimes">—</span>
         </article>
         <article class="v32-demo-card v32-demo-forward">
           <div class="v32-demo-card-head"><span class="v32-demo-label">NEXT TWO CALENDAR WEEKS</span><strong>Roster at a glance</strong></div>
           <div id="v32DemoCalendar" class="v32-demo-calendar" aria-label="Example roster for this calendar week and next calendar week"></div>
-          <div class="v32-demo-pay"><span>76.0 hours this pay fortnight</span><strong>$4,286 expected</strong><small>Estimated before tax</small></div>
+          <div class="v32-demo-pay"><span id="v32DemoRosteredHours">Rostered hours this pay fortnight</span><strong id="v32DemoExpectedPay">Calculating…</strong><small>Qualified Driver · estimated gross before tax</small></div>
         </article>
       </div>
 
@@ -736,7 +734,7 @@
           <div><dt>Sign on / off</dt><dd id="v32DemoDutyTimes">—</dd></div>
           <div><dt>Duration</dt><dd id="v32DemoDutyDuration">—</dd></div>
         </dl>
-        <div id="v32DemoDutyContent" class="v32-demo-duty-content"><p>Shift details will appear here.</p></div>
+        <div id="v32DemoDutyContent" class="v32-demo-duty-content"></div>
         <p id="v32DemoDutyOffRoster" class="v32-demo-off-roster" hidden>Off Roster</p>
       </div>
     </section>
