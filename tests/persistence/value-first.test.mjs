@@ -56,6 +56,8 @@ test('sample forward roster is two Monday-to-Sunday calendar weeks with visible 
 test('sample day glance uses the shared dialog controller and exposes no editing surface',()=>{
   const modal=between(html,'<div id="v32DemoDayModal"','<div id="employmentModal"');
   assert.match(modal,/role="dialog"/);assert.match(modal,/aria-modal="true"/);assert.match(modal,/FICTIONAL EXAMPLE DUTY/);assert.match(modal,/Off Roster/);
+  assert.match(modal,/Sign on \/ off/);assert.match(modal,/id="v32DemoDutyTimes"/);assert.doesNotMatch(modal,/id="v32DemoDuty(?:Start|End)"/);
+  assert.match(modal,/Shift details will appear here\./);assert.doesNotMatch(navigation,/fictional (?:morning|afternoon|evening|early)?\s*passenger services/i);
   assert.doesNotMatch(modal,/<(?:input|select|textarea|form)\b/i);
   for(const excluded of ['Pay editing','Diary editing','Actual worked','Cloud Sync','Employment'])assert.doesNotMatch(modal,new RegExp(excluded,'i'));
   const opener=between(navigation,'function openDemoDay','function showFrontDoor');

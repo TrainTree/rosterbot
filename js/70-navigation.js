@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/70-navigation.js','rb-build:cd16c0c6e9b0c84b5e29fb64152524a531b32e4246a6fb4c515488816a19f6af')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/70-navigation.js','rb-build:b482256cd45fff82a59a3ead9b4866f085f9d5aed8876e3123e1d0ea25568437')}catch(error){throw error}
 /* v0.27 dashboard/navigation prototype. Reads the existing roster/pay state and
    routes into existing tools; it does not replace the calculation engines. */
 (()=>{
@@ -11,15 +11,15 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const PAY_ANCHOR='2026-06-14';
   const DEMO_DUTIES=Object.freeze([
-    {kind:'work',code:'8041',start:'06:11',end:'14:19',detail:'Sign on at Southern Cross, prepare the train, then work fictional passenger services to Watergardens and return before sign-off.'},
-    {kind:'or'},{kind:'work',code:'8246',start:'14:18',end:'22:26',detail:'Sign on at Southern Cross, work fictional afternoon passenger services to Pakenham and return, then stable the train before sign-off.'},
-    {kind:'work',code:'8123',start:'05:42',end:'13:50',detail:'Sign on at Southern Cross, prepare the train, then work fictional morning passenger services to Werribee and return before sign-off.'},
-    {kind:'or'},{kind:'work',code:'8315',start:'15:02',end:'23:10',detail:'Sign on at Southern Cross, work fictional evening passenger services to Sunbury and return, then complete disposal before sign-off.'},
-    {kind:'work',code:'8075',start:'07:05',end:'15:13',detail:'Sign on at Southern Cross, work fictional passenger services to Craigieburn and return, then complete handover before sign-off.'},
-    {kind:'or'},{kind:'work',code:'7984',start:'04:58',end:'13:06',detail:'Sign on at Southern Cross, prepare the train, then work fictional early passenger services to Frankston and return before sign-off.'},
-    {kind:'work',code:'8198',start:'13:36',end:'21:44',detail:'Sign on at Southern Cross, work fictional afternoon passenger services to Belgrave and return before sign-off.'},
-    {kind:'or'},{kind:'work',code:'8056',start:'06:24',end:'14:32',detail:'Sign on at Southern Cross, prepare the train, then work fictional passenger services to Upfield and return before sign-off.'},
-    {kind:'work',code:'8262',start:'14:46',end:'22:54',detail:'Sign on at Southern Cross, work fictional evening passenger services to Cranbourne and return, then complete disposal before sign-off.'},
+    {kind:'work',code:'8041',start:'06:11',end:'14:19'},
+    {kind:'or'},{kind:'work',code:'8246',start:'14:18',end:'22:26'},
+    {kind:'work',code:'8123',start:'05:42',end:'13:50'},
+    {kind:'or'},{kind:'work',code:'8315',start:'15:02',end:'23:10'},
+    {kind:'work',code:'8075',start:'07:05',end:'15:13'},
+    {kind:'or'},{kind:'work',code:'7984',start:'04:58',end:'13:06'},
+    {kind:'work',code:'8198',start:'13:36',end:'21:44'},
+    {kind:'or'},{kind:'work',code:'8056',start:'06:24',end:'14:32'},
+    {kind:'work',code:'8262',start:'14:46',end:'22:54'},
     {kind:'or'}
   ]);
   const demoDayDetails=new Map();
@@ -78,8 +78,8 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   function openDemoDay(duty,date,invoker){
     if(!duty||!date)return;const off=duty.kind!=='work',label=shortDate(date),facts=$('v32DemoDutyFacts'),content=$('v32DemoDutyContent'),offRoster=$('v32DemoDutyOffRoster');
     if($('v32DemoDayTitle'))$('v32DemoDayTitle').textContent=off?`${label} · Off Roster`:`${duty.code} · ${label}`;
-    if($('v32DemoDutyDate'))$('v32DemoDutyDate').textContent=label;if($('v32DemoDutyCode'))$('v32DemoDutyCode').textContent=duty.code||'—';if($('v32DemoDutyStart'))$('v32DemoDutyStart').textContent=duty.start||'—';if($('v32DemoDutyEnd'))$('v32DemoDutyEnd').textContent=duty.end||'—';if($('v32DemoDutyDuration'))$('v32DemoDutyDuration').textContent=off?'—':durationText(durationMinutes(duty.start,duty.end));
-    if(facts)facts.hidden=off;if(content){content.hidden=off;content.innerHTML=off?'':`<strong>Example shift content</strong><p>${esc(duty.detail||'Fictional passenger-service duty.')}</p>`}if(offRoster)offRoster.hidden=!off;
+    if($('v32DemoDutyDate'))$('v32DemoDutyDate').textContent=label;if($('v32DemoDutyCode'))$('v32DemoDutyCode').textContent=duty.code||'—';if($('v32DemoDutyTimes'))$('v32DemoDutyTimes').textContent=off?'—':`${duty.start} → ${duty.end}`;if($('v32DemoDutyDuration'))$('v32DemoDutyDuration').textContent=off?'—':durationText(durationMinutes(duty.start,duty.end));
+    if(facts)facts.hidden=off;if(content)content.hidden=off;if(offRoster)offRoster.hidden=!off;
     window.RosterBotDialogs.open($('v32DemoDayModal'),{invoker,initialFocus:$('v32DemoDayClose'),onRequestClose:()=>window.RosterBotDialogs.close($('v32DemoDayModal'))});
   }
   function showFrontDoor({historyMode='replace',focus=false}={}){
