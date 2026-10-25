@@ -53,6 +53,35 @@ test('seven-day time ranges remain complete and responsive inside their day colu
   assert.match(calendar,/class="time-start"[\s\S]*?class="time-sep"[\s\S]*?class="time-finish"/);
 });
 
+test('same-row fields use the shared alignment and intrinsic-width contract',()=>{
+  const alignedRows=[
+    'diary-nav-grid rb-field-row',
+    'form-grid rb-field-row',
+    'form-grid swap-fields rb-field-row',
+    'v27-viewer-grid rb-field-row',
+    'form-grid timeline-change-fields rb-field-row',
+    'form-grid cloud-auth-grid rb-field-row',
+    'cloud-encryption-grid rb-field-row',
+    'form-grid cloud-config-grid rb-field-row'
+  ];
+  for(const className of alignedRows)assert(html.includes(`class="${className}"`),className);
+  assert.match(css,/\.field > :is\(input:not\(\[type="checkbox"\]\):not\(\[type="radio"\]\):not\(\[type="hidden"\]\), select, textarea\) \{ width:100%; min-width:0; max-width:100%; \}/);
+  assert.match(css,/@supports\(grid-template-rows:subgrid\)\{[\s\S]*?\.rb-field-row>\.field\{[\s\S]*?grid-row:span 3;[\s\S]*?grid-template-rows:subgrid/);
+  assert.match(css,/\.swap-fields \{ grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.swap-fields \.sequence-preview \{ grid-column:1 \/ -1;/);
+});
+
+test('compound control rows have an explicit shrink and breakpoint policy',()=>{
+  assert.match(css,/\.leave-add-row \{ display:grid; grid-template-columns:minmax\(0,1fr\) auto auto;/);
+  assert.match(css,/\.leave-add-row > button \{ grid-row:2; align-self:stretch; \}/);
+  assert.match(css,/\.day-time-actions\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\) auto;/);
+  assert.match(css,/\.day-allowance-qty\{display:grid;grid-template-columns:minmax\(0,1fr\) 90px;/);
+  assert.match(css,/\.manual-pattern-grid label,\.employment-pattern-grid label\{grid-template-columns:38px 24px minmax\(0,1fr\) 14px minmax\(0,1fr\)/);
+  assert.match(html,/class="field paybot-setup-action"><button class="btn primary" id="loadBtn"/);
+  assert.match(css,/\.paybot-page \.setup-grid \{[^}]*align-items:start;/);
+  assert.match(css,/@media\(max-width:900px\) and \(min-width:621px\)\{\s*\.inline-daily-row\{grid-template-columns:110px minmax\(0,1fr\) auto\}/);
+});
+
 test('native controls follow the selected light or dark app appearance',()=>{
   assert.match(css,/html\[data-color-mode="light"\] input,[\s\S]*?textarea\{color-scheme:light\}/);
   assert.match(css,/html\[data-color-mode="dark"\] input,[\s\S]*?textarea\{color-scheme:dark\}/);

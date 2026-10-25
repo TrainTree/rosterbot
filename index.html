@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:d140e049212dc46913a13345506580841c06f0f567a10ddc65110300057e84ea">
+  <meta name="rosterbot-build-id" content="rb-build:12569c8431769f5b36f3a903e52ac38ff6ce1c9e36ab8d0f90cabd1dc22e7db9">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -288,7 +288,7 @@
         <div><div class="eyebrow" id="diaryNavEyebrow">ROSTER DIARY</div><h2 id="diary-nav-title">Your roster timeline</h2></div>
         <div class="setup-toggle-actions"><button id="editSetupBtn" class="secondary quick-only" type="button">Quick setup</button><button id="diaryHistoryBtn" class="secondary diary-only" type="button">Roster history</button></div>
       </div>
-      <div class="diary-nav-grid">
+      <div class="diary-nav-grid rb-field-row">
         <label class="field"><span>Display roster from</span><input id="viewFromDate" type="date"><small>Any date; the surrounding WC week is resolved automatically.</small></label>
         <label class="field"><span>To</span><input id="viewToDate" type="date"><small>Choose a day, week, pay cycle, month or multi-year range.</small></label>
       </div>
@@ -327,7 +327,7 @@
         <strong>LOCAL DATA ONLY.</strong> Your roster diary and pay entries are stored in this browser, not in a RosterBot account or database. You are responsible for keeping a backup. <button id="openDataFromNotice" type="button" class="text-action">DATA / BACKUP</button>
       </div>
 
-      <div class="form-grid">
+      <div class="form-grid rb-field-row">
         <label class="field">
           <span id="startDateLabel">Schedule / roster start date</span>
           <input id="startDate" type="date" required>
@@ -386,7 +386,7 @@
           </span>
         </label>
 
-        <div id="swapFields" class="form-grid swap-fields" hidden>
+        <div id="swapFields" class="form-grid swap-fields rb-field-row" hidden>
           <label class="field"><span>Other depot</span><select id="swapDepot"></select></label>
           <label class="field">
             <span>Other roster</span>
@@ -699,7 +699,7 @@
         <div class="field roster-field"><label>Week 2 roster</label><select id="r2"></select></div>
         <div class="field roster-field"><label>Week 2 line</label><select id="l2"></select></div>
         <div class="field"><label>Employment</label><select disabled><option>Full Time · Part 7 Locomotive Operating (80h guarantee)</option></select></div>
-        <div class="field"><button class="btn primary" id="loadBtn">Load fortnight</button></div>
+        <div class="field paybot-setup-action"><button class="btn primary" id="loadBtn">Load fortnight</button></div>
         <div class="mode-note"><span id="datasetNote">Not loaded yet.</span> <strong>Unpaid leave</strong> is available for any day and may affect the 80-hour guarantee.</div>
       </div>
       <div class="rate-card"><div class="rate-main"><strong id="rateDisplay">$0.00/hr</strong><span id="rateEffective"></span></div><div class="rate-note" id="rateNote"></div><span class="dataset-pill" id="sourcePill">Roster not loaded</span></div>
@@ -747,7 +747,7 @@
       <div class="employment-body">
         <section id="employmentCurrent" class="employment-current"></section>
         <section class="employment-section"><div class="employment-section-head"><div><div class="eyebrow">ROLE HISTORY</div><h3>Your classifications over time</h3><p>PayBot resolves this timeline separately for each date, so a role change in the middle of a pay fortnight uses the correct rate on each side.</p></div></div><div id="employmentTimeline" class="employment-timeline"></div></section>
-        <section id="employmentEditor" class="employment-section employment-editor"><div class="employment-section-head"><div><div class="eyebrow">ADD / EDIT</div><h3 id="employmentFormTitle">Add role change</h3></div></div><div class="form-grid">
+        <section id="employmentEditor" class="employment-section employment-editor"><div class="employment-section-head"><div><div class="eyebrow">ADD / EDIT</div><h3 id="employmentFormTitle">Add role change</h3></div></div><div class="form-grid rb-field-row">
           <label class="field"><span>Effective date</span><input id="employmentDate" type="date"></label>
           <label class="field"><span>Classification</span><select id="employmentClassification"></select></label>
           <label class="field"><span>PDT arrangement</span><select id="employmentPdtScheme"><option value="none">Not PDT / no PDT treatment</option><option value="legacy">Legacy PDT — VL014 classification</option><option value="current">Current scheme — underlying grade + A704/A705 when training</option></select><small id="employmentPdtHint"></small></label>
@@ -831,7 +831,7 @@
     <section class="feedback-dialog v27-viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="rosterViewerTitle">
       <div class="feedback-dialog-header"><div><div class="eyebrow">OFFICIAL ROSTER DATA</div><h2 id="rosterViewerTitle">Roster &amp; shift viewer</h2></div><button id="rosterViewerClose" class="feedback-close-btn" type="button" aria-label="Close roster viewer">×</button></div>
       <div class="v27-viewer-body">
-        <div class="v27-viewer-grid">
+        <div class="v27-viewer-grid rb-field-row">
           <label class="field"><span>Roster period</span><select id="viewerDataset"></select><small id="viewerDatasetDates"></small></label>
           <label class="field"><span>Depot</span><select id="viewerDepot"></select></label>
           <label class="field"><span>Roster</span><select id="viewerRoster"></select><small id="viewerRotationSummary">—</small></label>
@@ -876,7 +876,7 @@
             <select id="timelineChangeType" hidden aria-hidden="true"><option value="single">Continuous roster</option><option value="swap">Permanent swap / alternating pair</option><option value="replace">Replace the active alternating track; keep the other</option></select>
           </div>
 
-          <div class="form-grid timeline-change-fields">
+          <div class="form-grid timeline-change-fields rb-field-row">
             <label class="field"><span id="timelineChangeDateLabel">When did this change start?</span><input id="timelineChangeDate" type="date"><small id="timelineWcHint">Choose any date in the week. RosterBot will anchor it to the correct WC Sunday.</small></label>
             <label class="field"><span id="timelineDepotLabel">New depot</span><select id="timelineDepot"></select></label>
             <label class="field"><span id="timelineRosterLabel">New roster</span><select id="timelineRoster"></select></label>
@@ -944,7 +944,7 @@
     <section class="feedback-dialog week-override-dialog" role="dialog" aria-modal="true" aria-labelledby="weekOverrideTitle">
       <div class="feedback-dialog-header"><div><div class="eyebrow">ONE-WEEK OVERRIDE</div><h2 id="weekOverrideTitle">Change roster line for this week</h2></div><button id="weekOverrideClose" class="feedback-close-btn" type="button" aria-label="Close week override">×</button></div>
       <p id="weekOverrideDate" class="muted"></p>
-      <div class="form-grid"><label class="field"><span>Depot</span><select id="weekOverrideDepot"></select></label><label class="field"><span>Roster</span><select id="weekOverrideRoster"></select></label><label class="field"><span>Line</span><select id="weekOverrideLine"></select></label></div>
+      <div class="form-grid rb-field-row"><label class="field"><span>Depot</span><select id="weekOverrideDepot"></select></label><label class="field"><span>Roster</span><select id="weekOverrideRoster"></select></label><label class="field"><span>Line</span><select id="weekOverrideLine"></select></label></div>
       <p class="muted">This changes only this WC week. The underlying timeline continues normally before and after it.</p>
       <div class="actions"><button id="weekOverrideSave" class="primary" type="button">Save week override</button><button id="weekOverrideRemove" class="secondary danger-data-btn" type="button">Remove override</button></div>
     </section>
@@ -995,17 +995,17 @@
             </div>
 
             <div id="cloudSignInPanel" class="cloud-auth-panel" role="tabpanel">
-              <div class="form-grid cloud-auth-grid">
+              <div class="form-grid cloud-auth-grid rb-field-row">
                 <label class="field"><span>Email</span><input id="cloudEmail" type="email" autocomplete="username" placeholder="you@example.com"></label>
                 <label class="field"><span>Password</span><input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Password"></label>
               </div>
               <div class="data-actions"><button id="cloudSignIn" class="primary" type="button">Sign in</button><button id="cloudForgotPassword" class="secondary" type="button">Forgot password</button></div>
               <div id="cloudRecoveryRequest" class="cloud-account-note" hidden><strong>Reset password</strong><span class="muted cloud-small">Enter your email above, then request a reset link. The link returns to this RosterBot page.</span><div class="data-actions"><button id="cloudSendReset" class="secondary" type="button">Send reset email</button><button id="cloudCancelReset" class="secondary" type="button">Cancel</button></div></div>
-              <div id="cloudRecoveryPassword" class="cloud-account-note" hidden><strong>Choose a new password</strong><span class="muted cloud-small">Your recovery link was accepted. Set a new password for this account.</span><div class="form-grid cloud-auth-grid"><label class="field"><span>New password</span><input id="cloudNewPassword" type="password" autocomplete="new-password" placeholder="At least 10 characters"></label><label class="field"><span>Confirm password</span><input id="cloudNewPasswordConfirm" type="password" autocomplete="new-password" placeholder="Repeat password"></label></div><div class="data-actions"><button id="cloudSaveNewPassword" class="primary" type="button">Save new password</button></div></div>
+              <div id="cloudRecoveryPassword" class="cloud-account-note" hidden><strong>Choose a new password</strong><span class="muted cloud-small">Your recovery link was accepted. Set a new password for this account.</span><div class="form-grid cloud-auth-grid rb-field-row"><label class="field"><span>New password</span><input id="cloudNewPassword" type="password" autocomplete="new-password" placeholder="At least 10 characters"></label><label class="field"><span>Confirm password</span><input id="cloudNewPasswordConfirm" type="password" autocomplete="new-password" placeholder="Repeat password"></label></div><div class="data-actions"><button id="cloudSaveNewPassword" class="primary" type="button">Save new password</button></div></div>
             </div>
 
             <div id="cloudSignUpPanel" class="cloud-auth-panel" role="tabpanel" hidden>
-              <div class="form-grid cloud-auth-grid">
+              <div class="form-grid cloud-auth-grid rb-field-row">
                 <label class="field"><span>Email</span><input id="cloudSignupEmail" type="email" autocomplete="email" placeholder="you@example.com"><small>Use an address you can access for verification.</small></label>
                 <label class="field"><span>Password</span><input id="cloudSignupPassword" type="password" autocomplete="new-password" placeholder="At least 10 characters"><small>RosterBot enforces a 10-character minimum.</small></label>
                 <label class="field"><span>Confirm password</span><input id="cloudSignupConfirm" type="password" autocomplete="new-password" placeholder="Repeat password"></label>
@@ -1039,7 +1039,7 @@
                 <div id="cloudEncryptionEnableStage" hidden>
                   <strong>Enable encrypted cloud</strong>
                   <p class="muted cloud-small">Choose a separate encryption passphrase. This is not your RosterBot account password. RosterBot will also generate a one-time recovery key.</p>
-                  <div class="cloud-encryption-grid">
+                  <div class="cloud-encryption-grid rb-field-row">
                     <label class="field"><span>Encryption passphrase</span><input id="cloudEncryptionPassphrase" type="password" autocomplete="new-password" placeholder="At least 12 characters"></label>
                     <label class="field"><span>Confirm passphrase</span><input id="cloudEncryptionPassphraseConfirm" type="password" autocomplete="new-password" placeholder="Repeat passphrase"></label>
                   </div>
@@ -1065,7 +1065,7 @@
                 <div id="cloudEncryptionPassphraseStage" hidden>
                   <strong>Change encryption passphrase</strong>
                   <p class="muted cloud-small">This re-wraps the existing cloud master key; your roster encryption key and encrypted roster body stay the same. To make the old passphrase unusable, RosterBot creates a new cloud revision and atomically removes older revision history containing the old wrapper.</p>
-                  <div class="cloud-encryption-grid">
+                  <div class="cloud-encryption-grid rb-field-row">
                     <label class="field"><span>New encryption passphrase</span><input id="cloudNewEncryptionPassphrase" type="password" autocomplete="new-password" placeholder="At least 12 characters"></label>
                     <label class="field"><span>Confirm new passphrase</span><input id="cloudNewEncryptionPassphraseConfirm" type="password" autocomplete="new-password" placeholder="Repeat passphrase"></label>
                   </div>
@@ -1138,7 +1138,7 @@
           <details id="cloudConnectionDetails" class="cloud-setup-details">
             <summary>Connection settings</summary>
             <p class="muted cloud-dev-note">Developer fallback only. Hosted RosterBot already contains its public cloud connection configuration; never enter a secret/service-role key.</p>
-            <div class="form-grid cloud-config-grid">
+            <div class="form-grid cloud-config-grid rb-field-row">
               <label class="field"><span>Project URL</span><input id="cloudProjectUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://xxxxx.supabase.co"><small>Public project URL.</small></label>
               <label class="field"><span>Publishable key</span><input id="cloudPublishableKey" type="password" autocomplete="off" placeholder="sb_publishable_…"><small>Use the publishable key only — never a secret/service-role key.</small></label>
             </div>
