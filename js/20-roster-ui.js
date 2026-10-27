@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/20-roster-ui.js','rb-build:12569c8431769f5b36f3a903e52ac38ff6ce1c9e36ab8d0f90cabd1dc22e7db9')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/20-roster-ui.js','rb-build:f2d9b561683d59e78c9f31d9ab0ade090d66017b87a3a4206dec6c77aebb5700')}catch(error){throw error}
 (function () {
   'use strict';
 
@@ -17,6 +17,12 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   const startRole = $('startRole');
   const startRoleDate = $('startRoleDate');
   const startScheduleMode = $('startScheduleMode');
+  const scheduleChoiceStep = $('v32ScheduleChoiceStep');
+  const scheduleDetailsStep = $('v32ScheduleDetailsStep');
+  const scheduleDetailsTitle = $('v32ScheduleDetailsTitle');
+  const scheduleDetailsIntro = $('v32ScheduleDetailsIntro');
+  const setupActions = $('v32SetupActions');
+  const scheduleChoiceButtons = [...document.querySelectorAll('[data-v32-schedule-choice]')];
   const startManualPatternBox = $('startManualPatternBox');
   const startAdhocNote = $('startAdhocNote');
   const officialSwapBox = $('officialSwapBox');
@@ -126,13 +132,36 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   const MANUAL_DAY_KEYS=['sun','mon','tue','wed','thu','fri','sat'];
   const SETUP_DRAFT_KEY='rosterbot-setup-draft-v1';
   let startManualPatternUpdatedAt='';
+  let setupModeChosen=false;
+  let initialOnboardingPrepared=false;
+  function readSetupDraft(){try{const value=JSON.parse(localStorage.getItem(SETUP_DRAFT_KEY)||'null');return value&&typeof value==='object'&&!Array.isArray(value)?value:null}catch(_){return null}}
+  const onboardingActive=()=>document.documentElement.classList.contains('v28-onboarding-active')&&!hasSavedTimeline();
+  const progressiveSetupActive=()=>!hasSavedTimeline()&&(onboardingActive()||initialOnboardingPrepared||!!readSetupDraft());
   function normalizeClock(v){return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||''))?String(v):''}
   function collectStartManualPattern(){
     const days={};for(const key of MANUAL_DAY_KEYS){const cap=key[0].toUpperCase()+key.slice(1),on=!!$(`startPattern${cap}On`)?.checked,start=normalizeClock($(`startPattern${cap}Start`)?.value),end=normalizeClock($(`startPattern${cap}End`)?.value);days[key]={on,start:on?start:'',end:on?end:''};}
-    return {version:1,label:'Regular work pattern',days,updatedAt:startManualPatternUpdatedAt||new Date().toISOString()};
+    if(!startManualPatternUpdatedAt)startManualPatternUpdatedAt=new Date().toISOString();return {version:1,label:'Regular work pattern',days,updatedAt:startManualPatternUpdatedAt};
   }
   function applyStartManualPattern(pattern){const p=pattern||window.RosterBotEmployment?.defaultManualPattern?.();if(!p)return;startManualPatternUpdatedAt=typeof p.updatedAt==='string'?p.updatedAt:'';for(const key of MANUAL_DAY_KEYS){const cap=key[0].toUpperCase()+key.slice(1),d=p.days?.[key]||{},on=$(`startPattern${cap}On`),st=$(`startPattern${cap}Start`),en=$(`startPattern${cap}End`);if(on)on.checked=!!d.on;if(st){st.value=d.start||'08:00';st.disabled=!d.on}if(en){en.value=d.end||'16:00';en.disabled=!d.on}}}
-  function updateScheduleModeUi(){const mode=startScheduleMode?.value||'official',manual=mode!=='official',pattern=mode==='pattern';['startDepotField','startRosterField','startLineField'].forEach(id=>{const el=$(id);if(el)el.hidden=manual});if(officialSwapBox)officialSwapBox.hidden=manual;if(startManualPatternBox)startManualPatternBox.hidden=!pattern;if(startAdhocNote)startAdhocNote.hidden=mode!=='adhoc';if(manual){hasSwap.checked=false;swapFields.hidden=true}const btn=generateBtn;if(btn&&document.documentElement.classList.contains('v28-onboarding-active'))btn.textContent=manual?'Preview my work pattern':'Show my roster';const accept=$('v28UseRosterBtn');if(accept)accept.textContent=manual?'Use this as my schedule':'Use this as my roster'}
+  function renderProgressiveSetup(){
+    const mode=startScheduleMode?.value||'official',active=onboardingActive(),chosen=!active||setupModeChosen;
+    scheduleChoiceButtons.forEach(button=>{const selected=chosen&&button.dataset.v32ScheduleChoice===mode;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});
+    if(scheduleDetailsStep)scheduleDetailsStep.hidden=!chosen;
+    if(setupActions)setupActions.hidden=!chosen;
+    if(scheduleChoiceStep)scheduleChoiceStep.hidden=!active;
+    const official=mode==='official',pattern=mode==='pattern';
+    if(scheduleDetailsTitle)scheduleDetailsTitle.textContent=official?'Tell us which roster line is yours':pattern?'Describe your regular week':'Choose when manual entry should begin';
+    if(scheduleDetailsIntro)scheduleDetailsIntro.textContent=official?'Choose the week when this roster and line apply. RosterBot will then show two weeks for you to check.':pattern?'Choose when this pattern begins, then mark your usual work days and times.':'Choose when RosterBot should stop assuming a default roster. You can enter each fortnight as it becomes known.';
+    const dateLabel=$('startDateLabel');if(dateLabel)dateLabel.textContent=official?'Which week does this roster line apply from?':'When should this schedule begin?';
+  }
+  function updateScheduleModeUi(){const mode=startScheduleMode?.value||'official',manual=mode!=='official',pattern=mode==='pattern';['startDepotField','startRosterField','startLineField'].forEach(id=>{const el=$(id);if(el)el.hidden=manual});if(officialSwapBox)officialSwapBox.hidden=manual;if(startManualPatternBox)startManualPatternBox.hidden=!pattern;if(startAdhocNote)startAdhocNote.hidden=mode!=='adhoc';if(manual){hasSwap.checked=false;swapFields.hidden=true}const btn=generateBtn;if(btn&&document.documentElement.classList.contains('v28-onboarding-active'))btn.textContent=manual?'Preview my schedule':'Show my roster';const accept=$('v28UseRosterBtn');if(accept)accept.textContent=manual?'Use this as my schedule':'Use this as my roster';renderProgressiveSetup()}
+  function chooseScheduleMode(mode,{persist=true,focus=true}={}){
+    if(!['official','pattern','adhoc'].includes(mode))return;
+    setupModeChosen=true;startScheduleMode.value=mode;
+    if(mode!=='official'){hasSwap.checked=false;swapFields.hidden=true}
+    updateScheduleModeUi();clearPreparedCalendarFiles();if(persist)saveRosterSession();
+    if(focus)requestAnimationFrame(()=>startDate?.focus({preventScroll:true}));
+  }
   function manualPatternValid(pattern){const rows=Object.values(pattern?.days||{}).filter(d=>d?.on);return rows.every(d=>normalizeClock(d.start)&&normalizeClock(d.end))}
 
   function validRosterSelection(date,depot,roster,line){
@@ -144,7 +173,8 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     return count>0&&n<=count;
   }
   function validRosterSettings(st){
-    if(!st||!st.startDate||!st.roleStartDate)return false;
+    if(!st||!st.startDate)return false;
+    if(onboardingActive()&&!setupModeChosen)return false;
     const mode=st.scheduleMode||'official';
     if(mode==='pattern')return manualPatternValid(st.manualPattern||collectStartManualPattern());
     if(mode==='adhoc')return true;
@@ -164,16 +194,30 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     if(hasSavedTimeline()){clearPreviewConfirmation();setExperience('diary',{display:false});await window.RosterBotSchema5Persistence?.syncNow?.('existing-roster-confirmation');return true}
     const base=buildBasicTimeline();if(!base.length)return false;
     const st=currentSettings(),role=window.RosterBotEmployment?.parseRoleValue?.(st.startRole||'PB205:none')||{classification:'PB205',pdtScheme:'none'},timestamp=new Date().toISOString();
-    const employment=window.RosterBotEmployment?.all?.()||[];if(!employment.length)employment.push({id:`role-${st.roleStartDate||st.startDate}-${role.classification}`,effectiveDate:st.roleStartDate||st.startDate,classification:role.pdtScheme==='legacy'?'VL014':role.classification,pdtScheme:role.pdtScheme,note:'Initial role from RosterBot setup',createdAt:timestamp});
+    const employment=window.RosterBotEmployment?.all?.()||[];
     const onboarding=document.documentElement.classList.contains('v28-onboarding-active');
+    if(!onboarding&&!employment.length)employment.push({id:`role-${st.roleStartDate||st.startDate}-${role.classification}`,effectiveDate:st.roleStartDate||st.startDate,classification:role.pdtScheme==='legacy'?'VL014':role.classification,pdtScheme:role.pdtScheme,note:'Initial role from RosterBot setup',createdAt:timestamp});
     const acceptedViewFrom=snapPayPeriodIso(localTodayIso()),acceptedViewTo=E.addDays(acceptedViewFrom,13);
-    const session={...st,experienceMode:'diary',displayWeeks:2,lastViewedFrom:acceptedViewFrom,lastViewedTo:acceptedViewTo},changes={
+    const acceptedSettings={...st};if(onboarding){delete acceptedSettings.startRole;delete acceptedSettings.roleStartDate;if(st.scheduleMode!=='official'){acceptedSettings.startDepot='PERSONAL';acceptedSettings.startRoster='MANUAL';acceptedSettings.startLine=1;acceptedSettings.hasSwap=false;acceptedSettings.swapDepot='PERSONAL';acceptedSettings.swapRoster='MANUAL';acceptedSettings.swapLine=1}}
+    const session={...acceptedSettings,experienceMode:'diary',displayWeeks:2,lastViewedFrom:acceptedViewFrom,lastViewedTo:acceptedViewTo},changes={
       'rosterbot-timeline-v1':JSON.stringify(base),'rosterbot-employment-profile-v1':JSON.stringify(employment),'rosterbot-diary-annual-leave-v1':JSON.stringify(onboarding?[]:(st.annualLeaveWeeks||[])),'rosterbot-session-settings-v1':JSON.stringify(session)
     };
     if(st.scheduleMode&&st.scheduleMode!=='official'){const manual=st.scheduleMode==='pattern'?st.manualPattern:{version:1,label:'No default pattern',days:Object.fromEntries(MANUAL_DAY_KEYS.map(key=>[key,{on:false,start:'',end:''}]))};changes['rosterbot-manual-schedule-v1']=JSON.stringify({...manual,version:1,updatedAt:manual.updatedAt||timestamp})}
     const result=await window.RosterBotSchema5Persistence?.commitPersonalChanges?.(changes,'accept-initial-roster');if(!result?.ok)return false;
     try{localStorage.removeItem(SETUP_DRAFT_KEY);localStorage.setItem('rosterbot-experience-v1','diary')}catch(_){}
     experienceMode='diary';updateExperienceUI();clearPreviewConfirmation();window.RosterBotDiary?.mirrorNow?.();return true;
+  }
+  async function saveCurrentPayRole(value){
+    if(!hasSavedTimeline())return {ok:false,error:'Save a roster before setting up pay.'};
+    const parsed=window.RosterBotEmployment?.parseRoleValue?.(value);if(!value||!parsed)return {ok:false,error:'Choose your current role.'};
+    const timeline=readJson('rosterbot-timeline-v1',[]),effectiveDate=Array.isArray(timeline)&&timeline.length?timeline.map(row=>String(row.startWC||'')).filter(Boolean).sort()[0]:'';
+    if(!effectiveDate)return {ok:false,error:'RosterBot could not find the saved roster start date.'};
+    const classification=parsed.pdtScheme==='legacy'?'VL014':parsed.classification,rows=window.RosterBotEmployment?.all?.()||[],timestamp=new Date().toISOString();
+    if(rows.length)return {ok:false,error:'A pay profile already exists. Use Employment & Pay Profile to change it.'};
+    const event={id:`role-${effectiveDate}-${classification}`,effectiveDate,classification,pdtScheme:parsed.pdtScheme,note:'Current role chosen after roster setup',createdAt:timestamp};
+    const result=await window.RosterBotSchema5Persistence?.commitPersonalChanges?.({'rosterbot-employment-profile-v1':JSON.stringify([event])},'complete-current-pay-setup');
+    if(!result?.ok)return {ok:false,error:'RosterBot could not safely save that pay setup.'};
+    window.dispatchEvent(new CustomEvent('rosterbot:employment-change',{detail:{key:'rosterbot-employment-profile-v1'}}));return {ok:true,effectiveDate,generation:result.envelope?.generation?.number||null};
   }
   function setViewRange(from,to,display=true,{preserveMonthFocus=false}={}){
     if(!from)return;if(!preserveMonthFocus){monthFocusFrom='';monthFocusTo=''}let a=from,b=to||from;if(E.compareIsoDates(b,a)<0)[a,b]=[b,a];viewFromDate.value=a;viewToDate.value=b;if(display)generateDisplay(false);
@@ -221,15 +265,15 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
 
   function depotNames(date=startDate.value||localTodayIso()){return window.RosterOfficial?.depotNames?.(date)||['SCS']}
   function rosterNames(depot=startDepot?.value||'SCS',date=startDate.value||localTodayIso()){return window.RosterOfficial?.rosterNames?.(date,depot)||[]}
-  function populateDepotSelect(select,preferred,date=startDate.value||localTodayIso()){if(!select)return;const current=preferred||select.value||'SCS',names=depotNames(date);select.replaceChildren();for(const name of names){const opt=new Option(name==='SCS'?'Southern Cross (SCS)':name,name);select.add(opt)}select.value=names.includes(current)?current:(names.includes('SCS')?'SCS':names[0]||'SCS')}
-  function populateRosterSelect(select, preferred, depot=startDepot?.value||'SCS', date=startDate.value||localTodayIso()) {const current=preferred||select.value,names=rosterNames(depot,date);select.replaceChildren();for(const name of names){const opt=new Option(name==='FLEX'?'Flex':name==='MAIN'?'Main rotation':name==='CABCOM'?'Cab Committee':`${name} Roster`,name);select.add(opt)}if(names.includes(current))select.value=current;else if(names.length)select.value=names[0]}
-  function populateLineSelect(select, rosterName, preferredLine, depot=startDepot?.value||'SCS', date=startDate.value||localTodayIso()) {const count=window.RosterOfficial?.lineCount?.(date,depot,rosterName)||data.rosters?.[rosterName]?.lineCount||1,old=parseInt(preferredLine??select.value,10);select.replaceChildren();for(let i=1;i<=count;i++)select.add(new Option(String(i),String(i)));select.value=String(Number.isFinite(old)?Math.min(count,Math.max(1,old)):1)}
+  function populateDepotSelect(select,preferred,date=startDate.value||localTodayIso()){if(!select)return;const explicit=preferred!==undefined?preferred:select.value,current=explicit||'',names=depotNames(date),prompt=progressiveSetupActive();select.replaceChildren();if(prompt)select.add(new Option('Choose depot',''));for(const name of names){const opt=new Option(name==='SCS'?'Southern Cross (SCS)':name,name);select.add(opt)}select.value=names.includes(current)?current:(prompt?'':(names.includes('SCS')?'SCS':names[0]||'SCS'))}
+  function populateRosterSelect(select, preferred, depot=startDepot?.value||'SCS', date=startDate.value||localTodayIso()) {const current=(preferred!==undefined?preferred:select.value)||'',names=depot?rosterNames(depot,date):[],prompt=progressiveSetupActive();select.replaceChildren();if(prompt)select.add(new Option('Choose roster',''));for(const name of names){const opt=new Option(name==='FLEX'?'Flex':name==='MAIN'?'Main rotation':name==='CABCOM'?'Cab Committee':`${name} Roster`,name);select.add(opt)}if(names.includes(current))select.value=current;else if(prompt)select.value='';else if(names.length)select.value=names[0]}
+  function populateLineSelect(select, rosterName, preferredLine, depot=startDepot?.value||'SCS', date=startDate.value||localTodayIso()) {const count=rosterName?(window.RosterOfficial?.lineCount?.(date,depot,rosterName)||data.rosters?.[rosterName]?.lineCount||0):0,old=parseInt(preferredLine!==undefined?preferredLine:select.value,10),prompt=progressiveSetupActive();select.replaceChildren();if(prompt)select.add(new Option('Choose line',''));for(let i=1;i<=count;i++)select.add(new Option(String(i),String(i)));select.value=Number.isFinite(old)&&old>=1&&old<=count?String(old):(prompt?'':(count?'1':''))}
 
   function formatMetaDate(iso) {
     return iso ? E.formatDateLong(iso) : 'unknown';
   }
 
-  function updateStartHints() {try{wcHint.textContent=`WC ${E.formatDateLong(E.weekCommencing(startDate.value))}`}catch(_){wcHint.textContent='WC —'}const depot=startDepot?.value||'SCS',r=window.RosterOfficial?.rosterObj?.(startDate.value,depot,startRoster.value),count=r?.lineCount||0;lineCountHint.textContent=`${count} line${count===1?'':'s'} in this roster`;const ds=window.RosterOfficial?.datasetKey?.(startDate.value)||'No dataset';rosterMeta.textContent=`${depot} · ${ds}${startRoster.value==='FLEX'?` · ${window.RosterOfficial?.flexVersion?.(startDate.value)?.source||'FLEX'}`:''}`}
+  function updateStartHints() {if(!startDate.value){wcHint.textContent='Choose any date in the week. RosterBot will use the WC Sunday date.'}else try{wcHint.textContent=`WC ${E.formatDateLong(E.weekCommencing(startDate.value))}`}catch(_){wcHint.textContent='WC —'}const depot=startDepot?.value||'',r=startDate.value&&depot&&startRoster.value?window.RosterOfficial?.rosterObj?.(startDate.value,depot,startRoster.value):null,count=r?.lineCount||0;lineCountHint.textContent=count?`${count} line${count===1?'':'s'} in this roster`:'Choose a roster first';const ds=startDate.value?window.RosterOfficial?.datasetKey?.(startDate.value):'';rosterMeta.textContent=depot&&ds?`${depot} · ${ds}${startRoster.value==='FLEX'?` · ${window.RosterOfficial?.flexVersion?.(startDate.value)?.source||'FLEX'}`:''}`:'Choose the applicable week and depot'}
 
 
   function initialRosterViewMode() {
@@ -262,7 +306,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   function currentSettings() {
     return {
       startDate: startDate.value,
-      startDepot: startDepot?.value || 'SCS',
+      startDepot: startDepot?.value || (onboardingActive()?'':'SCS'),
       startRoster: startRoster.value,
       startLine: Number.parseInt(startLine.value, 10),
       startRole: startRole?.value || 'PB205:none',
@@ -280,18 +324,31 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   function saveRosterSession() {
     if(document.documentElement.classList.contains('v28-lookup-active')) return;
     const value={ ...currentSettings(), experienceMode, displayWeeks:Math.min(5200,Math.max(1,Number.parseInt(displayWeeks.value,10)||1)), lastViewedFrom:viewFromDate?.value||'', lastViewedTo:viewToDate?.value||'' };
-    try {const draft=document.documentElement.classList.contains('v28-onboarding-active')&&!hasSavedTimeline();if(draft)localStorage.setItem(SETUP_DRAFT_KEY,JSON.stringify(value));else{localStorage.setItem('rosterbot-session-settings-v1',JSON.stringify(value));window.RosterBotSchema5Persistence?.notifyPersonalChange?.('rosterbot-session-settings-v1')}} catch (_) {}
+    try {const draft=document.documentElement.classList.contains('v28-onboarding-active')&&!hasSavedTimeline();if(draft){const draftValue={...value,setupModeChosen};delete draftValue.startRole;delete draftValue.roleStartDate;localStorage.setItem(SETUP_DRAFT_KEY,JSON.stringify(draftValue))}else{const prior=readJson('rosterbot-session-settings-v1',null),committed={...value};if(prior&&!Object.prototype.hasOwnProperty.call(prior,'startRole')){delete committed.startRole;delete committed.roleStartDate}localStorage.setItem('rosterbot-session-settings-v1',JSON.stringify(committed));window.RosterBotSchema5Persistence?.notifyPersonalChange?.('rosterbot-session-settings-v1')}} catch (_) {}
   }
 
   function restoreRosterSession() {
-    let saved=(!hasSavedTimeline()?readJson(SETUP_DRAFT_KEY,null):null)||readJson('rosterbot-session-settings-v1',null)||readJson('rosterbot-shared-settings-v1',null);
+    const draft=!hasSavedTimeline()?readSetupDraft():null;
+    let saved=draft||readJson('rosterbot-session-settings-v1',null)||readJson('rosterbot-shared-settings-v1',null);
     saved=saved?{...saved,roleStartDate:saved.roleStartDate||saved.startDate,scheduleMode:saved.scheduleMode||'official',manualPattern:saved.manualPattern||window.RosterBotEmployment?.manualPattern?.()||null}:saved;
-    if(!saved || !validRosterSettings({...saved,startDepot:saved.startDepot||'SCS',swapDepot:saved.swapDepot||saved.startDepot||'SCS'})) return false;
-    startDate.value=saved.startDate;if(startRole)startRole.value=saved.startRole||'PB205:none';if(startRoleDate)startRoleDate.value=saved.roleStartDate||saved.startDate;if(startScheduleMode)startScheduleMode.value=saved.scheduleMode||'official';if(saved.manualPattern)applyStartManualPattern(saved.manualPattern);updateScheduleModeUi(); populateDepotSelect(startDepot,saved.startDepot||'SCS',saved.startDate); populateRosterSelect(startRoster,saved.startRoster,startDepot.value,saved.startDate); populateLineSelect(startLine,startRoster.value,saved.startLine||1,startDepot.value,saved.startDate);
+    if(!saved || (!draft&&!validRosterSettings({...saved,startDepot:saved.startDepot||'SCS',swapDepot:saved.swapDepot||saved.startDepot||'SCS'}))) return false;
+    setupModeChosen=draft?!!saved.setupModeChosen:true;startDate.value=saved.startDate||'';if(startRole)startRole.value=saved.startRole||'PB205:none';if(startRoleDate)startRoleDate.value=saved.roleStartDate||saved.startDate||'';if(startScheduleMode)startScheduleMode.value=saved.scheduleMode||'official';if(saved.manualPattern)applyStartManualPattern(saved.manualPattern);updateScheduleModeUi(); populateDepotSelect(startDepot,saved.startDepot||'',saved.startDate||localTodayIso()); populateRosterSelect(startRoster,saved.startRoster||'',startDepot.value||'SCS',saved.startDate||localTodayIso()); populateLineSelect(startLine,startRoster.value,saved.startLine||'',startDepot.value||'SCS',saved.startDate||localTodayIso());
     hasSwap.checked=!!saved.hasSwap; swapFields.hidden=!hasSwap.checked; populateDepotSelect(swapDepot,saved.swapDepot||saved.startDepot||'SCS',saved.startDate); populateRosterSelect(swapRoster,saved.swapRoster||'C',swapDepot.value,saved.startDate); populateLineSelect(swapLine,swapRoster.value,saved.swapLine||1,swapDepot.value,saved.startDate);
     displayWeeks.value=String(Math.min(5200,Math.max(1,Number.parseInt(saved.displayWeeks,10)||1))); annualLeaveWeeks.clear(); for(const wc of (saved.annualLeaveWeeks||[])) annualLeaveWeeks.add(wc);
-    hasAnnualLeave.checked=annualLeaveWeeks.size>0; annualLeaveFields.hidden=!hasAnnualLeave.checked; annualLeaveDate.value=annualLeaveWeeks.size?Array.from(annualLeaveWeeks).sort()[0]:E.weekCommencing(startDate.value);
+    hasAnnualLeave.checked=annualLeaveWeeks.size>0; annualLeaveFields.hidden=!hasAnnualLeave.checked; annualLeaveDate.value=annualLeaveWeeks.size?Array.from(annualLeaveWeeks).sort()[0]:E.weekCommencing(startDate.value||localTodayIso());
     renderAnnualLeaveList(); updateStartHints(); updateSequencePreview(); return true;
+  }
+
+  function beginInitialOnboarding(){
+    if(hasSavedTimeline()){setupModeChosen=true;renderProgressiveSetup();return}
+    if(!initialOnboardingPrepared){
+      initialOnboardingPrepared=true;
+      const draft=readSetupDraft();
+      if(!draft){
+        setupModeChosen=false;startDate.value='';if(startRoleDate)startRoleDate.value='';startDepot.value='';startRoster.value='';startLine.value='';hasSwap.checked=false;swapFields.hidden=true;
+      }else setupModeChosen=!!draft.setupModeChosen;
+    }
+    updateScheduleModeUi();
   }
 
   function updateSequencePreview() {if(!hasSwap.checked)return;try{const st=currentSettings(),out=[];let a=+st.startLine||1,b=+st.swapLine||1;for(let i=0;i<8;i++){const useA=i%2===0,depot=useA?st.startDepot:st.swapDepot,roster=useA?st.startRoster:st.swapRoster,line=useA?a:b;out.push(`${depot==='SCS'?'':depot+' · '}${roster==='MAIN'?'LINE':roster} ${line}`);const count=window.RosterOfficial?.lineCount?.(st.startDate,depot,roster)||1;if(useA)a=((a-1+2)%count)+1;else b=((b-1+2)%count)+1}sequencePreview.textContent=out.join('  →  ')}catch(err){sequencePreview.textContent=err.message}}
@@ -653,7 +710,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   }
   function updateHomeDashboard(weeks){if(!isDiaryMode())return;const groups=payPeriodGroups(weeks||[]),g=groups[0],title=$('homePeriodTitle'),pos=$('homePosition'),monthMode=!!monthFocusFrom;if(title){if(monthMode){const dt=isoUtc(monthFocusFrom);title.textContent=dt.toLocaleDateString('en-AU',{timeZone:'UTC',month:'long',year:'numeric'})}else title.textContent=g?`${E.formatDateLong(g.start)} – ${E.formatDateLong(g.end)}`:`${E.formatDateLong(activeViewFrom)} – ${E.formatDateLong(activeViewTo)}`}if(pos)pos.textContent=monthMode?`${groups.length} complete pay cycle${groups.length===1?'':'s'} shown · outside-month days dimmed`:(currentRosterPosition?.textContent||'Personal diary');
     const ns=nextShiftFromToday();if($('homeNextShift'))$('homeNextShift').textContent=ns?`${ns.code} · ${ns.start||'—'}`:'No upcoming shift';if($('homeNextShiftMeta'))$('homeNextShiftMeta').textContent=ns?`${E.formatDateLong(ns.date)}${ns.end?` · ${ns.start}–${ns.end}`:''}`:'Within the next 12 weeks';if($('homeNextShiftCard'))$('homeNextShiftCard').dataset.jumpDate=ns?.date||'';
-    if(g){const results=groups.map(x=>window.PayBotCombined?.previewFortnight?.(x.start)),ready=results.every(r=>r?.available&&r.unresolved===0);if(ready){const gross=results.reduce((a,r)=>a+(+r.gross||0),0),ph=results.reduce((a,r)=>a+(+r.phMove||0),0);$('homeExpectedPay').textContent=moneyAud(gross);$('homePhMovement').textContent=`${ph>=0?'+':''}${Number(ph).toFixed(2)} h`;if($('homePayCard'))$('homePayCard').dataset.payStart=g.start;if($('homePayMeta'))$('homePayMeta').textContent=monthMode?`${groups.length} complete pay cycles shown`:'Current displayed fortnight'}else{$('homeExpectedPay').textContent='—';$('homePhMovement').textContent='—'}}
+    if(g){const results=groups.map(x=>window.PayBotCombined?.previewFortnight?.(x.start)),ready=results.every(r=>r?.available&&r.unresolved===0),profileReady=(window.RosterBotEmployment?.all?.()||[]).length>0;if(ready&&profileReady){const gross=results.reduce((a,r)=>a+(+r.gross||0),0),ph=results.reduce((a,r)=>a+(+r.phMove||0),0);$('homeExpectedPay').textContent=moneyAud(gross);$('homePhMovement').textContent=`${ph>=0?'+':''}${Number(ph).toFixed(2)} h`;if($('homePayCard'))$('homePayCard').dataset.payStart=g.start;if($('homePayMeta'))$('homePayMeta').textContent=monthMode?`${groups.length} complete pay cycles shown`:'Current displayed fortnight'}else{$('homeExpectedPay').textContent=profileReady?'—':'Set up pay';$('homePhMovement').textContent='—';if($('homePayMeta')&&!profileReady)$('homePayMeta').textContent='Choose your current role for an estimate'}}
     const issues=payVarianceEntries();if($('homeIssues'))$('homeIssues').textContent=String(issues.length);if($('homeIssuesMeta'))$('homeIssuesMeta').textContent=issues.length?`${issues.length} checked difference${issues.length===1?'':'s'} · tap to review`:'No checked variances';renderHistoryStrip();
   }
   function updateClassicRosterHead(){const from=viewFromDate.value,to=viewToDate.value;if($('v27ClassicPeriod'))$('v27ClassicPeriod').textContent=from&&to?`${E.formatDateLong(from)} – ${E.formatDateLong(to)}`:'Your roster';if($('v27ClassicPosition'))$('v27ClassicPosition').textContent=$('homePosition')?.textContent||''}
@@ -699,8 +756,10 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     engineSettingsForView,
     isDiaryMode,
     setExperience,
+    beginInitialOnboarding,
     showCurrentPayCycle(options={}){setCurrentPayCycle(true,options)},
     saveCurrentAsMyRoster,
+    saveCurrentPayRole,
     saveSession: saveRosterSession,
     restoreSession: restoreRosterSession,
     refreshPayPreviews,
@@ -1024,18 +1083,18 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   let startRoleDateManuallyEdited=false;
   const restoredRosterSession = restoreRosterSession(); if(restoredRosterSession&&startRoleDate)startRoleDateManuallyEdited=true; if (!restoredRosterSession) updateStartHints();
   updateExperienceUI();
-  if(restoredRosterSession){if(isDiaryMode()&&hasSavedTimeline()){setCurrentPayCycle(false);setupPanel.hidden=true;generateDisplay(false,{persist:false})}else{const w=E.weekCommencing(startDate.value);viewFromDate.value=restoredRosterSession&&readJson('rosterbot-session-settings-v1',{})?.lastViewedFrom||w;viewToDate.value=restoredRosterSession&&readJson('rosterbot-session-settings-v1',{})?.lastViewedTo||E.addDays(w,13);setupPanel.hidden=false;generateDisplay(false,{persist:false})}}else{viewFromDate.value=E.weekCommencing(startDate.value);viewToDate.value=E.addDays(viewFromDate.value,13);setupPanel.hidden=!isDiaryMode();updateDiaryPosition()}
+  if(restoredRosterSession){if(isDiaryMode()&&hasSavedTimeline()){setCurrentPayCycle(false);setupPanel.hidden=true;generateDisplay(false,{persist:false})}else if(!hasSavedTimeline()&&readSetupDraft()){const w=E.weekCommencing(startDate.value||localTodayIso());viewFromDate.value=w;viewToDate.value=E.addDays(w,13);setupPanel.hidden=false;updateDiaryPosition()}else{const w=E.weekCommencing(startDate.value||localTodayIso());viewFromDate.value=readJson('rosterbot-session-settings-v1',{})?.lastViewedFrom||w;viewToDate.value=readJson('rosterbot-session-settings-v1',{})?.lastViewedTo||E.addDays(w,13);setupPanel.hidden=false;generateDisplay(false,{persist:false})}}else{viewFromDate.value=E.weekCommencing(startDate.value);viewToDate.value=E.addDays(viewFromDate.value,13);setupPanel.hidden=!isDiaryMode();updateDiaryPosition()}
 
   startRoleDate?.addEventListener('change',()=>{startRoleDateManuallyEdited=true;saveRosterSession()});
   startDate.addEventListener('change', () => {
-    if(startRoleDate&&!startRoleDateManuallyEdited)startRoleDate.value=startDate.value;
-    const sd=startDepot?.value||'SCS',sr=startRoster.value,xd=swapDepot?.value||sd,xr=swapRoster.value;populateDepotSelect(startDepot,sd,startDate.value);populateRosterSelect(startRoster,sr,startDepot.value,startDate.value);populateLineSelect(startLine,startRoster.value,startLine.value,startDepot.value,startDate.value);populateDepotSelect(swapDepot,xd,startDate.value);populateRosterSelect(swapRoster,xr,swapDepot.value,startDate.value);populateLineSelect(swapLine,swapRoster.value,swapLine.value,swapDepot.value,startDate.value);updateStartHints();
-    if (!annualLeaveWeeks.size) annualLeaveDate.value = E.weekCommencing(startDate.value);
+    if(startRoleDate&&!startRoleDateManuallyEdited&&!onboardingActive())startRoleDate.value=startDate.value;
+    const sd=startDepot?.value||'',sr=startRoster.value||'',xd=swapDepot?.value||'',xr=swapRoster.value||'';populateDepotSelect(startDepot,sd,startDate.value||localTodayIso());populateRosterSelect(startRoster,sr,startDepot.value,startDate.value||localTodayIso());populateLineSelect(startLine,startRoster.value,startLine.value,startDepot.value,startDate.value||localTodayIso());populateDepotSelect(swapDepot,xd,startDate.value||localTodayIso());populateRosterSelect(swapRoster,xr,swapDepot.value,startDate.value||localTodayIso());populateLineSelect(swapLine,swapRoster.value,swapLine.value,swapDepot.value,startDate.value||localTodayIso());updateStartHints();
+    if (!annualLeaveWeeks.size) annualLeaveDate.value = E.weekCommencing(startDate.value||localTodayIso());
     clearPreparedCalendarFiles();
   });
-  startDepot?.addEventListener('change',()=>{populateRosterSelect(startRoster,startRoster.value,startDepot.value,startDate.value);populateLineSelect(startLine,startRoster.value,1,startDepot.value,startDate.value);updateStartHints();updateSequencePreview();clearPreparedCalendarFiles()});
+  startDepot?.addEventListener('change',()=>{populateRosterSelect(startRoster,'',startDepot.value,startDate.value||localTodayIso());populateLineSelect(startLine,'','',startDepot.value,startDate.value||localTodayIso());updateStartHints();updateSequencePreview();clearPreparedCalendarFiles()});
   startRoster.addEventListener('change', () => {
-    populateLineSelect(startLine, startRoster.value, startLine.value,startDepot?.value||'SCS',startDate.value);
+    populateLineSelect(startLine, startRoster.value, '',startDepot?.value||'SCS',startDate.value||localTodayIso());
     updateStartHints();
     updateSequencePreview();
     clearPreparedCalendarFiles();
@@ -1053,7 +1112,8 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     clearPreparedCalendarFiles();
   });
   swapLine.addEventListener('change', () => { updateSequencePreview(); clearPreparedCalendarFiles(); });
-  startScheduleMode?.addEventListener('change',()=>{updateScheduleModeUi();clearPreparedCalendarFiles();saveRosterSession()});startRole?.addEventListener('change',saveRosterSession);
+  startScheduleMode?.addEventListener('change',()=>{setupModeChosen=true;updateScheduleModeUi();clearPreparedCalendarFiles();saveRosterSession()});startRole?.addEventListener('change',saveRosterSession);
+  scheduleChoiceButtons.forEach(button=>button.addEventListener('click',()=>chooseScheduleMode(button.dataset.v32ScheduleChoice)));
   $('startManualWeekdays')?.addEventListener('click',()=>{applyStartManualPattern(window.RosterBotEmployment?.defaultManualPattern?.());saveRosterSession()});
   for(const key of MANUAL_DAY_KEYS){const cap=key[0].toUpperCase()+key.slice(1),on=$(`startPattern${cap}On`),st=$(`startPattern${cap}Start`),en=$(`startPattern${cap}End`),saveManualChange=()=>{startManualPatternUpdatedAt=new Date().toISOString();saveRosterSession()};on?.addEventListener('change',()=>{if(st)st.disabled=!on.checked;if(en)en.disabled=!on.checked;saveManualChange()});st?.addEventListener('change',saveManualChange);en?.addEventListener('change',saveManualChange);}
 
@@ -1089,11 +1149,11 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   document.querySelectorAll('input[name="durationMode"]').forEach(el => el.addEventListener('change', clearPreparedCalendarFiles));
   [exportWeeks, splitAlternating, splitOr, splitAnnualLeave].forEach(el => el.addEventListener('change', clearPreparedCalendarFiles));
 
-  [startDate,startRole,startRoleDate,startScheduleMode,startRoster,startLine,displayWeeks,hasSwap,swapRoster,swapLine,hasAnnualLeave].filter(Boolean).forEach(el=>el.addEventListener('change',saveRosterSession));
+  [startDate,startRole,startRoleDate,startScheduleMode,startDepot,startRoster,startLine,displayWeeks,hasSwap,swapDepot,swapRoster,swapLine,hasAnnualLeave].filter(Boolean).forEach(el=>el.addEventListener('change',saveRosterSession));
   generateBtn.addEventListener('click', () => {
     const onboarding=document.documentElement.classList.contains('v28-onboarding-active');
     if(onboarding){
-      if(!validRosterSettings(currentSettings())){alert((startScheduleMode?.value||'official')==='official'?'Choose a valid schedule date, role effective date, depot, roster and line first.':'Choose a valid schedule date, role effective date and work pattern first.');return}
+      if(!validRosterSettings(currentSettings())){alert(!setupModeChosen?'Choose the kind of roster you work first.':(startScheduleMode?.value||'official')==='official'?'Choose the applicable week, depot, roster and line first.':'Choose when this schedule begins and complete the required pattern details.');return}
       const lookup=document.documentElement.classList.contains('v28-lookup-active');
       const w=E.weekCommencing(startDate.value);viewFromDate.value=w;viewToDate.value=E.addDays(w,13);generateDisplay(false,{persist:!lookup});
       document.documentElement.classList.add('v28-onboarding-preview');const c=$('v28PreviewConfirm');if(c)c.hidden=lookup;

@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:12569c8431769f5b36f3a903e52ac38ff6ce1c9e36ab8d0f90cabd1dc22e7db9">
+  <meta name="rosterbot-build-id" content="rb-build:f2d9b561683d59e78c9f31d9ab0ade090d66017b87a3a4206dec6c77aebb5700">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -149,6 +149,11 @@
           <div id="universalSearchResults" class="universal-search-results" hidden></div>
         </div>
       </div>
+
+      <aside id="v32PaySetupCard" class="v32-pay-setup-card" aria-labelledby="v32PaySetupCardTitle" hidden>
+        <div><span>OPTIONAL NEXT STEP</span><strong id="v32PaySetupCardTitle">Want accurate pay estimates?</strong><p>Tell RosterBot your current role so it can use the right pay rate. Your roster already works without this.</p></div>
+        <button id="v32OpenPaySetup" class="primary" type="button" aria-haspopup="dialog" aria-controls="v32PaySetupModal">Set up pay estimate</button>
+      </aside>
 
       <div class="v27-card-pager" id="dashboardCardPager" aria-label="Dashboard cards">
         <div class="v27-card-page" data-dashboard-page="0">
@@ -322,19 +327,30 @@
           <p class="muted">Choose a date in the week represented by the selected roster line.</p>
         </div>
       </div>
-      <div id="v28OnboardingIntro" class="v28-onboarding-copy"><strong>Tell RosterBot how your work is scheduled.</strong> This is the current manual setup path. RosterBot will show the roster or work pattern first so you can check it looks right. Nothing becomes your saved schedule until you choose <em>Use this as my roster</em>.</div>
+      <div id="v28OnboardingIntro" class="v28-onboarding-copy"><strong>First, tell RosterBot what kind of roster you work.</strong> You will only be asked for the details needed to show a preview. Nothing becomes your saved schedule until you choose <em>Use this as my roster</em>.</div>
       <div id="localDataNotice" class="local-data-notice">
         <strong>LOCAL DATA ONLY.</strong> Your roster diary and pay entries are stored in this browser, not in a RosterBot account or database. You are responsible for keeping a backup. <button id="openDataFromNotice" type="button" class="text-action">DATA / BACKUP</button>
       </div>
 
-      <div class="form-grid rb-field-row">
+      <section id="v32ScheduleChoiceStep" class="v32-setup-step" aria-labelledby="v32ScheduleChoiceTitle">
+        <div class="v32-setup-step-head"><span>Step 1 of 2</span><h3 id="v32ScheduleChoiceTitle">Which best describes your usual work?</h3><p>Choose the situation you recognise. You can change this later.</p></div>
+        <div id="v32ScheduleChoices" class="v32-schedule-choices" role="group" aria-label="How your work is scheduled">
+          <button type="button" data-v32-schedule-choice="official" aria-pressed="false"><strong>I’m on a master roster</strong><span>I know my depot, roster and line.</span></button>
+          <button type="button" data-v32-schedule-choice="pattern" aria-pressed="false"><strong>I work a regular pattern</strong><span>My usual work days and times repeat each week.</span></button>
+          <button type="button" data-v32-schedule-choice="adhoc" aria-pressed="false"><strong>My shifts vary</strong><span>I’ll enter the shifts I actually receive.</span></button>
+        </div>
+      </section>
+
+      <section id="v32ScheduleDetailsStep" class="v32-setup-step v32-setup-details" aria-labelledby="v32ScheduleDetailsTitle" hidden>
+        <div class="v32-setup-step-head"><span>Step 2 of 2</span><h3 id="v32ScheduleDetailsTitle">Tell us where your roster starts</h3><p id="v32ScheduleDetailsIntro">These details are used only to build the preview below.</p></div>
+      <div id="v32SetupFields" class="form-grid rb-field-row">
         <label class="field">
-          <span id="startDateLabel">Schedule / roster start date</span>
+          <span id="startDateLabel">Which week does this roster line apply from?</span>
           <input id="startDate" type="date" required>
-          <small id="wcHint">WC —</small>
+          <small id="wcHint">Choose any date in that week. RosterBot will show the WC Sunday date.</small>
         </label>
 
-        <label class="field"><span>Role / pay classification</span><select id="startRole">
+        <label id="startRoleField" class="field v32-pay-later-field"><span>Role / pay classification</span><select id="startRole">
           <option value="PB205:none" selected>PB205 · Qualified Driver</option>
           <option value="PF441:none">PF441 · Trainee Driver — new start</option>
           <option value="PB311:none">PB311 · Trainee Driver — Stage 2</option>
@@ -345,9 +361,9 @@
           <option value="VL006:none">VL006 · Regional Driver Supervisor</option>
         </select><small>Your role is stored separately from your roster so PayBot can apply the correct classification by date.</small></label>
 
-        <label class="field"><span>Role effective from</span><input id="startRoleDate" type="date" required><small>Use the date this classification actually began. For a new PF441 trainee, use your employment start date. You can add later role changes at any time.</small></label>
+        <label id="startRoleDateField" class="field v32-pay-later-field"><span>Role effective from</span><input id="startRoleDate" type="date"><small>Use the date this classification actually began. For a new PF441 trainee, use your employment start date. You can add later role changes at any time.</small></label>
 
-        <label class="field"><span>How are your work days scheduled?</span><select id="startScheduleMode">
+        <label id="startScheduleModeField" class="field v32-internal-schedule-field"><span>How are your work days scheduled?</span><select id="startScheduleMode">
           <option value="official" selected>Official / master roster</option>
           <option value="pattern">Regular manual work pattern</option>
           <option value="adhoc">No default pattern — enter each fortnight manually</option>
@@ -374,7 +390,7 @@
         </label>
 
         <input id="displayWeeks" type="hidden" value="1">
-        <div class="field compact-field"><span>Quick view</span><small>Choose the visible date range above. This Quick / Basic sequence stays independent of any saved Personal Diary history.</small></div>
+        <div class="field compact-field v32-quick-view-field"><span>Quick view</span><small>Choose the visible date range above. This Quick / Basic sequence stays independent of any saved Personal Diary history.</small></div>
       </div>
 
       <div id="officialSwapBox" class="swap-box">
@@ -421,7 +437,10 @@
 
       <div id="startAdhocNote" class="manual-pattern-box" hidden><strong>No default work pattern</strong><p>RosterBot will not invent rostered shifts. Open Pay and choose <strong>Enter shifts manually</strong> for each fortnight. Your full-time Part 7 guarantee can still be calculated from the days you enter.</p></div>
 
-      <div class="annual-leave-box">
+      <p class="v32-setup-save-note"><strong>Next:</strong> RosterBot will show two weeks for you to check. These answers stay as an unfinished draft until you accept the preview.</p>
+      </section>
+
+      <div id="annualLeaveBox" class="annual-leave-box">
         <label class="check-row">
           <input id="hasAnnualLeave" type="checkbox">
           <span>
@@ -443,7 +462,7 @@
         </div>
       </div>
 
-      <div class="actions quick-convert-row">
+      <div id="v32SetupActions" class="actions quick-convert-row">
         <button id="generateBtn" class="primary" type="button">Show my roster</button>
         <button id="convertQuickToDiaryBtn" class="secondary quick-only" type="button">Use this as my roster</button>
         <span id="quickConvertNote" class="quick-convert-note quick-only">Preview first. Your personal roster is only saved after you confirm it looks right.</span>
@@ -740,6 +759,28 @@
     </section>
   </div>
 
+
+  <div id="v32PaySetupModal" class="feedback-modal" hidden>
+    <section class="feedback-dialog v32-pay-setup-dialog" role="dialog" aria-modal="true" aria-labelledby="v32PaySetupTitle" aria-describedby="v32PaySetupDescription">
+      <div class="feedback-dialog-header"><div><div class="eyebrow">PAY ESTIMATE</div><h2 id="v32PaySetupTitle">Make expected pay more accurate</h2></div><button id="v32PaySetupClose" class="feedback-close-btn" type="button" aria-label="Close pay setup">×</button></div>
+      <div class="v32-pay-setup-body">
+        <p id="v32PaySetupDescription">Your roster is already saved. Choose your current role so PayBot can use the applicable rate. You can add role changes and history later.</p>
+        <label class="field"><span>My current role</span><select id="v32PaySetupRole" required>
+          <option value="">Choose your current role</option>
+          <option value="PB205:none">Qualified Driver</option>
+          <option value="PF441:none">Trainee Driver — new start</option>
+          <option value="PB311:none">Trainee Driver — Stage 2</option>
+          <option value="PB312:none">Trainee Driver — 12 months</option>
+          <option value="VL014:legacy">Practical Driver Trainer — legacy scheme</option>
+          <option value="PB205:current">Qualified Driver + current-scheme PDT</option>
+          <option value="VL007:none">Driver Training Compliance Officer</option>
+          <option value="VL006:none">Regional Driver Supervisor</option>
+        </select><small id="v32PaySetupEffective">This will apply from your saved roster’s starting week. You can correct the date later in Employment &amp; Pay Profile.</small></label>
+        <p id="v32PaySetupError" class="v32-field-error" role="alert" hidden></p>
+        <div class="actions"><button id="v32PaySetupSave" class="primary" type="button">Use this role for pay</button><button id="v32PaySetupLater" class="secondary" type="button">Maybe later</button></div>
+      </div>
+    </section>
+  </div>
 
   <div id="employmentModal" class="feedback-modal" hidden>
     <section class="feedback-dialog employment-dialog" role="dialog" aria-modal="true" aria-labelledby="employmentTitle">

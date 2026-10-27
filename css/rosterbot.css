@@ -2646,3 +2646,26 @@ html[data-theme="7"] .v32-demo-card{border:0!important;border-radius:0!important
   .day-time-actions>button{grid-column:1 / -1;width:100%}
   .paybot-page .break-row>.day-total{grid-column:2;grid-row:1}
 }
+
+/* ==========================================================================
+   v0.32 Phase 3 — progressive manual onboarding
+   Setup choices remain device-local draft UI until the verified acceptance
+   transaction commits the resulting roster. Pay facts deliberately follow
+   roster value rather than gating its preview.
+   ========================================================================== */
+.v32-setup-step{margin-top:18px;padding:18px;border:1px solid var(--border);border-radius:18px;background:var(--surface-2)}
+.v32-setup-step[hidden],#v32SetupActions[hidden]{display:none!important}
+.v32-setup-step-head{margin-bottom:15px}.v32-setup-step-head>span{display:block;color:var(--accent);font-size:.7rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.v32-setup-step-head h3{margin:4px 0 5px;font-size:clamp(1.08rem,2.5vw,1.35rem)}.v32-setup-step-head p{margin:0;color:var(--muted);font-size:.84rem;line-height:1.45}
+.v32-schedule-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.v32-schedule-choices button{display:flex;flex-direction:column;align-items:flex-start;min-width:0;min-height:92px;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);text-align:left;box-shadow:none}
+.v32-schedule-choices button span{margin-top:5px;color:var(--muted);font-size:.78rem;font-weight:500;line-height:1.35}.v32-schedule-choices button:hover,.v32-schedule-choices button:focus-visible{border-color:var(--accent)}.v32-schedule-choices button.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));box-shadow:inset 0 0 0 1px var(--accent)}
+.v32-setup-details>#v32SetupFields{grid-template-columns:repeat(4,minmax(0,1fr))}.v32-setup-save-note{margin:16px 0 0;padding:11px 12px;border-radius:12px;background:color-mix(in srgb,var(--accent) 7%,var(--surface));color:var(--muted);font-size:.8rem;line-height:1.45}.v32-setup-save-note strong{color:var(--text)}
+html.v28-onboarding-active :is(.v32-pay-later-field,.v32-internal-schedule-field,.v32-quick-view-field,#annualLeaveBox){display:none!important}
+html.v28-onboarding-active #officialSwapBox,html.v28-onboarding-active #startManualPatternBox,html.v28-onboarding-active #startAdhocNote{margin-top:15px}
+html.v28-onboarding-active #v32SetupActions{margin-top:14px}
+
+.v32-pay-setup-card{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 14px;padding:15px 17px;border:1px solid color-mix(in srgb,var(--accent) 45%,var(--border));border-radius:17px;background:color-mix(in srgb,var(--accent) 8%,var(--surface-2))}.v32-pay-setup-card[hidden]{display:none!important}.v32-pay-setup-card span,.v32-pay-setup-card strong,.v32-pay-setup-card p{display:block}.v32-pay-setup-card span{color:var(--accent);font-size:.66rem;font-weight:900;letter-spacing:.08em}.v32-pay-setup-card strong{margin-top:3px;font-size:1rem}.v32-pay-setup-card p{margin:4px 0 0;color:var(--muted);font-size:.78rem;line-height:1.4}.v32-pay-setup-card button{flex:0 0 auto;min-height:44px}
+.v32-pay-setup-dialog{width:min(540px,calc(100vw - 28px))}.v32-pay-setup-body{padding:18px 20px 22px}.v32-pay-setup-body>p:first-child{margin:0 0 16px;color:var(--muted);line-height:1.5}.v32-pay-setup-body .field{gap:7px}.v32-field-error{margin:10px 0 0;color:#ffb7ad;font-weight:750;font-size:.82rem}.v32-field-error[hidden]{display:none!important}
+
+@media(max-width:820px){.v32-schedule-choices{grid-template-columns:1fr}.v32-schedule-choices button{min-height:74px}.v32-setup-details>#v32SetupFields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.v32-setup-step{padding:15px 13px}.v32-setup-details>#v32SetupFields{grid-template-columns:1fr}.v32-pay-setup-card{align-items:stretch;flex-direction:column}.v32-pay-setup-card button{width:100%}.v32-pay-setup-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px)}.v32-pay-setup-body{padding:15px}}

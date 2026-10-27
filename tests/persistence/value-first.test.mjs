@@ -57,7 +57,7 @@ test('sample forward roster is the real C60/C61 Sunday-to-Saturday fortnight wit
 });
 
 test('sample day glance uses the shared dialog controller and exposes no editing surface',()=>{
-  const modal=between(html,'<div id="v32DemoDayModal"','<div id="employmentModal"');
+  const modal=between(html,'<div id="v32DemoDayModal"','<div id="v32PaySetupModal"');
   assert.match(modal,/role="dialog"/);assert.match(modal,/aria-modal="true"/);assert.match(modal,/FICTIONAL EXAMPLE DUTY/);assert.match(modal,/Off Roster/);
   assert.match(modal,/Sign on \/ off/);assert.match(modal,/id="v32DemoDutyTimes"/);assert.doesNotMatch(modal,/id="v32DemoDuty(?:Start|End)"/);
   assert.match(navigation,/duty\.detail/);assert.match(navigation,/Shift details<\/strong>/);assert.match(navigation,/cell\.bookContents/);assert.doesNotMatch(navigation,/fictional (?:morning|afternoon|evening|early)?\s*passenger services/i);
