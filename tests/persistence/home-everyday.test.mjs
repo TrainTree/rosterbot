@@ -15,7 +15,10 @@ test('Home exposes daily answers before secondary search and detailed roster uti
 
 test('forward roster is four calendar weeks with a shared read-only day dialog',()=>{
   assert.match(navigation,/Array\.from\(\{length:4\}/);
-  assert.match(navigation,/names=\['Mon','Tue','Wed','Thu','Fri','Sat','Sun'\]/);
+  assert.match(navigation,/start=weekStart\(today\)/);
+  assert.match(navigation,/names=\['Sun','Mon','Tue','Wed','Thu','Fri','Sat'\]/);
+  assert.match(navigation,/Current week – /);
+  assert.match(navigation,/forwardWeekPosition\(week\)/);
   assert.match(navigation,/data-v32-roster-date/);
   assert.match(html,/id="v32RosterDayModal"/);
   assert.match(html,/id="v32RosterDayEdit"[^>]*>Edit \/ record actual day</);
@@ -40,4 +43,8 @@ test('compact roster cells contain all content and expose non-colour state',()=>
   assert.match(navigation,/kind==='off'\?'OR'/);
   assert.match(navigation,/aria-label=.*Off Roster/s);
   assert.match(navigation,/aria-current=\"date\"/);
+  assert.match(css,/\.v32-forward-day\.off\{background:var\(--blue\)/);
+  assert.match(css,/\.v32-forward-day\.alr\{background:var\(--alr\)/);
+  assert.match(css,/\.v32-forward-day\.ph\{border-color:#d9a514/);
+  assert.match(navigation,/PH · \$\{baseSecondary\}/);
 });
