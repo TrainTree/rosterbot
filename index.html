@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:f2d9b561683d59e78c9f31d9ab0ade090d66017b87a3a4206dec6c77aebb5700">
+  <meta name="rosterbot-build-id" content="rb-build:fd7d388273fa92cf02f1f27ee3988152a87abf017aa9fbcd7b627fb0387e2d82">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -140,6 +140,7 @@
 
   <main id="rosterbotPage" class="shell">
     <section id="diaryHomePanel" class="v27-dashboard" aria-label="RosterBot dashboard">
+      <h1 class="rb-visually-hidden">My RosterBot dashboard</h1>
       <div class="v27-search-row">
         <div class="universal-search-wrap v27-search-wrap">
           <div class="universal-search v27-search">
@@ -155,22 +156,45 @@
         <button id="v32OpenPaySetup" class="primary" type="button" aria-haspopup="dialog" aria-controls="v32PaySetupModal">Set up pay estimate</button>
       </aside>
 
+      <section class="v32-home-now" aria-labelledby="v32HomeNowTitle">
+        <div class="v32-home-section-head"><div><span>YOUR NEXT DUTIES</span><h2 id="v32HomeNowTitle">Today and tomorrow</h2></div><small>Tap a day for shift details</small></div>
+        <div class="v32-home-day-grid">
+          <button id="dashTodayCard" class="v27-dash-card v27-today-card v32-home-day-card" type="button" aria-haspopup="dialog" aria-controls="v32RosterDayModal">
+            <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span><span>Today</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
+            <strong id="dashTodayJob">—</strong><span id="dashTodayDate" class="v27-card-line">—</span><span id="dashTodayTimes" class="v27-card-line">—</span><span id="dashTodaySource" class="v32-day-source">—</span>
+          </button>
+          <button id="dashTomorrowCard" class="v27-dash-card v32-home-day-card" type="button" aria-haspopup="dialog" aria-controls="v32RosterDayModal">
+            <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span><span>Tomorrow</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
+            <strong id="dashTomorrowJob">—</strong><span id="dashTomorrowDate" class="v27-card-line">—</span><span id="dashTomorrowTimes" class="v27-card-line">—</span><span id="dashTomorrowSource" class="v32-day-source">—</span>
+          </button>
+        </div>
+        <div class="v32-home-glance-grid">
+          <article class="v32-home-glance" aria-labelledby="v32NextOrLabel"><span id="v32NextOrLabel">NEXT OFF ROSTER</span><strong id="dashNextOffRoster">—</strong><small id="dashNextOffRosterMeta">Looking ahead…</small></article>
+          <button id="dashPaySummary" class="v32-home-glance v32-home-pay" type="button"><span>EXPECTED PAY</span><strong id="dashFortnightPay">Expected —</strong><small id="dashFortnightRange">—</small><small id="dashFortnightHours">—</small><em id="dashFortnightPayslip" class="v27-status-line neutral">Payslip · Not checked</em></button>
+        </div>
+      </section>
+
+      <section class="v32-forward-roster" aria-labelledby="v32ForwardRosterTitle">
+        <div class="v32-home-section-head"><div><span>FORWARD ROSTER</span><h2 id="v32ForwardRosterTitle">Your next four weeks</h2><p id="v32ForwardRosterRange">—</p></div><button id="v32OpenFullRoster" class="v32-open-roster" type="button">Open full roster <span aria-hidden="true">›</span></button></div>
+        <div id="v32ForwardRoster" class="v32-forward-weeks" aria-label="Current calendar week and following three weeks"></div>
+      </section>
+
       <div class="v27-card-pager" id="dashboardCardPager" aria-label="Dashboard cards">
         <div class="v27-card-page" data-dashboard-page="0">
           <button id="dashRosterCard" class="v27-dash-card v27-wide-card v31-roster-card" type="button">
             <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2M15 17h2"/></svg></span><span>My roster</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
-            <span class="v31-roster-period"><strong id="dashFortnightRange">—</strong><small id="dashRosterPosition">—</small></span>
+            <span class="v31-roster-period"><strong id="dashRosterPeriod">My detailed roster</strong><small id="dashRosterPosition">—</small></span>
             <span class="v31-roster-week-heading"><small>THIS WEEK</small><strong id="dashWeekRange">—</strong></span>
             <div id="dashWeekDays" class="v27-week-strip" aria-label="This week"></div>
-            <span class="v31-roster-pay-row"><span id="dashFortnightHours" class="v27-card-line">—</span><span id="dashFortnightPay" class="v27-card-pay">Expected —</span><span id="dashFortnightPayslip" class="v27-status-line neutral">Payslip · Not checked</span></span>
+            <span class="v31-roster-pay-row"><span class="v27-card-line">Open the complete roster and pay-fortnight view</span></span>
             <span class="v27-card-watermark" aria-hidden="true"><svg class="v27-svg" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2M15 17h2"/></svg></span>
           </button>
 
-          <button id="dashTodayCard" class="v27-dash-card v27-today-card" type="button">
+          <button id="dashLegacyTodayCard" class="v27-dash-card v27-today-card" type="button" hidden>
             <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span><span>Today</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
-            <strong id="dashTodayJob">—</strong>
-            <span id="dashTodayDate" class="v27-card-line">—</span>
-            <span id="dashTodayTimes" class="v27-card-line">—</span>
+            <strong>—</strong>
+            <span class="v27-card-line">—</span>
+            <span class="v27-card-line">—</span>
             <span class="v27-card-watermark" aria-hidden="true"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span>
           </button>
 
@@ -740,6 +764,26 @@
     <section id="dailyView" class="panel results hidden"><div class="day-breakdown" id="dailyBody"></div><div class="warning">Day totals include ordinary base or paid leave plus any penalties, overtime and allowances for that day. Time-based pay classes use a 0.1h minimum for any positive time, then round to the nearest 0.1h per shift/day before the fortnight totals are added.</div></section>
     <footer class="footer">RosterBot 🤖 + PayBot 🤖💰 v0.31.0 · Local-first release · Australia/Melbourne</footer>
   </main>
+
+
+  <div id="v32RosterDayModal" class="feedback-modal" hidden>
+    <section class="feedback-dialog v32-roster-day-dialog" role="dialog" aria-modal="true" aria-labelledby="v32RosterDayTitle" aria-describedby="v32RosterDaySource">
+      <div class="feedback-dialog-header"><div><div class="eyebrow">SHIFT DETAIL</div><h2 id="v32RosterDayTitle">Roster day</h2></div><button id="v32RosterDayClose" class="feedback-close-btn" type="button" aria-label="Close shift details">×</button></div>
+      <div class="v32-roster-day-body">
+        <p id="v32RosterDaySource" class="v32-roster-day-source">Roster projection</p>
+        <dl id="v32RosterDayFacts" class="v32-demo-duty-facts">
+          <div><dt>Date</dt><dd id="v32RosterDayDate">—</dd></div>
+          <div><dt>Duty</dt><dd id="v32RosterDayCode">—</dd></div>
+          <div><dt>Sign on / off</dt><dd id="v32RosterDayTimes">—</dd></div>
+          <div><dt>Duration</dt><dd id="v32RosterDayDuration">—</dd></div>
+        </dl>
+        <p id="v32RosterDayOff" class="v32-demo-off-roster" hidden>Off Roster</p>
+        <p id="v32RosterDayRostered" class="v32-roster-day-rostered" hidden></p>
+        <div id="v32RosterDayContent" class="v32-demo-duty-content"></div>
+        <div class="v32-roster-day-actions"><button id="v32RosterDayEdit" class="primary" type="button">Edit / record actual day</button></div>
+      </div>
+    </section>
+  </div>
 
 
   <div id="v32DemoDayModal" class="feedback-modal" hidden>

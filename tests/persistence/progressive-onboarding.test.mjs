@@ -48,7 +48,7 @@ test('unfinished setup is a device-local draft and records branch orientation',(
 test('pay is presented honestly until a current role is configured',()=>{
   assert.match(html,/Want accurate pay estimates\?/);
   assert.match(html,/Your roster already works without this/);
-  assert.match(navigation,/profileReady\?`\$\{money\(r\.gross\)\} expected`:'Set up pay estimate'/);
+  assert.match(navigation,/profileReady\?`\$\{money\(r\.gross\)\} expected gross`:'Set up pay estimate'/);
   assert.match(navigation,/Pay role not set/);
   assert.match(html,/Choose your current role/);
 });
