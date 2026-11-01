@@ -17,8 +17,9 @@ test('forward roster is four calendar weeks with a shared read-only day dialog',
   assert.match(navigation,/Array\.from\(\{length:4\}/);
   assert.match(navigation,/start=weekStart\(today\)/);
   assert.match(navigation,/names=\['Sun','Mon','Tue','Wed','Thu','Fri','Sat'\]/);
-  assert.match(navigation,/Current week – /);
+  assert.match(navigation,/<span>Current week<\/span>/);
   assert.match(navigation,/forwardWeekPosition\(week\)/);
+  assert.match(css,/\.v32-forward-weeks\{[^}]*grid-template-columns:minmax\(0,1fr\)/);
   assert.match(navigation,/data-v32-roster-date/);
   assert.match(html,/id="v32RosterDayModal"/);
   assert.match(html,/id="v32RosterDayEdit"[^>]*>Edit \/ record actual day</);
