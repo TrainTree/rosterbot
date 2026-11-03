@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:96c805ac2cf0b97dc0967cf3082953830112277e83b3988bde95a599f3ebddc0">
+  <meta name="rosterbot-build-id" content="rb-build:4f3214f274e4a1b69ff90c6b2f3421897e2e8cfe7373f778f247284e03849ee3">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -157,26 +157,31 @@
       </aside>
 
       <section class="v32-home-now" aria-labelledby="v32HomeNowTitle">
-        <div class="v32-home-section-head"><div><span>YOUR NEXT DUTIES</span><h2 id="v32HomeNowTitle">Today and tomorrow</h2></div><small>Tap a day for shift details</small></div>
+        <div class="v32-home-section-head"><div><span>TODAY</span><h2 id="v32HomeNowTitle">What you need to know now</h2></div><small>Tap for shift details or to record what happened</small></div>
         <div class="v32-home-day-grid">
           <button id="dashTodayCard" class="v27-dash-card v27-today-card v32-home-day-card" type="button" aria-haspopup="dialog" aria-controls="v32RosterDayModal">
             <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span><span>Today</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
-            <strong id="dashTodayJob">—</strong><span id="dashTodayDate" class="v27-card-line">—</span><span id="dashTodayTimes" class="v27-card-line">—</span><span id="dashTodaySource" class="v32-day-source">—</span>
+            <strong id="dashTodayJob">—</strong>
+            <span class="v32-today-facts">
+              <span><small>Date</small><b id="dashTodayDate">—</b></span>
+              <span><small>Sign on</small><b id="dashTodaySignOn">—</b></span>
+              <span><small>Sign off</small><b id="dashTodaySignOff">—</b></span>
+              <span><small>Roster / line</small><b id="dashTodayRoster">—</b></span>
+            </span>
+            <span id="dashTodayDetails" class="v32-today-details">—</span>
+            <span id="dashTodaySource" class="v32-day-source">—</span>
           </button>
-          <button id="dashTomorrowCard" class="v27-dash-card v32-home-day-card" type="button" aria-haspopup="dialog" aria-controls="v32RosterDayModal">
-            <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span><span>Tomorrow</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
-            <strong id="dashTomorrowJob">—</strong><span id="dashTomorrowDate" class="v27-card-line">—</span><span id="dashTomorrowTimes" class="v27-card-line">—</span><span id="dashTomorrowSource" class="v32-day-source">—</span>
-          </button>
-        </div>
-        <div class="v32-home-glance-grid">
-          <article class="v32-home-glance" aria-labelledby="v32NextOrLabel"><span id="v32NextOrLabel">NEXT OFF ROSTER</span><strong id="dashNextOffRoster">—</strong><small id="dashNextOffRosterMeta">Looking ahead…</small></article>
-          <button id="dashPaySummary" class="v32-home-glance v32-home-pay" type="button"><span>EXPECTED PAY</span><strong id="dashFortnightPay">Expected —</strong><small id="dashFortnightRange">—</small><small id="dashFortnightHours">—</small><em id="dashFortnightPayslip" class="v27-status-line neutral">Payslip · Not checked</em></button>
         </div>
       </section>
 
       <section class="v32-forward-roster" aria-labelledby="v32ForwardRosterTitle">
         <div class="v32-home-section-head"><div><span>FORWARD ROSTER</span><h2 id="v32ForwardRosterTitle">Your next four weeks</h2><p id="v32ForwardRosterRange">—</p></div><button id="v32OpenFullRoster" class="v32-open-roster" type="button">Open full roster <span aria-hidden="true">›</span></button></div>
         <div id="v32ForwardRoster" class="v32-forward-weeks" aria-label="Current calendar week and following three weeks"></div>
+      </section>
+
+      <section class="v32-home-pay-section" aria-labelledby="v32HomePayTitle">
+        <h2 id="v32HomePayTitle" class="rb-visually-hidden">Pay</h2>
+        <button id="dashPaySummary" class="v32-home-glance v32-home-pay" type="button"><span>EXPECTED PAY</span><strong id="dashFortnightPay">Expected —</strong><small id="dashFortnightRange">—</small><small id="dashFortnightHours">—</small><em id="dashFortnightPayslip" class="v27-status-line neutral">Payslip · Not checked</em></button>
       </section>
 
       <div class="v27-card-pager" id="dashboardCardPager" aria-label="Dashboard cards">

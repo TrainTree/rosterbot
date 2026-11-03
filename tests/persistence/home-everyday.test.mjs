@@ -6,20 +6,28 @@ const html=fs.readFileSync(new URL('../../index.html',import.meta.url),'utf8');
 const css=fs.readFileSync(new URL('../../css/rosterbot.css',import.meta.url),'utf8');
 const navigation=fs.readFileSync(new URL('../../js/70-navigation.js',import.meta.url),'utf8');
 
-test('Home exposes daily answers before secondary search and detailed roster utilities',()=>{
-  for(const id of ['dashTodayCard','dashTomorrowCard','dashNextOffRoster','dashPaySummary','v32ForwardRoster'])assert.match(html,new RegExp(`id="${id}"`));
-  assert.match(css,/#diaryHomePanel>\.v32-home-now\{order:1\}/);
-  assert.match(css,/#diaryHomePanel>\.v32-forward-roster\{order:2\}/);
-  assert.match(css,/#diaryHomePanel>\.v27-search-row\{order:4/);
+test('Home exposes only the final Search, Today, four-week roster and Pay hierarchy',()=>{
+  for(const id of ['universalSearch','dashTodayCard','dashTodayDate','dashTodaySignOn','dashTodaySignOff','dashTodayRoster','dashTodayDetails','v32ForwardRoster','dashPaySummary'])assert.match(html,new RegExp(`id="${id}"`));
+  for(const removed of ['dashTomorrowCard','dashNextOffRoster'])assert.doesNotMatch(html,new RegExp(`id="${removed}"`));
+  assert.match(css,/#diaryHomePanel>\.v27-search-row\{order:1/);
+  assert.match(css,/#diaryHomePanel>\.v32-home-now\{order:2\}/);
+  assert.match(css,/#diaryHomePanel>\.v32-forward-roster\{order:3\}/);
+  assert.match(css,/#diaryHomePanel>\.v32-home-pay-section\{order:4\}/);
+  assert.match(css,/#diaryHomePanel>#dashboardCardPager,[\s\S]*display:none/);
+  assert.doesNotMatch(navigation,/renderNextOffRoster/);
 });
 
 test('forward roster is four calendar weeks with a shared read-only day dialog',()=>{
   assert.match(navigation,/Array\.from\(\{length:4\}/);
   assert.match(navigation,/start=weekStart\(today\)/);
   assert.match(navigation,/names=\['Sun','Mon','Tue','Wed','Thu','Fri','Sat'\]/);
-  assert.match(navigation,/<span>Current week<\/span>/);
+  assert.match(navigation,/weekIndex===0\?'Current week':''/);
   assert.match(navigation,/forwardWeekPosition\(week\)/);
   assert.match(css,/\.v32-forward-weeks\{[^}]*grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(navigation,/monthLabel/);
+  assert.match(navigation,/month-transition/);
+  assert.match(navigation,/month-start/);
+  assert.match(css,/\.v32-forward-week\.month-transition/);
   assert.match(navigation,/data-v32-roster-date/);
   assert.match(html,/id="v32RosterDayModal"/);
   assert.match(html,/id="v32RosterDayEdit"[^>]*>Edit \/ record actual day</);
@@ -28,7 +36,7 @@ test('forward roster is four calendar weeks with a shared read-only day dialog',
 });
 
 test('presentation actions do not write personal state or notify Cloud',()=>{
-  const renderers=navigation.slice(navigation.indexOf('function renderHomeDay'),navigation.indexOf('function currentPayCheck'));
+  const renderers=navigation.slice(navigation.indexOf('function renderToday'),navigation.indexOf('function currentPayCheck'));
   const detail=navigation.slice(navigation.indexOf('function openRosterDay'),navigation.indexOf('function setMode'));
   assert.doesNotMatch(renderers,/localStorage\.setItem|notifyPersonalChange|notifyLocalChange|CloudSync\?\.(?:save|upload)/);
   assert.doesNotMatch(detail,/localStorage\.setItem|notifyPersonalChange|notifyLocalChange|CloudSync\?\.(?:save|upload)/);
