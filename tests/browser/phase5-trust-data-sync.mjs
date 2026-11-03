@@ -24,7 +24,7 @@ try{
   const before=await page.evaluate(()=>{const e=JSON.parse(localStorage.getItem('rosterbot-personal-state-v1'));return {generation:e.generation.number,fingerprint:e.generation.fingerprint,cloudMeta:localStorage.getItem('rosterbot-cloud-meta-v1')}});
   await page.evaluate(()=>window.RosterBotDataUI.show());assert.equal(await page.locator('#dataModal').isVisible(),true);assert.equal(await page.evaluate(()=>document.activeElement?.id),'dataCloseBtn');
   const text=await page.locator('#dataModal').innerText();for(const phrase of ['Your working copy is on this device','Keep a backup of my RosterBot','Use RosterBot on another device','Cloud Sync','Technical details'])assert.match(text,new RegExp(phrase,'i'));
-  assert.match(text,/nothing is (?:being )?uploaded/i);assert.match(text,/point-in-time/i);assert.match(text,/phone and iPad/i);
+  assert.match(text,/nothing is (?:being )?uploaded/i);assert.match(text,/point-in-time/i);assert.match(text,/multiple devices/i);
   await page.locator('#dataAnotherCloudBtn').click();assert.equal(await page.evaluate(()=>document.activeElement?.id),'cloudEmail');
   await page.locator('#dataTechnicalDetails > summary').click();assert.equal(await page.locator('#storageHealth').isVisible(),true);assert.match(await page.locator('#dataTechnicalDetails').innerText(),/Privacy evidence/);
   const downloadPromise=page.waitForEvent('download');await page.locator('#exportDataBtn').click();const download=await downloadPromise;assert.match(download.suggestedFilename(),/\.rosterbot$/);assert.match(await page.locator('#dataStatus').innerText(),/Keep the \.rosterbot file somewhere safe/i);
