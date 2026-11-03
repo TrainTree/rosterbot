@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:4f3214f274e4a1b69ff90c6b2f3421897e2e8cfe7373f778f247284e03849ee3">
+  <meta name="rosterbot-build-id" content="rb-build:6e288d095e49abff28250263c849ea40d8c48599c835a72afa67e83a1309b136">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -1057,20 +1057,34 @@
     <section class="feedback-dialog data-dialog" role="dialog" aria-modal="true" aria-labelledby="dataTitle">
       <div class="feedback-dialog-header"><div><div class="eyebrow">YOUR DATA</div><h2 id="dataTitle">Data &amp; Sync</h2></div><button id="dataCloseBtn" class="feedback-close-btn" type="button" aria-label="Close data settings">×</button></div>
       <div class="data-body">
-        <section class="data-local-section">
-          <div class="cloud-section-head"><div><div class="eyebrow">THIS DEVICE</div><h3>Local storage &amp; backup</h3></div><span class="cloud-state-pill local">Local-first</span></div>
-          <p><strong>RosterBot still works entirely without an account.</strong> Your browser remains the working copy. You can keep using local storage and manual <code>.rosterbot</code> backups forever, even if Cloud Sync is never enabled.</p>
-          <p id="storageHealth" class="storage-health muted">Checking browser storage…</p>
-          <p class="muted"><strong>Backups matter:</strong> private browsing, clearing site data, browser cleanup settings, uninstalling the browser, or opening the site in a different browser/profile can make local data unavailable. RosterBot will gently remind you when your last backup is getting old.</p>
-          <p class="muted"><strong>Hosting privacy:</strong> RosterBot itself includes no analytics or tracking code. When hosted on GitHub Pages, GitHub may process normal website/service usage information. Your roster/pay diary is only sent to the optional Supabase sync service when you explicitly sign in and choose a sync action.</p>
-          <p id="backupAge" class="storage-health muted">Last backup: never.</p>
-          <div class="data-actions"><button id="persistDataBtn" class="secondary" type="button">Keep data on this device</button><button id="exportDataBtn" class="primary" type="button">Export backup</button><button id="importDataBtn" class="secondary" type="button">Import backup</button><button id="clearDataBtn" class="secondary danger-data-btn" type="button">Clear saved data</button></div>
+        <p class="data-trust-intro">Your working RosterBot is saved on this device. An account is optional, and entering roster, diary or pay information does not upload it.</p>
+
+        <section class="data-job-section data-device-section" aria-labelledby="dataDeviceTitle">
+          <div class="cloud-section-head"><div><div class="eyebrow">THIS DEVICE</div><h3 id="dataDeviceTitle">Your working copy is on this device</h3></div><span class="cloud-state-pill local">Saved locally</span></div>
+          <p>RosterBot works without an account and keeps working offline. Your changes are saved here first.</p>
+          <p class="data-safety-note">If this device is lost, or its browser/site data is cleared, you will need a backup file or Cloud Sync to recover your RosterBot.</p>
+        </section>
+
+        <section class="data-job-section data-backup-section" aria-labelledby="dataBackupTitle">
+          <div class="cloud-section-head"><div><div class="eyebrow">KEEP A BACKUP</div><h3 id="dataBackupTitle">Keep a backup of my RosterBot</h3></div><span id="backupAge" class="cloud-state-pill local">Last backup: never</span></div>
+          <p>A <code>.rosterbot</code> file is a point-in-time copy of your roster, diary, pay setup and supported settings. Keep it somewhere you control, then use it to restore RosterBot later.</p>
+          <p class="muted">Restoring always stages and checks the file before replacing this device’s working copy.</p>
+          <div class="data-actions"><button id="exportDataBtn" class="primary" type="button">Download .rosterbot backup</button><button id="importDataBtn" class="secondary" type="button">Restore from backup</button></div>
           <input id="importDataFile" type="file" accept="application/json,.json,.rosterbot" hidden><p id="dataStatus" class="feedback-status" aria-live="polite"></p>
         </section>
 
+        <section class="data-job-section data-another-device-section" aria-labelledby="dataAnotherDeviceTitle">
+          <div class="cloud-section-head"><div><div class="eyebrow">ANOTHER DEVICE</div><h3 id="dataAnotherDeviceTitle">Use RosterBot on another device</h3></div></div>
+          <div class="data-route-grid">
+            <article><strong>Keep a phone and iPad in sync</strong><p>Use optional encrypted Cloud Sync for ongoing changes across your signed-in devices.</p><button id="dataAnotherCloudBtn" class="secondary" type="button">Set up Cloud Sync</button></article>
+            <article><strong>Move or restore once</strong><p>Download a backup here, then choose Restore from backup on the new device.</p><button id="dataAnotherImportBtn" class="secondary" type="button">Restore a backup</button></article>
+          </div>
+        </section>
+
         <section id="cloudSyncSection" class="cloud-sync-section" aria-labelledby="cloudSyncTitle" data-sync-state="signed-out">
-          <div class="cloud-section-head"><div><div class="eyebrow">OPTIONAL CLOUD</div><h3 id="cloudSyncTitle">Cloud Sync <span class="sync-poc-badge">SAFE SYNC</span></h3></div><span id="cloudStatePill" class="cloud-state-pill">Local only</span></div>
-          <p class="muted">Cloud Sync is optional. RosterBot still saves to this browser <strong>first</strong> and continues working without an account. Once a device has a safe sync baseline, RosterBot can automatically upload local diary changes and safely apply cloud-only changes. v0.25 adds optional client-side encryption so the cloud payload can be stored as ciphertext. First backup/link, encryption migration and every conflict still require an explicit choice.</p>
+          <div class="cloud-section-head"><div><div class="eyebrow">OPTIONAL CLOUD</div><h3 id="cloudSyncTitle">Cloud Sync</h3></div><span id="cloudStatePill" class="cloud-state-pill">Local only</span></div>
+          <p class="cloud-purpose"><strong>Cloud Sync keeps supported RosterBot information coordinated across your devices.</strong> It is optional, uses a separate account, and does not replace the working copy saved on each device.</p>
+          <div class="data-plain-comparison"><div><strong>Backup</strong><span>A point-in-time file that you keep.</span></div><div><strong>Cloud Sync</strong><span>Ongoing coordination between devices when enabled.</span></div></div>
 
           <div id="cloudConfigNeeded" class="cloud-config-needed" hidden>
             <strong>Cloud service setup is unavailable on this copy.</strong>
@@ -1078,7 +1092,7 @@
           </div>
 
           <div id="cloudSignedOut" class="cloud-auth-block">
-            <div class="cloud-auth-intro"><strong>Use Cloud Sync on this device</strong><p class="muted cloud-small">Create an account or sign in. Creating/signing in never uploads your roster by itself; you still choose <strong>Sync now</strong>.</p></div>
+            <div class="cloud-auth-intro"><strong>Cloud Sync is off on this device</strong><p class="muted cloud-small">Nothing is being uploaded. Sign in or create an account, then make a separate choice to start the first sync.</p></div>
             <div class="cloud-auth-switch" role="tablist" aria-label="Cloud account action">
               <button id="cloudShowSignIn" class="active" type="button" role="tab" aria-selected="true">Sign in</button>
               <button id="cloudShowSignUp" type="button" role="tab" aria-selected="false">Create account</button>
@@ -1101,9 +1115,9 @@
                 <label class="field"><span>Confirm password</span><input id="cloudSignupConfirm" type="password" autocomplete="new-password" placeholder="Repeat password"></label>
               </div>
               <div class="data-actions"><button id="cloudCreateAccount" class="primary" type="button">Create account</button></div>
-              <div class="cloud-account-note"><strong>Email confirmation may be required</strong><span class="muted cloud-small">If confirmation is enabled in Supabase, RosterBot will ask you to check your inbox. The confirmation link returns to this exact RosterBot page when its URL is allowed in Supabase. RosterBot removes the temporary auth tokens from the address bar and then asks you to sign in.</span></div>
+              <div class="cloud-account-note"><strong>Email confirmation may be required</strong><span class="muted cloud-small">Check your inbox if RosterBot asks you to confirm the address. The confirmation link should return here, then you can sign in normally.</span></div>
             </div>
-            <p class="muted cloud-small">Your password is only sent to Supabase Auth and is never written into RosterBot storage or cloud roster payloads. To keep you signed in, RosterBot stores the Supabase session tokens in this browser only; Sign out removes them. Access tokens are refreshed automatically when needed.</p>
+            <p class="muted cloud-small"><strong>An account is not the same as Cloud Sync.</strong> Signing in identifies your Cloud account, but it does not upload your roster. The first sync remains a separate action.</p>
           </div>
 
           <div id="cloudSignedIn" hidden>
@@ -1173,8 +1187,7 @@
                 </div>
               </div>
               <p id="cloudKeyManagementStatus" class="feedback-status" aria-live="polite" hidden></p>
-              <p class="muted cloud-small" style="margin:9px 0 0"><strong>Scope:</strong> encryption protects the cloud payload and cloud revision history. Browser local storage and manually exported <code>.rosterbot</code> files remain plaintext in v0.25.2a.</p>
-              <p class="muted cloud-small" style="margin:6px 0 0"><strong>Trusted-device note:</strong> remembering stores the cloud master key in this browser profile. Treat a trusted browser profile like an unlocked device; use <em>Lock &amp; forget this device</em> before handing it to someone else.</p>
+              <details class="cloud-encryption-technical"><summary>How encryption works on this device</summary><p class="muted cloud-small"><strong>Scope:</strong> encryption protects the synced Cloud copy and its history. The working copy on this device and manually downloaded <code>.rosterbot</code> files are not encrypted by Cloud Sync.</p><p class="muted cloud-small"><strong>Remembered device:</strong> remembering the key lets this browser unlock the synced copy again without storing your passphrase. Lock and forget the device before handing it to someone else.</p></details>
             </div>
 
             <label class="cloud-auto-row" for="cloudAutoSync">
@@ -1199,7 +1212,7 @@
             </div>
 
             <details id="cloudAdvancedDetails" class="cloud-advanced-details">
-              <summary>Advanced / Recovery</summary>
+              <summary>Technical sync details &amp; recovery</summary>
               <div class="cloud-metrics">
                 <div><span>Cloud revision</span><strong id="cloudRevision">—</strong></div>
                 <div><span>This device base</span><strong id="cloudBaseRevision">Never synced</strong></div>
@@ -1225,14 +1238,22 @@
             </details>
           </div>
 
-          <details id="cloudConnectionDetails" class="cloud-setup-details">
-            <summary>Connection settings</summary>
-            <p class="muted cloud-dev-note">Developer fallback only. Hosted RosterBot already contains its public cloud connection configuration; never enter a secret/service-role key.</p>
-            <div class="form-grid cloud-config-grid rb-field-row">
-              <label class="field"><span>Project URL</span><input id="cloudProjectUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://xxxxx.supabase.co"><small>Public project URL.</small></label>
-              <label class="field"><span>Publishable key</span><input id="cloudPublishableKey" type="password" autocomplete="off" placeholder="sb_publishable_…"><small>Use the publishable key only — never a secret/service-role key.</small></label>
+          <details id="dataTechnicalDetails" class="data-technical-details">
+            <summary>Technical details</summary>
+            <div class="data-technical-body">
+              <p id="storageHealth" class="storage-health muted">Checking browser storage…</p>
+              <p class="muted"><strong>Privacy evidence:</strong> RosterBot includes no analytics or tracking code. Hosted pages may produce ordinary hosting logs. Personal roster state is sent to the configured sync service only after Cloud Sync is explicitly used.</p>
+              <div class="data-actions"><button id="persistDataBtn" class="secondary" type="button">Ask browser to protect local storage</button><button id="clearDataBtn" class="secondary danger-data-btn" type="button">Clear this device’s saved data</button></div>
+              <details id="cloudConnectionDetails" class="cloud-setup-details">
+                <summary>Cloud connection evidence</summary>
+                <p class="muted cloud-dev-note">Hosted RosterBot already contains its public connection configuration. These values are diagnostic evidence; never enter a secret or service-role key.</p>
+                <div class="form-grid cloud-config-grid rb-field-row">
+                  <label class="field"><span>Project URL</span><input id="cloudProjectUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://xxxxx.supabase.co"><small>Public project URL.</small></label>
+                  <label class="field"><span>Publishable key</span><input id="cloudPublishableKey" type="password" autocomplete="off" placeholder="sb_publishable_…"><small>Public browser credential only.</small></label>
+                </div>
+                <div class="data-actions"><button id="cloudSaveConfig" class="secondary" type="button">Save connection</button><button id="cloudForgetConfig" class="secondary" type="button">Forget connection</button></div>
+              </details>
             </div>
-            <div class="data-actions"><button id="cloudSaveConfig" class="secondary" type="button">Save connection</button><button id="cloudForgetConfig" class="secondary" type="button">Forget connection</button></div>
           </details>
 
           <div id="cloudHistoryPanel" class="cloud-history-panel" hidden></div>
