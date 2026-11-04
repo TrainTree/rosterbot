@@ -44,6 +44,7 @@ test('fixture corpus covers the Phase 7 acceptance and alarm-fatigue cases',()=>
 
 test('research surface uses existing Home primitives and accessible progressive evidence',()=>{
   for(const className of ['v32-home-now','v32-home-day-card','v32-forward-roster','v32-forward-weeks'])assert.match(html,new RegExp(className));
+  assert.match(html,/<small>Sign on \/ off<\/small><b id="phase7DutyTimes">—<\/b>/);assert.doesNotMatch(html,/phase7Duty(?:Start|End)/);assert.match(ui,/phase7DutyTimes/);assert.match(ui,/timeRange\(value\)/);
   assert.match(ui,/v32-forward-day/);
   assert.match(html,/role="status" aria-live="polite"/);assert.match(html,/<dialog[^>]*aria-labelledby="phase7DetailTitle"/);assert.match(html,/<summary>Duty history<\/summary>/);assert.match(css,/prefers-reduced-motion:reduce/);assert.match(css,/min-height:44px/);assert.match(css,/@media\(max-width:620px\)/);
 });

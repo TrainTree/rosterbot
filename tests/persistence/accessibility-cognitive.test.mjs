@@ -23,6 +23,7 @@ test('Home search has a persistent label and restrained result announcement',()=
   assert.match(html,/id="universalSearch"[^>]+aria-describedby="universalSearchStatus"[^>]+aria-expanded="false"/);
   assert.match(html,/id="universalSearchStatus"[^>]+role="status"[^>]+aria-live="polite"/);
   assert.match(rosterUi,/search result[^\n]+available/);
+  assert.match(rosterUi,/dutyContext=\[j\.depot,j\.book\][^\n]+indexOf\(value\)===index/);
   assert.doesNotMatch(navigation,/aria-live="assertive"/);
 });
 
