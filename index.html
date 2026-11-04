@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:60b3e35fcc7760c02be7e0ea7e93d58deeaa279b18355ef2178992e1264cf858">
+  <meta name="rosterbot-build-id" content="rb-build:e5924c0073b07f841b05334f46b9f10aaf9d7244569050a22aac4f8429763b24">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -235,25 +235,25 @@
         <button id="homeIssuesCard" type="button"><span id="homeIssues"></span><small id="homeIssuesMeta"></small></button>
       </div>
     </section>
-    <section id="v32FrontDoor" class="v32-front-door" aria-labelledby="v32FrontDoorTitle" hidden>
-      <div class="v32-front-door-hero">
+    <section id="v32FrontDoor" class="v32-front-door v32-entry-surface" aria-labelledby="v32FrontDoorTitle" hidden>
+      <div class="v32-front-door-hero v32-entry-hero">
         <div class="eyebrow">ROSTER, DIARY &amp; PAY</div>
         <h1 id="v32FrontDoorTitle" tabindex="-1">Know what you’re working and what you should be paid.</h1>
         <p>Your roster, diary and expected pay together in one place, with your working copy available offline.</p>
-        <div class="v32-front-door-actions">
+        <div class="v32-front-door-actions v32-entry-actions">
           <button id="v32TryRosterBot" class="primary v32-try-action" type="button">Try RosterBot</button>
           <button id="v32SetUpRoster" class="secondary" type="button">Set up my roster</button>
         </div>
         <p class="v32-try-note">See a realistic example first — no account or personal details needed.</p>
       </div>
 
-      <div class="v32-front-door-secondary">
-        <button id="v32BrowseRosters" class="v32-browse-card" type="button" aria-haspopup="dialog" aria-controls="rosterViewerModal">
+      <div class="v32-front-door-secondary v32-entry-stack">
+        <button id="v32BrowseRosters" class="v32-browse-card v32-entry-card" type="button" aria-haspopup="dialog" aria-controls="rosterViewerModal">
           <span><strong>Browse rosters &amp; shifts</strong><small>Look through supplied master rosters and shift-book duties without setting up a personal roster.</small></span>
           <span aria-hidden="true">›</span>
         </button>
 
-        <div class="v32-trust-promise" aria-label="How RosterBot handles your information">
+        <div class="v32-trust-promise v32-entry-card--accent" aria-label="How RosterBot handles your information">
           <strong>Your roster can stay on this device.</strong>
           <p>No account is required for ordinary use. Cloud Sync is optional, nothing is uploaded just because you enter roster details, and RosterBot keeps working offline once it is installed.</p>
         </div>
@@ -269,28 +269,30 @@
       </div>
     </section>
 
-    <section id="v32DemoPanel" class="v32-demo" aria-labelledby="v32DemoTitle" hidden>
-      <div class="v32-demo-head">
-        <div>
+    <section id="v32DemoPanel" class="v32-demo v32-entry-surface" aria-labelledby="v32DemoTitle" hidden>
+      <div class="v32-demo-head v32-entry-hero">
+        <div class="v32-entry-copy">
           <div class="eyebrow">TRY ROSTERBOT · EXAMPLE ROSTER</div>
           <h1 id="v32DemoTitle" tabindex="-1">Here’s what your roster could look like</h1>
           <p>This is fictional sample information. Nothing here is your roster and nothing has been saved.</p>
         </div>
-        <button id="v32ExitDemo" class="secondary" type="button">Exit example</button>
+        <div class="v32-demo-head-actions v32-entry-actions">
+          <button id="v32ExitDemo" class="secondary" type="button">Exit example</button>
+        </div>
       </div>
 
-      <div class="v32-demo-value-grid" aria-label="Example RosterBot dashboard">
-        <button id="v32DemoToday" class="v32-demo-card v32-demo-today" type="button" aria-haspopup="dialog" aria-controls="v32DemoDayModal">
+      <div class="v32-demo-value-grid v32-entry-stack" aria-label="Example RosterBot dashboard">
+        <button id="v32DemoToday" class="v32-demo-card v32-demo-today v32-entry-card" type="button" aria-haspopup="dialog" aria-controls="v32DemoDayModal">
           <span class="v32-demo-label">TODAY</span>
           <strong id="v32DemoTodayDuty">Loading roster…</strong>
           <span id="v32DemoTodayTimes">—</span>
         </button>
-        <article class="v32-demo-card">
+        <article class="v32-demo-card v32-entry-card">
           <span class="v32-demo-label">TOMORROW</span>
           <strong id="v32DemoTomorrowDuty">Loading roster…</strong>
           <span id="v32DemoTomorrowTimes">—</span>
         </article>
-        <article class="v32-demo-card v32-demo-forward">
+        <article class="v32-demo-card v32-demo-forward v32-entry-card">
           <div class="v32-demo-card-head"><span class="v32-demo-label">NEXT TWO CALENDAR WEEKS</span><strong>Roster at a glance</strong></div>
           <div id="v32DemoCalendar" class="v32-demo-calendar" aria-label="Example roster for this calendar week and next calendar week"></div>
           <div class="v32-demo-pay"><span id="v32DemoRosteredHours">Rostered hours this pay fortnight</span><strong id="v32DemoExpectedPay">Calculating…</strong><small>Qualified Driver · estimated gross before tax</small></div>
@@ -298,12 +300,12 @@
       </div>
 
       <div class="v32-demo-benefits" aria-label="What RosterBot can help with">
-        <div><strong>Diary &amp; corrections</strong><span>Record what you actually worked when the roster changes.</span></div>
-        <div><strong>Pay checks</strong><span>Compare expected pay with your payslip.</span></div>
-        <div><strong>Calendar &amp; offline</strong><span>Prepare calendar events and check your saved roster without reception.</span></div>
+        <div class="v32-entry-card"><strong>Diary &amp; corrections</strong><span>Record what you actually worked when the roster changes.</span></div>
+        <div class="v32-entry-card"><strong>Pay checks</strong><span>Compare expected pay with your payslip.</span></div>
+        <div class="v32-entry-card"><strong>Calendar &amp; offline</strong><span>Prepare calendar events and check your saved roster without reception.</span></div>
       </div>
 
-      <div class="v32-demo-convert">
+      <div class="v32-demo-convert v32-entry-card--accent">
         <div><strong>Want RosterBot to show your roster?</strong><span>You’ll preview it before anything becomes your saved schedule.</span></div>
         <button id="v32DemoSetUpRoster" class="primary" type="button">Set up my roster</button>
       </div>
