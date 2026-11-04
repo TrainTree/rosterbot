@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/50-data-backup.js','rb-build:64470174cb9ded5782c26f3607aa9bce855b3d015115a33f8a09550e7dc016bb')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/50-data-backup.js','rb-build:60b3e35fcc7760c02be7e0ea7e93d58deeaa279b18355ef2178992e1264cf858')}catch(error){throw error}
 (function(){
   'use strict';
   const modal=document.getElementById('dataModal'),openBtn=document.getElementById('dataOpenBtn'),noticeBtn=document.getElementById('openDataFromNotice'),closeBtn=document.getElementById('dataCloseBtn'),persistBtn=document.getElementById('persistDataBtn'),storageHealth=document.getElementById('storageHealth'),exportBtn=document.getElementById('exportDataBtn'),importBtn=document.getElementById('importDataBtn'),fileInput=document.getElementById('importDataFile'),clearBtn=document.getElementById('clearDataBtn'),status=document.getElementById('dataStatus'),backupAge=document.getElementById('backupAge'),privacyPill=document.querySelector('.privacy-pill'),anotherCloudBtn=document.getElementById('dataAnotherCloudBtn'),anotherImportBtn=document.getElementById('dataAnotherImportBtn');
@@ -33,7 +33,8 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     }catch(_){storageHealth.innerHTML='<strong>Browser storage:</strong> unavailable or blocked. Exported backups are especially important on this browser.';if(persistBtn)persistBtn.hidden=true;}
   }
   const show=()=>{status.textContent='';updateStorageHealth();updateBackupUI();window.RosterBotDialogs.open(modal,{invoker:document.activeElement,initialFocus:closeBtn,onRequestClose:hide});};
-  const showCloud=()=>{show();setTimeout(()=>{document.getElementById('cloudSyncSection')?.scrollIntoView({behavior:'smooth',block:'start'});const signedIn=!document.getElementById('cloudSignedIn')?.hidden;if(!signedIn)document.getElementById('cloudEmail')?.focus({preventScroll:true})},80)};
+  const scrollBehavior=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth';
+  const showCloud=()=>{show();setTimeout(()=>{document.getElementById('cloudSyncSection')?.scrollIntoView({behavior:scrollBehavior(),block:'start'});const signedIn=!document.getElementById('cloudSignedIn')?.hidden;if(!signedIn)document.getElementById('cloudEmail')?.focus({preventScroll:true})},80)};
   const beginImport=()=>fileInput?.click();
   const hide=()=>{window.RosterBotDialogs.close(modal);};
   function download(name,text){const blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
@@ -82,7 +83,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     holds.__device={reason:'explicit-local-clear',at:stamp};localStorage.setItem('rosterbot-cloud-auto-hold-v1',JSON.stringify(holds));return {clearedAt:stamp,hold:holds.__device};
   }
   openBtn?.addEventListener('click',show);noticeBtn?.addEventListener('click',show);closeBtn?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();hide()});
-  anotherCloudBtn?.addEventListener('click',()=>{document.getElementById('cloudSyncSection')?.scrollIntoView({behavior:'smooth',block:'start'});const signedIn=!document.getElementById('cloudSignedIn')?.hidden;(signedIn?document.getElementById('cloudSyncNow'):document.getElementById('cloudEmail'))?.focus({preventScroll:true})});
+  anotherCloudBtn?.addEventListener('click',()=>{document.getElementById('cloudSyncSection')?.scrollIntoView({behavior:scrollBehavior(),block:'start'});const signedIn=!document.getElementById('cloudSignedIn')?.hidden;(signedIn?document.getElementById('cloudSyncNow'):document.getElementById('cloudEmail'))?.focus({preventScroll:true})});
   anotherImportBtn?.addEventListener('click',beginImport);
   persistBtn?.addEventListener('click',async()=>{try{if(!navigator.storage?.persist)throw new Error('This browser does not offer persistent-storage requests.');const granted=await navigator.storage.persist();status.textContent=granted?'Persistent browser storage granted. You should still export backups of important history.':'The browser kept standard storage. Autosave still works, but an exported backup is the durable copy you control.';status.className=granted?'feedback-status success':'feedback-status';await updateStorageHealth()}catch(err){status.textContent=err?.message||'Could not request persistent storage.';status.className='feedback-status error'}});
   exportBtn?.addEventListener('click',()=>{

@@ -14,6 +14,7 @@
     "test:value-first": "node tests/browser/phase2-value-first.mjs",
     "test:progressive-onboarding": "node tests/browser/phase3-progressive-onboarding.mjs",
     "test:home-everyday": "node tests/browser/phase4-home-everyday.mjs",
+    "test:accessibility": "node tests/browser/phase6-accessibility-cognitive.mjs",
     "check:syntax": "node --check js/*.js && node --check scripts/*.mjs && node --check tests/persistence/*.mjs && node --check tests/browser/*.mjs && node --check supabase/tests/*.mjs",
     "report:persistence": "node tests/persistence/report.mjs"
   }

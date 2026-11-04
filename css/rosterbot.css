@@ -731,7 +731,7 @@ html[data-theme="6"] .changelog-entry.current { box-shadow:inset 3px 0 0 #b879cf
 .paybot-page { padding:24px 0 50px; }
 .paybot-page .pb-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:16px; }
 .paybot-page .pb-hero-title { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.paybot-page .pb-hero h2 { font-size:clamp(1.45rem,3.2vw,2rem); }
+.paybot-page .pb-hero :is(h1,h2) { font-size:clamp(1.45rem,3.2vw,2rem); }
 .paybot-page .pb-beta { display:inline-flex; align-items:center; border:1px solid var(--accent); color:var(--accent); border-radius:999px; padding:5px 9px; font-size:.7rem; font-weight:850; letter-spacing:.05em; }
 .paybot-page .pb-intro { margin:5px 0 0; color:var(--muted); font-size:.88rem; }
 .paybot-page .setup { padding:clamp(16px,3vw,26px); }
@@ -2708,3 +2708,34 @@ html[data-theme="1"][data-color-mode="light"] .v32-forward-day.alr{background:#d
 .cloud-setup-details summary::after{content:none}
 html[data-theme="1"][data-color-mode="light"] .data-job-section{background:#fff;color:var(--text)}
 @media(max-width:760px){.data-route-grid,.data-plain-comparison{grid-template-columns:1fr}}
+
+/* ======================================================================
+   v0.32 Phase 6 — accessibility and cognitive clarity
+   ====================================================================== */
+.v32-forward-week-head h3{min-width:0;margin:0;font-size:.76rem;line-height:1.3;letter-spacing:normal}
+:where(button,a[href],summary,input,select,textarea,[tabindex]:not([tabindex="-1"])):focus-visible{
+  outline:3px solid var(--accent);
+  outline-offset:3px;
+}
+html[data-theme="7"] :where(button,a[href],summary,input,select,textarea,[tabindex]:not([tabindex="-1"])):focus-visible{
+  outline:1px dashed #fff!important;
+  outline-offset:3px!important;
+}
+:where(summary,.feedback-close-btn,.universal-search button,.quick-calendar-day,.history-year-btn,.leave-chip button,.week-actions-menu button){min-height:var(--rb-touch-target,44px)}
+summary{display:flex;align-items:center;width:fit-content;max-width:100%;padding-block:8px}
+.pwa-update-actions button{min-height:var(--rb-touch-target,44px)}
+.paybot-page .summary-grid>.metric:first-child{grid-column:span 2;border-color:color-mix(in srgb,var(--accent) 52%,var(--border))}
+.paybot-page .summary-grid>.metric:first-child .v{color:var(--accent);font-size:clamp(1.6rem,4vw,2.25rem)}
+.v32-field-error{color:#ffb7ad}
+html[data-color-mode="light"] .v32-field-error{color:#9f1d14}
+@media(max-width:720px){.paybot-page .summary-grid>.metric:first-child{grid-column:1 / -1}}
+
+@media(prefers-reduced-motion:reduce){
+  html:focus-within{scroll-behavior:auto}
+  *,*::before,*::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+    scroll-behavior:auto!important;
+  }
+}
