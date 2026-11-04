@@ -19,6 +19,12 @@ const productionProjectRef='rithmbggiiusrmdcqrif';
 const productionProjectUrl=`https://${productionProjectRef}.supabase.co`;
 const productionPublishableKey='sb_publishable_TnrRQNNVqPbLq_JkNgu9Zg_--0mqp4B';
 const publishableKey=String(process.env.PHASE10B_BETA_PUBLISHABLE_KEY||'').trim();
+const stagingResearchAssets=Object.freeze([
+  'research/phase7-published-roster.html',
+  'research/phase7-published-roster.css',
+  'research/phase7-published-roster-model.mjs',
+  'research/phase7-published-roster-ui.mjs'
+]);
 
 function sourceCommitIfClean(){
   const supplied=String(process.env.ROSTERBOT_SOURCE_COMMIT||'').trim();
@@ -61,6 +67,7 @@ async function copy(relative){
 }
 
 for(const relative of RUNTIME_SOURCE_ASSETS)await copy(relative);
+for(const relative of stagingResearchAssets)await copy(relative);
 
 await writeFile(path.join(destination,'js/05-cloud-deployment-profile.js'),betaProfileScript,'utf8');
 
