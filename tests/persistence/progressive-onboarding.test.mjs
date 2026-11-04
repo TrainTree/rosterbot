@@ -63,8 +63,8 @@ test('new progressive UI has explicit accessibility and mobile contracts',()=>{
   assert.match(css,/@media\(max-width:620px\)/);
 });
 
-test('Phase 3 does not alter the accepted Phase 2 sample or introduce future ingestion claims',()=>{
-  assert.match(navigation,/DEMO_ROSTER=Object\.freeze\(\{depot:'SCS',roster:'C',lines:Object\.freeze\(\[60,61\]\)/);
+test('progressive onboarding keeps the accepted example roster isolated and introduces no future-ingestion claims',()=>{
+  assert.match(navigation,/DEMO_ROSTER=Object\.freeze\(\{depot:'SCS',roster:'C',lines:Object\.freeze\(\[60,61,62,63\]\)/);
   const changed=`${html}\n${css}\n${ui}\n${navigation}`;
   for(const forbidden of ['Microsoft Entra','weekly roster ingestion','daily roster ingestion','automatic roster change notification'])assert.doesNotMatch(changed,new RegExp(forbidden,'i'));
 });

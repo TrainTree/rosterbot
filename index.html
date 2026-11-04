@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:e5924c0073b07f841b05334f46b9f10aaf9d7244569050a22aac4f8429763b24">
+  <meta name="rosterbot-build-id" content="rb-build:6d37b53eb6fedc291231e6ce1ffb08f0108332d1f56658499504c6a42f441abb">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -281,28 +281,40 @@
         </div>
       </div>
 
-      <div class="v32-demo-value-grid v32-entry-stack" aria-label="Example RosterBot dashboard">
-        <button id="v32DemoToday" class="v32-demo-card v32-demo-today v32-entry-card" type="button" aria-haspopup="dialog" aria-controls="v32DemoDayModal">
-          <span class="v32-demo-label">TODAY</span>
-          <strong id="v32DemoTodayDuty">Loading roster…</strong>
-          <span id="v32DemoTodayTimes">—</span>
-        </button>
-        <article class="v32-demo-card v32-entry-card">
-          <span class="v32-demo-label">TOMORROW</span>
-          <strong id="v32DemoTomorrowDuty">Loading roster…</strong>
-          <span id="v32DemoTomorrowTimes">—</span>
-        </article>
-        <article class="v32-demo-card v32-demo-forward v32-entry-card">
-          <div class="v32-demo-card-head"><span class="v32-demo-label">NEXT TWO CALENDAR WEEKS</span><strong>Roster at a glance</strong></div>
-          <div id="v32DemoCalendar" class="v32-demo-calendar" aria-label="Example roster for this calendar week and next calendar week"></div>
-          <div class="v32-demo-pay"><span id="v32DemoRosteredHours">Rostered hours this pay fortnight</span><strong id="v32DemoExpectedPay">Calculating…</strong><small>Qualified Driver · estimated gross before tax</small></div>
-        </article>
-      </div>
+      <div class="v32-demo-dashboard" aria-label="Example RosterBot dashboard">
+        <section class="v32-home-now" aria-labelledby="v32DemoTodaySectionTitle">
+          <div class="v32-home-section-head"><div><span>TODAY</span><h2 id="v32DemoTodaySectionTitle">What you need to know now</h2></div><small>Tap for complete fictional shift details</small></div>
+          <div class="v32-home-day-grid">
+            <button id="v32DemoToday" class="v27-dash-card v27-today-card v32-home-day-card" type="button" aria-haspopup="dialog" aria-controls="v32DemoDayModal">
+              <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span><span>Today</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
+              <strong id="v32DemoTodayJob">Loading roster…</strong>
+              <span class="v32-today-facts">
+                <span><small>Date</small><b id="v32DemoTodayDate">—</b></span>
+                <span><small>Sign on</small><b id="v32DemoTodaySignOn">—</b></span>
+                <span><small>Sign off</small><b id="v32DemoTodaySignOff">—</b></span>
+                <span><small>Roster / line</small><b id="v32DemoTodayRoster">—</b></span>
+              </span>
+              <span id="v32DemoTodayDetails" class="v32-today-details">—</span>
+              <span id="v32DemoTodaySource" class="v32-day-source">Fictional example roster</span>
+            </button>
+          </div>
+        </section>
 
-      <div class="v32-demo-benefits" aria-label="What RosterBot can help with">
-        <div class="v32-entry-card"><strong>Diary &amp; corrections</strong><span>Record what you actually worked when the roster changes.</span></div>
-        <div class="v32-entry-card"><strong>Pay checks</strong><span>Compare expected pay with your payslip.</span></div>
-        <div class="v32-entry-card"><strong>Calendar &amp; offline</strong><span>Prepare calendar events and check your saved roster without reception.</span></div>
+        <section class="v32-forward-roster" aria-labelledby="v32DemoForwardTitle">
+          <div class="v32-home-section-head"><div><span>FORWARD ROSTER</span><h2 id="v32DemoForwardTitle">Your next four weeks</h2><p id="v32DemoForwardRange">—</p></div></div>
+          <div id="v32DemoCalendar" class="v32-forward-weeks" aria-label="Example current calendar week and following three weeks"></div>
+        </section>
+
+        <section class="v32-home-pay-section" aria-labelledby="v32DemoPayTitle">
+          <h2 id="v32DemoPayTitle" class="rb-visually-hidden">Pay</h2>
+          <button id="v32DemoPaySummary" class="v32-home-glance v32-home-pay" type="button" aria-label="Example expected pay. Set up your roster to estimate your own pay">
+            <span>EXPECTED PAY</span>
+            <strong id="v32DemoExpectedPay">Calculating…</strong>
+            <small id="v32DemoPayRange">—</small>
+            <small id="v32DemoRosteredHours">Rostered hours this pay fortnight</small>
+            <em class="v27-status-line neutral">Estimate · Payslip not checked</em>
+          </button>
+        </section>
       </div>
 
       <div class="v32-demo-convert v32-entry-card--accent">

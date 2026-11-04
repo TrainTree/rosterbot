@@ -29,47 +29,45 @@ test('sample is explicit, fictional and contains no form controls or identity',(
   const demo=between(html,'<section id="v32DemoPanel"','<section id="experiencePanel"');
   assert.match(demo,/fictional sample information/i);assert.match(demo,/Nothing here is your roster/i);assert.match(demo,/TRY ROSTERBOT · EXAMPLE ROSTER/i);
   assert.doesNotMatch(demo,/<(?:input|select|textarea|form)\b/i);
-  for(const value of ['TODAY','TOMORROW','NEXT TWO CALENDAR WEEKS','expected','Diary &amp; corrections','Pay checks','Calendar &amp; offline'])assert.match(demo,new RegExp(value,'i'));
+  for(const value of ['TODAY','FORWARD ROSTER','Your next four weeks','EXPECTED PAY'])assert.match(demo,new RegExp(value,'i'));
   assert.match(demo,/id="v32DemoCalendar"/);assert.doesNotMatch(demo,/v32-demo-week[^-]/);
   assert.match(navigation,/Off Roster/);assert.doesNotMatch(demo,/\bRest(?: day| days)?\b/i);
 });
 
-test('sample cards use the configured Home theme tokens rather than a parallel palette',()=>{
-  const card=css.match(/\.v32-entry-card\{([^}]*)\}/)?.[1]||'';
-  for(const declaration of ['border:1px solid var(--border)','background:var(--surface-2)','color:var(--text)'])assert(card.includes(declaration),declaration);
-  assert.match(css,/\.v32-demo-label\{color:var\(--accent\)/);
-  assert.match(css,/\.v32-demo-card>small\{[^}]*color:var\(--muted\)/);
-  assert.doesNotMatch(card,/--v27-card|--v27-ink|#[a-f0-9]{3,8}/i);
+test('sample dashboard mounts fictional data into the configured Home card system',()=>{
+  const demo=between(html,'<section id="v32DemoPanel"','<section id="experiencePanel"');
+  assert.match(demo,/id="v32DemoToday" class="v27-dash-card v27-today-card v32-home-day-card"/);
+  assert.match(demo,/id="v32DemoCalendar" class="v32-forward-weeks"/);
+  assert.match(demo,/id="v32DemoPaySummary" class="v32-home-glance v32-home-pay"/);
+  assert.doesNotMatch(demo,/v32-demo-(?:card|value-grid|benefits|calendar-week|day\b)/);
+  assert.doesNotMatch(css,/\.v32-demo-(?:card|value-grid|benefits|calendar-week|day\b)/);
 });
 
 test('front door and example roster share the entry-surface design primitives',()=>{
   const front=between(html,'<section id="v32FrontDoor"','<section id="v32DemoPanel"');
   const demo=between(html,'<section id="v32DemoPanel"','<section id="experiencePanel"');
-  for(const className of ['v32-entry-surface','v32-entry-hero','v32-entry-actions','v32-entry-stack']){
+  for(const className of ['v32-entry-surface','v32-entry-hero','v32-entry-actions']){
     assert.match(front,new RegExp(`class="[^"]*${className}`),`front door missing ${className}`);
     assert.match(demo,new RegExp(`class="[^"]*${className}`),`example roster missing ${className}`);
   }
   assert.match(front,/v32-browse-card v32-entry-card/);
-  assert.match(demo,/v32-demo-card[^\"]*v32-entry-card/);
-  assert.match(demo,/v32-demo-benefits[\s\S]*v32-entry-card/);
+  assert.match(demo,/class="v32-demo-dashboard"/);
   for(const selector of ['.v32-entry-surface{','.v32-entry-hero{','.v32-entry-actions{','.v32-entry-stack{','.v32-entry-card{','.v32-entry-card--accent{'])assert(css.includes(selector),selector);
   assert.doesNotMatch(css,/\.v32-demo\{max-width:/);
   assert.doesNotMatch(css,/\.v32-demo-head h1\{/);
-  const demoCard=css.match(/\.v32-demo-card\{([^}]*)\}/)?.[1]||'';
-  assert.doesNotMatch(demoCard,/background:/);
 });
 
-test('sample forward roster is the real C60/C61 Sunday-to-Saturday fortnight with visible dates',()=>{
+test('sample forward roster uses four real C60-C63 Sunday-to-Saturday weeks with visible dates',()=>{
   const preview=between(navigation,'function renderDemoPreview','function showFrontDoor');
   assert.match(preview,/names=\['Sun','Mon','Tue','Wed','Thu','Fri','Sat'\]/);
-  assert.match(navigation,/DEMO_ROSTER=Object\.freeze\(\{depot:'SCS',roster:'C',lines:Object\.freeze\(\[60,61\]\),grade:'PB205'\}\)/);
-  assert.match(navigation,/RosterOfficial\?\.resolveCell/);assert.match(preview,/C · LINE \$\{line\}/);assert.match(preview,/WC \$\{/);
+  assert.match(navigation,/DEMO_ROSTER=Object\.freeze\(\{depot:'SCS',roster:'C',lines:Object\.freeze\(\[60,61,62,63\]\),grade:'PB205'\}\)/);
+  assert.match(navigation,/RosterOfficial\?\.resolveCell/);assert.match(preview,/WC \$\{esc\(shortDate\(start\)\)} – C \$\{line\}/);
   assert.match(preview,/PayBotCombined\?\.calculateDays/);assert.match(preview,/DEMO_ROSTER\.grade/);
-  assert.match(preview,/\[0,1\]\.map\(week=>/);
+  assert.match(preview,/Array\.from\(\{length:28\}/);assert.match(preview,/DEMO_ROSTER\.lines\.map/);
   assert.match(preview,/<time datetime=/);
   assert.match(preview,/week\*7\+index/);
   assert.doesNotMatch(preview,/payStartFor\(/);
-  assert.match(preview,/class="v32-demo-day/);assert.match(preview,/class="v32-demo-sign-on"/);assert.match(navigation,/code:'OR'/);
+  assert.match(preview,/class="v32-forward-day/);assert.match(preview,/class="v32-forward-week/);assert.match(navigation,/code:'OR'/);
   assert.doesNotMatch(preview,/['"]rest['"]/i);
 });
 
@@ -108,7 +106,7 @@ test('existing accepted roster remains the startup discriminator',()=>{
 test('new phone UI has semantic headings, reflow and accepted touch targets',()=>{
   assert.match(html,/<h1 id="v32FrontDoorTitle"/);assert.match(html,/<h1 id="v32DemoTitle"/);
   assert.match(css,/\.v32-entry-actions button\{min-height:48px/);assert.match(css,/\.v32-returning-user summary\{min-height:44px/);
-  assert.match(css,/@media\(max-width:620px\)/);assert.match(css,/\.v32-demo-benefits\{grid-template-columns:1fr\}/);
+  assert.match(css,/@media\(max-width:620px\)/);assert.match(css,/\.v32-forward-days\{[^}]*repeat\(7,minmax\(0,1fr\)\)/);
 });
 
 test('Phase 2 introduces no analytics or telemetry endpoint',()=>{
