@@ -1,4 +1,4 @@
-# RosterBot v0.31.0 — PWA, Mobile & Offline
+# RosterBot v0.32.0-rc.1 — UX, Adoption & Accessibility
 
 This is the modular RosterBot source build. It keeps the frozen official roster/pay reference packs separate from the application UI, personal history and sync code.
 
@@ -9,7 +9,18 @@ This is the modular RosterBot source build. It keeps the frozen official roster/
 
 The frozen-data files are unchanged from the validated v0.29 production build.
 
-## v0.31.0 changes
+## v0.32.0 release candidate
+
+- Introduces a value-first front door with a non-persistent Try RosterBot example and genuine low-commitment roster/shift browsing.
+- Simplifies manual onboarding so a normal master-roster user sees a personal roster preview before employment/pay administration.
+- Refines configured Home around Search, a complete Today summary, a four-calendar-week forward roster and truthful expected-pay status.
+- Reorganises Data & Sync around the working copy on this device, backups, another-device use and optional encrypted Cloud Sync.
+- Improves keyboard/focus behaviour, form clarity, large-text reflow, reduced-motion support and cognitive hierarchy across the app.
+- Preserves schema-5 persistence, Cloud capability/revision contracts, encryption, atomic offline caching and controlled PWA updates.
+
+The published-roster provenance/change work in `research/` remains an isolated beta research artefact. Weekly/daily roster ingestion is not part of v0.32.0.
+
+## v0.31.0 foundation retained
 
 - Adds an installable, same-origin RosterBot PWA with an atomic, hash-verified offline application shell.
 - Supports cold offline launch and normal local roster, diary and PayBot work after one complete online load.

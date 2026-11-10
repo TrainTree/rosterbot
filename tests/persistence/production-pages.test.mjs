@@ -38,13 +38,13 @@ function runtimeFrom(output,origin='https://rosterbot.work'){
   return {profile:window.RosterBotCloudDeploymentProfile,api:window.RosterBotCloudConfig};
 }
 
-test('production bundle is runtime-only v0.31.0 and contains one production browser binding',()=>{
+test('production bundle is runtime-only v0.32.0-rc.1 and contains one production browser binding',()=>{
   const {parent,output,prepared}=prepare();
   try{
     assert.equal(prepared.status,0,prepared.stderr||prepared.stdout);
     const report=JSON.parse(prepared.stdout),published=new Set(filesBelow(output));
     assert.equal(fs.readFileSync(path.join(output,'CNAME'),'utf8').trim(),'rosterbot.work');
-    assert.match(fs.readFileSync(path.join(output,'index.html'),'utf8'),/<title>RosterBot 🤖 v0\.31\.0<\/title>/);
+    assert.match(fs.readFileSync(path.join(output,'index.html'),'utf8'),/<title>RosterBot 🤖 v0\.32\.0-rc\.1<\/title>/);
     for(const forbidden of ['docs','tests','supabase','backend-capture','scripts','.git'])assert(![...published].some(file=>file===forbidden||file.startsWith(`${forbidden}${path.sep}`)),`${forbidden} leaked into production bundle`);
     const bytes=Buffer.concat([...published].map(file=>fs.readFileSync(path.join(output,file)))).toString('utf8');
     assert(bytes.includes(PRODUCTION_REF));assert(bytes.includes(PRODUCTION_URL));assert(bytes.includes(PRODUCTION_KEY));

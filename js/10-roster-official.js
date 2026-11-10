@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/10-roster-official.js','rb-build:9ab95ab5079a9f3db0b07c321680797c9bfb3fcccc6b6fe080c3d78358e2fce5')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/10-roster-official.js','rb-build:8d8e916e93ef645d84ebcbe44470e83eaef73980dca6c286292a9c717ef79da9')}catch(error){throw error}
 (function(root){
   'use strict';
   const O=root.ROSTERBOT_OFFICIAL_DATA, DAYS=['sun','mon','tue','wed','thu','fri','sat'];

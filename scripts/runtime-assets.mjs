@@ -1,4 +1,4 @@
-export const APPLICATION_VERSION='0.31.0';
+export const APPLICATION_VERSION='0.32.0-rc.1';
 export const ASSET_MANIFEST_VERSION=2;
 export const BUILD_ID_PREFIX='rb-build:';
 export const BUILD_ID_PLACEHOLDER=`${BUILD_ID_PREFIX}${'0'.repeat(64)}`;
