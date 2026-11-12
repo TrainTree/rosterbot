@@ -9,14 +9,14 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="RosterBot">
-  <meta name="rosterbot-build-id" content="rb-build:f975cefad1b130c09a48db7d44c56aa072049034ff6b25b2e3c31a935cbc3ae8">
+  <meta name="rosterbot-build-id" content="rb-build:1dd75d9547321eaf27713ec6ca0e71166079208f1dc64263bb54492386adafca">
   <link rel="canonical" href="https://rosterbot.work/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
-  <title>RosterBot 🤖 v0.31.0</title>
+  <title>RosterBot 🤖 v0.32.0</title>
   <script id="rosterbotBootDiagnostics">
   (function(){
     'use strict';
@@ -101,7 +101,7 @@
   </div>
   <div id="fatalError" hidden style="max-width:1180px;margin:12px auto;padding:12px 14px;background:#5b1e1e;color:#fff;border:1px solid #a84a4a;border-radius:10px;font-family:system-ui,sans-serif"></div>
   <noscript><style>#appStartup{display:none!important}</style><div style="max-width:1180px;margin:12px auto;padding:12px 14px;background:#5b1e1e;color:#fff;border-radius:10px;font-family:system-ui,sans-serif">JavaScript is disabled. RosterBot needs JavaScript enabled in this browser.</div></noscript>
-  <aside id="pwaUpdateNotice" class="pwa-update-notice" hidden aria-live="polite" aria-label="Application update">
+  <aside id="pwaUpdateNotice" class="pwa-update-notice" hidden role="status" aria-live="polite" aria-label="Application update">
     <div><strong>A new version of RosterBot is ready</strong><span id="pwaUpdateVersion"></span><small id="pwaUpdateStatus">Update when it suits you. Your saved roster stays on this device.</small></div>
     <div class="pwa-update-actions"><button id="pwaUpdateNow" type="button">Update now</button><button id="pwaUpdateDismiss" class="secondary" type="button">Not now</button></div>
   </aside>
@@ -140,32 +140,67 @@
 
   <main id="rosterbotPage" class="shell">
     <section id="diaryHomePanel" class="v27-dashboard" aria-label="RosterBot dashboard">
+      <h1 class="rb-visually-hidden">My RosterBot dashboard</h1>
       <div class="v27-search-row">
         <div class="universal-search-wrap v27-search-wrap">
-          <div class="universal-search v27-search">
-            <span class="v27-search-icon" aria-hidden="true"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg></span><input id="universalSearch" type="search" autocomplete="off" placeholder="Search duty, sign-on time or date…">
+          <div class="universal-search v27-search" role="search">
+            <span class="v27-search-icon" aria-hidden="true"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg></span><label class="rb-visually-hidden" for="universalSearch">Search roster by duty, sign-on time or date</label><input id="universalSearch" type="search" autocomplete="off" placeholder="Search duty, sign-on time or date…" aria-controls="universalSearchResults" aria-describedby="universalSearchStatus" aria-expanded="false">
             <button id="universalSearchClear" type="button" aria-label="Clear search">×</button>
           </div>
-          <div id="universalSearchResults" class="universal-search-results" hidden></div>
+          <p id="universalSearchStatus" class="rb-visually-hidden" role="status" aria-live="polite"></p>
+          <div id="universalSearchResults" class="universal-search-results" aria-label="Search results" hidden></div>
         </div>
       </div>
+
+      <aside id="v32PaySetupCard" class="v32-pay-setup-card" aria-labelledby="v32PaySetupCardTitle" hidden>
+        <div><span>OPTIONAL NEXT STEP</span><strong id="v32PaySetupCardTitle">Want accurate pay estimates?</strong><p>Tell RosterBot your current role so it can use the right pay rate. Your roster already works without this.</p></div>
+        <button id="v32OpenPaySetup" class="primary" type="button" aria-haspopup="dialog" aria-controls="v32PaySetupModal">Set up pay estimate</button>
+      </aside>
+
+      <section class="v32-home-now" aria-labelledby="v32HomeNowTitle">
+        <div class="v32-home-section-head"><div><span>TODAY</span><h2 id="v32HomeNowTitle">What you need to know now</h2></div><small>Tap for shift details or to record what happened</small></div>
+        <div class="v32-home-day-grid">
+          <button id="dashTodayCard" class="v27-dash-card v27-today-card v32-home-day-card" type="button" aria-haspopup="dialog" aria-controls="v32RosterDayModal">
+            <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span><span>Today</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
+            <strong id="dashTodayJob">—</strong>
+            <span class="v32-today-facts">
+              <span><small>Date</small><b id="dashTodayDate">—</b></span>
+              <span><small>Sign on</small><b id="dashTodaySignOn">—</b></span>
+              <span><small>Sign off</small><b id="dashTodaySignOff">—</b></span>
+              <span><small>Roster / line</small><b id="dashTodayRoster">—</b></span>
+            </span>
+            <span id="dashTodayDetails" class="v32-today-details">—</span>
+            <span id="dashTodaySource" class="v32-day-source">—</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="v32-forward-roster" aria-labelledby="v32ForwardRosterTitle">
+        <div class="v32-home-section-head"><div><span>FORWARD ROSTER</span><h2 id="v32ForwardRosterTitle">Your next four weeks</h2><p id="v32ForwardRosterRange">—</p></div><button id="v32OpenFullRoster" class="v32-open-roster" type="button">Open full roster <span aria-hidden="true">›</span></button></div>
+        <div id="v32ForwardRoster" class="v32-forward-weeks" aria-label="Current calendar week and following three weeks"></div>
+      </section>
+
+      <section class="v32-home-pay-section" aria-labelledby="v32HomePayTitle">
+        <h2 id="v32HomePayTitle" class="rb-visually-hidden">Pay</h2>
+        <button id="dashPaySummary" class="v32-home-glance v32-home-pay" type="button"><span>EXPECTED PAY</span><strong id="dashFortnightPay">Expected —</strong><small id="dashFortnightRange">—</small><small id="dashFortnightHours">—</small><em id="dashFortnightPayslip" class="v27-status-line neutral">Payslip · Not checked</em></button>
+      </section>
 
       <div class="v27-card-pager" id="dashboardCardPager" aria-label="Dashboard cards">
         <div class="v27-card-page" data-dashboard-page="0">
           <button id="dashRosterCard" class="v27-dash-card v27-wide-card v31-roster-card" type="button">
             <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2M15 17h2"/></svg></span><span>My roster</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
-            <span class="v31-roster-period"><strong id="dashFortnightRange">—</strong><small id="dashRosterPosition">—</small></span>
+            <span class="v31-roster-period"><strong id="dashRosterPeriod">My detailed roster</strong><small id="dashRosterPosition">—</small></span>
             <span class="v31-roster-week-heading"><small>THIS WEEK</small><strong id="dashWeekRange">—</strong></span>
             <div id="dashWeekDays" class="v27-week-strip" aria-label="This week"></div>
-            <span class="v31-roster-pay-row"><span id="dashFortnightHours" class="v27-card-line">—</span><span id="dashFortnightPay" class="v27-card-pay">Expected —</span><span id="dashFortnightPayslip" class="v27-status-line neutral">Payslip · Not checked</span></span>
+            <span class="v31-roster-pay-row"><span class="v27-card-line">Open the complete roster and pay-fortnight view</span></span>
             <span class="v27-card-watermark" aria-hidden="true"><svg class="v27-svg" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2M15 17h2"/></svg></span>
           </button>
 
-          <button id="dashTodayCard" class="v27-dash-card v27-today-card" type="button">
+          <button id="dashLegacyTodayCard" class="v27-dash-card v27-today-card" type="button" hidden>
             <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span><span>Today</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
-            <strong id="dashTodayJob">—</strong>
-            <span id="dashTodayDate" class="v27-card-line">—</span>
-            <span id="dashTodayTimes" class="v27-card-line">—</span>
+            <strong>—</strong>
+            <span class="v27-card-line">—</span>
+            <span class="v27-card-line">—</span>
             <span class="v27-card-watermark" aria-hidden="true"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span>
           </button>
 
@@ -200,6 +235,94 @@
         <button id="homeIssuesCard" type="button"><span id="homeIssues"></span><small id="homeIssuesMeta"></small></button>
       </div>
     </section>
+    <section id="v32FrontDoor" class="v32-front-door v32-entry-surface" aria-labelledby="v32FrontDoorTitle" hidden>
+      <div class="v32-front-door-hero v32-entry-hero">
+        <div class="eyebrow">ROSTER, DIARY &amp; PAY</div>
+        <h1 id="v32FrontDoorTitle" tabindex="-1">Know what you’re working and what you should be paid.</h1>
+        <p>Your roster, diary and expected pay together in one place, with your working copy available offline.</p>
+        <div class="v32-front-door-actions v32-entry-actions">
+          <button id="v32TryRosterBot" class="primary v32-try-action" type="button">Try RosterBot</button>
+          <button id="v32SetUpRoster" class="secondary" type="button">Set up my roster</button>
+        </div>
+        <p class="v32-try-note">See a realistic example first — no account or personal details needed.</p>
+      </div>
+
+      <div class="v32-front-door-secondary v32-entry-stack">
+        <button id="v32BrowseRosters" class="v32-browse-card v32-entry-card" type="button" aria-haspopup="dialog" aria-controls="rosterViewerModal">
+          <span><strong>Browse rosters &amp; shifts</strong><small>Look through supplied master rosters and shift-book duties without setting up a personal roster.</small></span>
+          <span aria-hidden="true">›</span>
+        </button>
+
+        <div class="v32-trust-promise v32-entry-card--accent" aria-label="How RosterBot handles your information">
+          <strong>Your roster can stay on this device.</strong>
+          <p>No account is required for ordinary use. Cloud Sync is optional, nothing is uploaded just because you enter roster details, and RosterBot keeps working offline once it is installed.</p>
+        </div>
+
+        <details id="v32ReturningUser" class="v32-returning-user">
+          <summary>Already use RosterBot?</summary>
+          <p>Restore your existing data or sign in to Cloud Sync.</p>
+          <div class="v32-returning-actions">
+            <button id="v30ExistingCloudBtn" class="secondary" type="button">Sign in &amp; restore</button>
+            <button id="v30ExistingImportBtn" class="secondary" type="button">Restore a .rosterbot backup</button>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="v32DemoPanel" class="v32-demo v32-entry-surface" aria-labelledby="v32DemoTitle" hidden>
+      <div class="v32-demo-head v32-entry-hero">
+        <div class="v32-entry-copy">
+          <div class="eyebrow">TRY ROSTERBOT · EXAMPLE ROSTER</div>
+          <h1 id="v32DemoTitle" tabindex="-1">Here’s what your roster could look like</h1>
+          <p>This is fictional sample information. Nothing here is your roster and nothing has been saved.</p>
+        </div>
+        <div class="v32-demo-head-actions v32-entry-actions">
+          <button id="v32ExitDemo" class="secondary" type="button">Exit example</button>
+        </div>
+      </div>
+
+      <div class="v32-demo-dashboard" aria-label="Example RosterBot dashboard">
+        <section class="v32-home-now" aria-labelledby="v32DemoTodaySectionTitle">
+          <div class="v32-home-section-head"><div><span>TODAY</span><h2 id="v32DemoTodaySectionTitle">What you need to know now</h2></div><small>Tap for complete fictional shift details</small></div>
+          <div class="v32-home-day-grid">
+            <button id="v32DemoToday" class="v27-dash-card v27-today-card v32-home-day-card" type="button" aria-haspopup="dialog" aria-controls="v32DemoDayModal">
+              <span class="v27-card-kicker"><span class="v27-card-label"><span class="v27-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7 3v5M17 3v5M3.5 10h17"/></svg></span><span>Today</span></span><span class="v27-card-chevron"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span></span>
+              <strong id="v32DemoTodayJob">Loading roster…</strong>
+              <span class="v32-today-facts">
+                <span><small>Date</small><b id="v32DemoTodayDate">—</b></span>
+                <span><small>Sign on</small><b id="v32DemoTodaySignOn">—</b></span>
+                <span><small>Sign off</small><b id="v32DemoTodaySignOff">—</b></span>
+                <span><small>Roster / line</small><b id="v32DemoTodayRoster">—</b></span>
+              </span>
+              <span id="v32DemoTodayDetails" class="v32-today-details">—</span>
+              <span id="v32DemoTodaySource" class="v32-day-source">Fictional example roster</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="v32-forward-roster" aria-labelledby="v32DemoForwardTitle">
+          <div class="v32-home-section-head"><div><span>FORWARD ROSTER</span><h2 id="v32DemoForwardTitle">Your next four weeks</h2><p id="v32DemoForwardRange">—</p></div></div>
+          <div id="v32DemoCalendar" class="v32-forward-weeks" aria-label="Example current calendar week and following three weeks"></div>
+        </section>
+
+        <section class="v32-home-pay-section" aria-labelledby="v32DemoPayTitle">
+          <h2 id="v32DemoPayTitle" class="rb-visually-hidden">Pay</h2>
+          <button id="v32DemoPaySummary" class="v32-home-glance v32-home-pay" type="button" aria-label="Example expected pay. Set up your roster to estimate your own pay">
+            <span>EXPECTED PAY</span>
+            <strong id="v32DemoExpectedPay">Calculating…</strong>
+            <small id="v32DemoPayRange">—</small>
+            <small id="v32DemoRosteredHours">Rostered hours this pay fortnight</small>
+            <em class="v27-status-line neutral">Estimate · Payslip not checked</em>
+          </button>
+        </section>
+      </div>
+
+      <div class="v32-demo-convert v32-entry-card--accent">
+        <div><strong>Want RosterBot to show your roster?</strong><span>You’ll preview it before anything becomes your saved schedule.</span></div>
+        <button id="v32DemoSetUpRoster" class="primary" type="button">Set up my roster</button>
+      </div>
+    </section>
+
     <section id="experiencePanel" class="panel experience-panel" aria-labelledby="experience-title">
       <div class="section-heading"><div><div class="eyebrow">USE ROSTERBOT YOUR WAY</div><h2 id="experience-title">Quick tool or personal roster diary?</h2></div></div>
       <div class="experience-grid" role="group" aria-label="RosterBot experience">
@@ -214,7 +337,7 @@
         <div><div class="eyebrow" id="diaryNavEyebrow">ROSTER DIARY</div><h2 id="diary-nav-title">Your roster timeline</h2></div>
         <div class="setup-toggle-actions"><button id="editSetupBtn" class="secondary quick-only" type="button">Quick setup</button><button id="diaryHistoryBtn" class="secondary diary-only" type="button">Roster history</button></div>
       </div>
-      <div class="diary-nav-grid">
+      <div class="diary-nav-grid rb-field-row">
         <label class="field"><span>Display roster from</span><input id="viewFromDate" type="date"><small>Any date; the surrounding WC week is resolved automatically.</small></label>
         <label class="field"><span>To</span><input id="viewToDate" type="date"><small>Choose a day, week, pay cycle, month or multi-year range.</small></label>
       </div>
@@ -240,28 +363,38 @@
     <section id="setupPanel" class="panel controls-panel" aria-labelledby="setup-title">
       <div class="section-heading">
         <div>
-          <div id="setupEyebrow" class="eyebrow">MY ROSTER</div>
-          <h2 id="setup-title">Let’s set up your role &amp; schedule</h2>
+          <div id="setupEyebrow" class="eyebrow">MANUAL ROSTER SETUP</div>
+          <h1 id="setup-title">Set up my roster</h1>
         </div>
         <div class="setup-heading-actions">
           <button id="advancedRosterBtn" class="secondary diary-only" type="button">Roster History &amp; Changes</button>
           <p class="muted">Choose a date in the week represented by the selected roster line.</p>
         </div>
       </div>
-      <div id="v28LookupBanner" class="v28-lookup-banner" hidden><div><strong>Roster Lookup</strong><small>Look at a roster without changing your saved personal roster.</small></div><button id="v28LookupBack" class="secondary" type="button">← Back</button></div>
-      <div id="v28OnboardingIntro" class="v28-onboarding-copy"><strong>Tell RosterBot your role and how your work is scheduled.</strong> We’ll show you the roster or work pattern first so you can check it looks right. Nothing becomes your saved schedule until you confirm it.<div class="v28-onboarding-secondary"><button id="v28RosterLookupBtn" class="secondary" type="button">Roster Lookup</button><small>Just looking? Browse a roster without saving it.</small></div><div id="v30ExistingUser" class="v30-existing-user"><div><strong>Already have a roster set up?</strong><small>Restore your existing RosterBot setup instead of creating another one.</small></div><div class="v30-existing-actions"><button id="v30ExistingCloudBtn" class="secondary" type="button">Sign in &amp; restore</button><button id="v30ExistingImportBtn" class="secondary" type="button">Upload .rosterbot file</button></div></div></div>
+      <div id="v28OnboardingIntro" class="v28-onboarding-copy"><strong>First, tell RosterBot what kind of roster you work.</strong> You will only be asked for the details needed to show a preview. Nothing becomes your saved schedule until you choose <em>Use this as my roster</em>.</div>
       <div id="localDataNotice" class="local-data-notice">
         <strong>LOCAL DATA ONLY.</strong> Your roster diary and pay entries are stored in this browser, not in a RosterBot account or database. You are responsible for keeping a backup. <button id="openDataFromNotice" type="button" class="text-action">DATA / BACKUP</button>
       </div>
 
-      <div class="form-grid">
+      <section id="v32ScheduleChoiceStep" class="v32-setup-step" aria-labelledby="v32ScheduleChoiceTitle">
+        <div class="v32-setup-step-head"><span>Step 1 of 2</span><h3 id="v32ScheduleChoiceTitle">Which best describes your usual work?</h3><p>Choose the situation you recognise. You can change this later.</p></div>
+        <div id="v32ScheduleChoices" class="v32-schedule-choices" role="group" aria-label="How your work is scheduled">
+          <button type="button" data-v32-schedule-choice="official" aria-pressed="false"><strong>I’m on a master roster</strong><span>I know my depot, roster and line.</span></button>
+          <button type="button" data-v32-schedule-choice="pattern" aria-pressed="false"><strong>I work a regular pattern</strong><span>My usual work days and times repeat each week.</span></button>
+          <button type="button" data-v32-schedule-choice="adhoc" aria-pressed="false"><strong>My shifts vary</strong><span>I’ll enter the shifts I actually receive.</span></button>
+        </div>
+      </section>
+
+      <section id="v32ScheduleDetailsStep" class="v32-setup-step v32-setup-details" aria-labelledby="v32ScheduleDetailsTitle" hidden>
+        <div class="v32-setup-step-head"><span>Step 2 of 2</span><h3 id="v32ScheduleDetailsTitle">Tell us where your roster starts</h3><p id="v32ScheduleDetailsIntro">These details are used only to build the preview below.</p></div>
+      <div id="v32SetupFields" class="form-grid rb-field-row">
         <label class="field">
-          <span id="startDateLabel">Schedule / roster start date</span>
+          <span id="startDateLabel">Which week does this roster line apply from?</span>
           <input id="startDate" type="date" required>
-          <small id="wcHint">WC —</small>
+          <small id="wcHint">Choose any date in that week. RosterBot will show the WC Sunday date.</small>
         </label>
 
-        <label class="field"><span>Role / pay classification</span><select id="startRole">
+        <label id="startRoleField" class="field v32-pay-later-field"><span>Role / pay classification</span><select id="startRole">
           <option value="PB205:none" selected>PB205 · Qualified Driver</option>
           <option value="PF441:none">PF441 · Trainee Driver — new start</option>
           <option value="PB311:none">PB311 · Trainee Driver — Stage 2</option>
@@ -272,9 +405,9 @@
           <option value="VL006:none">VL006 · Regional Driver Supervisor</option>
         </select><small>Your role is stored separately from your roster so PayBot can apply the correct classification by date.</small></label>
 
-        <label class="field"><span>Role effective from</span><input id="startRoleDate" type="date" required><small>Use the date this classification actually began. For a new PF441 trainee, use your employment start date. You can add later role changes at any time.</small></label>
+        <label id="startRoleDateField" class="field v32-pay-later-field"><span>Role effective from</span><input id="startRoleDate" type="date"><small>Use the date this classification actually began. For a new PF441 trainee, use your employment start date. You can add later role changes at any time.</small></label>
 
-        <label class="field"><span>How are your work days scheduled?</span><select id="startScheduleMode">
+        <label id="startScheduleModeField" class="field v32-internal-schedule-field"><span>How are your work days scheduled?</span><select id="startScheduleMode">
           <option value="official" selected>Official / master roster</option>
           <option value="pattern">Regular manual work pattern</option>
           <option value="adhoc">No default pattern — enter each fortnight manually</option>
@@ -301,7 +434,7 @@
         </label>
 
         <input id="displayWeeks" type="hidden" value="1">
-        <div class="field compact-field"><span>Quick view</span><small>Choose the visible date range above. This Quick / Basic sequence stays independent of any saved Personal Diary history.</small></div>
+        <div class="field compact-field v32-quick-view-field"><span>Quick view</span><small>Choose the visible date range above. This Quick / Basic sequence stays independent of any saved Personal Diary history.</small></div>
       </div>
 
       <div id="officialSwapBox" class="swap-box">
@@ -313,7 +446,7 @@
           </span>
         </label>
 
-        <div id="swapFields" class="form-grid swap-fields" hidden>
+        <div id="swapFields" class="form-grid swap-fields rb-field-row" hidden>
           <label class="field"><span>Other depot</span><select id="swapDepot"></select></label>
           <label class="field">
             <span>Other roster</span>
@@ -336,19 +469,22 @@
       <div id="startManualPatternBox" class="manual-pattern-box" hidden>
         <div class="manual-pattern-head"><div><strong>Regular work pattern</strong><small>These are your expected work times, not an official master roster. You can change any individual day later.</small></div><button id="startManualWeekdays" class="secondary" type="button">Mon–Fri 08:00–16:00</button></div>
         <div class="manual-pattern-grid">
-          <label><span>SUN</span><input id="startPatternSunOn" type="checkbox"><input id="startPatternSunStart" type="time" value="08:00" disabled><span>→</span><input id="startPatternSunEnd" type="time" value="16:00" disabled></label>
-          <label><span>MON</span><input id="startPatternMonOn" type="checkbox" checked><input id="startPatternMonStart" type="time" value="08:00"><span>→</span><input id="startPatternMonEnd" type="time" value="16:00"></label>
-          <label><span>TUE</span><input id="startPatternTueOn" type="checkbox" checked><input id="startPatternTueStart" type="time" value="08:00"><span>→</span><input id="startPatternTueEnd" type="time" value="16:00"></label>
-          <label><span>WED</span><input id="startPatternWedOn" type="checkbox" checked><input id="startPatternWedStart" type="time" value="08:00"><span>→</span><input id="startPatternWedEnd" type="time" value="16:00"></label>
-          <label><span>THU</span><input id="startPatternThuOn" type="checkbox" checked><input id="startPatternThuStart" type="time" value="08:00"><span>→</span><input id="startPatternThuEnd" type="time" value="16:00"></label>
-          <label><span>FRI</span><input id="startPatternFriOn" type="checkbox" checked><input id="startPatternFriStart" type="time" value="08:00"><span>→</span><input id="startPatternFriEnd" type="time" value="16:00"></label>
-          <label><span>SAT</span><input id="startPatternSatOn" type="checkbox"><input id="startPatternSatStart" type="time" value="08:00" disabled><span>→</span><input id="startPatternSatEnd" type="time" value="16:00" disabled></label>
+          <label><span>SUN</span><input id="startPatternSunOn" type="checkbox" aria-label="Sunday is a working day"><input id="startPatternSunStart" type="time" value="08:00" disabled aria-label="Sunday sign on"><span aria-hidden="true">→</span><input id="startPatternSunEnd" type="time" value="16:00" disabled aria-label="Sunday sign off"></label>
+          <label><span>MON</span><input id="startPatternMonOn" type="checkbox" checked aria-label="Monday is a working day"><input id="startPatternMonStart" type="time" value="08:00" aria-label="Monday sign on"><span aria-hidden="true">→</span><input id="startPatternMonEnd" type="time" value="16:00" aria-label="Monday sign off"></label>
+          <label><span>TUE</span><input id="startPatternTueOn" type="checkbox" checked aria-label="Tuesday is a working day"><input id="startPatternTueStart" type="time" value="08:00" aria-label="Tuesday sign on"><span aria-hidden="true">→</span><input id="startPatternTueEnd" type="time" value="16:00" aria-label="Tuesday sign off"></label>
+          <label><span>WED</span><input id="startPatternWedOn" type="checkbox" checked aria-label="Wednesday is a working day"><input id="startPatternWedStart" type="time" value="08:00" aria-label="Wednesday sign on"><span aria-hidden="true">→</span><input id="startPatternWedEnd" type="time" value="16:00" aria-label="Wednesday sign off"></label>
+          <label><span>THU</span><input id="startPatternThuOn" type="checkbox" checked aria-label="Thursday is a working day"><input id="startPatternThuStart" type="time" value="08:00" aria-label="Thursday sign on"><span aria-hidden="true">→</span><input id="startPatternThuEnd" type="time" value="16:00" aria-label="Thursday sign off"></label>
+          <label><span>FRI</span><input id="startPatternFriOn" type="checkbox" checked aria-label="Friday is a working day"><input id="startPatternFriStart" type="time" value="08:00" aria-label="Friday sign on"><span aria-hidden="true">→</span><input id="startPatternFriEnd" type="time" value="16:00" aria-label="Friday sign off"></label>
+          <label><span>SAT</span><input id="startPatternSatOn" type="checkbox" aria-label="Saturday is a working day"><input id="startPatternSatStart" type="time" value="08:00" disabled aria-label="Saturday sign on"><span aria-hidden="true">→</span><input id="startPatternSatEnd" type="time" value="16:00" disabled aria-label="Saturday sign off"></label>
         </div>
       </div>
 
       <div id="startAdhocNote" class="manual-pattern-box" hidden><strong>No default work pattern</strong><p>RosterBot will not invent rostered shifts. Open Pay and choose <strong>Enter shifts manually</strong> for each fortnight. Your full-time Part 7 guarantee can still be calculated from the days you enter.</p></div>
 
-      <div class="annual-leave-box">
+      <p class="v32-setup-save-note"><strong>Next:</strong> RosterBot will show two weeks for you to check. These answers stay as an unfinished draft until you accept the preview.</p>
+      </section>
+
+      <div id="annualLeaveBox" class="annual-leave-box">
         <label class="check-row">
           <input id="hasAnnualLeave" type="checkbox">
           <span>
@@ -370,11 +506,12 @@
         </div>
       </div>
 
-      <div class="actions quick-convert-row">
+      <div id="v32SetupActions" class="actions quick-convert-row">
         <button id="generateBtn" class="primary" type="button">Show my roster</button>
         <button id="convertQuickToDiaryBtn" class="secondary quick-only" type="button">Use this as my roster</button>
         <span id="quickConvertNote" class="quick-convert-note quick-only">Preview first. Your personal roster is only saved after you confirm it looks right.</span>
       </div>
+      <p id="v32SetupError" class="v32-field-error" role="alert" hidden></p>
     </section>
 
     <section id="outputSection" class="output-section" hidden>
@@ -407,7 +544,7 @@
       <div class="section-heading output-heading">
         <div>
           <div id="outputEyebrow" class="eyebrow">YOUR ROSTER</div>
-          <h2 id="outputTitle">Generated roster</h2>
+          <h1 id="outputTitle">Generated roster</h1>
         </div>
         <div class="output-tools">
           <div class="roster-view-toggle" role="group" aria-label="Roster view">
@@ -429,7 +566,7 @@
         <div class="section-heading rbcal-page-heading">
           <div>
             <div class="eyebrow">CALENDAR</div>
-            <h2 id="export-title">Calendar</h2>
+            <h1 id="export-title">Calendar</h1>
             <p class="rbcal-page-intro">Choose whether you want RosterBot to keep a calendar updated for you, or create a one-off calendar file.</p>
           </div>
         </div>
@@ -566,7 +703,7 @@
 
     <section id="v29RosterHub" class="v29-hub" aria-labelledby="v29RosterTitle">
       <div class="v29-hub-head">
-        <div><div class="eyebrow">ROSTER</div><h2 id="v29RosterTitle">My Roster</h2><p>Your saved roster, changes and temporary roster lookups in one place.</p></div>
+        <div><div class="eyebrow">ROSTER</div><h1 id="v29RosterTitle">My Roster</h1><p>Your saved roster, changes and temporary roster lookups in one place.</p></div>
       </div>
       <div class="v29-hub-grid">
         <article class="v29-hub-card">
@@ -582,19 +719,14 @@
 
         <button id="v29RosterLookupCard" class="v29-hub-card featured wide" type="button">
           <div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/><path d="M7.5 10.5h6M10.5 7.5v6"/></svg></span><span class="v29-card-arrow">›</span></div>
-          <h3>Roster Lookup</h3><p>Quickly view another roster, line or alternating pair without changing your saved My Roster or diary.</p>
-          <span class="v29-lookup-safety">Temporary view · your personal roster stays untouched</span>
-        </button>
-
-        <button id="v29OfficialViewerBtn" class="v29-hub-card wide" type="button">
-          <div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 9v11M13 9v11M18 9v11"/></svg></span><span class="v29-card-arrow">›</span></div>
-          <h3>Browse official rosters &amp; shifts</h3><p>Inspect the full master rotation and look up supplied shift-book duties by shift number or sign-on time.</p>
+          <h3>Browse rosters &amp; shifts</h3><p>Inspect supplied master rotations and look up shift-book duties by shift number or sign-on time.</p>
+          <span class="v29-lookup-safety">Reference only · your personal roster stays untouched</span>
         </button>
       </div>
     </section>
 
     <section id="v29MoreHub" class="v29-hub" aria-labelledby="v29MoreTitle">
-      <div class="v29-hub-head"><div><div class="eyebrow">MORE</div><h2 id="v29MoreTitle">More</h2><p>Data, settings and secondary RosterBot tools.</p></div></div>
+      <div class="v29-hub-head"><div><div class="eyebrow">MORE</div><h1 id="v29MoreTitle">More</h1><p>Data, settings and secondary RosterBot tools.</p></div></div>
       <div class="v29-hub-grid v29-more-grid">
         <button id="v29EmploymentBtn" class="v29-hub-card featured wide" type="button"><div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M17 10.5 19 12l2-2"/></svg></span><span class="v29-card-arrow">›</span></div><h3>Employment &amp; Pay Profile</h3><p>Record dated role changes, trainee progression, PDT arrangements and manual work patterns.</p><span class="v29-lookup-safety">Role history · date-aware pay grades · manual schedules</span></button>
         <button id="v28SourcesBtn" class="v29-hub-card featured wide" type="button"><div class="v29-hub-card-top"><span class="v29-hub-card-icon"><svg class="v27-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a3 3 0 0 1 3-3h6z"/></svg></span><span class="v29-card-arrow">›</span></div><h3>Sources</h3><p>Pay rates, allowances, enterprise agreements and the public references used by RosterBot and PayBot.</p><span class="v29-lookup-safety">Public sources · calculation references · rate history</span></button>
@@ -607,7 +739,7 @@
 
 
     <footer>
-      RosterBot 🤖 v0.31.0 · Local-first HTML/JavaScript · Australia/Melbourne
+      RosterBot 🤖 v0.32.0 · Local-first HTML/JavaScript · Australia/Melbourne
     </footer>
   </main>
 
@@ -615,7 +747,7 @@
     <div class="pb-hero">
       <div>
         <div class="eyebrow">PAY CHECKER</div>
-        <div class="pb-hero-title"><h2>PayBot 🤖💰</h2><span class="pb-beta">v0.31 ESTIMATE</span></div>
+        <div class="pb-hero-title"><h1>PayBot 🤖💰</h1><span class="pb-beta">v0.32 ESTIMATE</span></div>
         <p class="pb-intro">PayBot can use the roster you loaded in RosterBot. You can also choose roster lines or enter shifts yourself.</p>
       </div>
       <button class="btn soft" id="resetBtn" type="button">Reset PayBot fortnight</button>
@@ -623,15 +755,15 @@
 
     <section class="panel setup">
       <div class="setup-grid">
-        <div class="field"><label>Pay fortnight</label><div class="period-row"><button class="btn" id="prevPeriod" title="Previous fortnight">‹</button><input type="date" id="periodDate"><button class="btn" id="nextPeriod" title="Next fortnight">›</button></div><button class="btn tiny soft period-current" id="thisPeriod" type="button">This pay cycle</button><div class="subnote" id="periodLabel"></div></div>
-        <div class="field"><label>Grade</label><select id="grade"></select><div id="employmentProfileHint" class="subnote employment-profile-hint"></div><div class="subcontrol"><label for="pdtMode">PDT status</label><select id="pdtMode"><option value="none">No PDT (use selected grade)</option><option value="legacy">Legacy PDT (VL014 Practical Driver Trainer)</option><option value="current">Current PDT (choose days below)</option></select><div class="subnote" id="pdtHint">Uses the selected grade rate.</div></div></div>
-        <div class="field"><label>Input method</label><select id="entryMode"><option value="forecast">Use roster from RosterBot</option><option value="roster">Choose roster lines</option><option value="manual">Enter shifts manually</option></select><div class="subnote entry-mode-hint" id="entryModeHint">Changing this does not alter the loaded fortnight until you press Load fortnight.</div></div>
-        <div class="field roster-field"><label>Week 1 roster</label><select id="r1"></select></div>
-        <div class="field roster-field"><label>Week 1 line</label><select id="l1"></select></div>
-        <div class="field roster-field"><label>Week 2 roster</label><select id="r2"></select></div>
-        <div class="field roster-field"><label>Week 2 line</label><select id="l2"></select></div>
-        <div class="field"><label>Employment</label><select disabled><option>Full Time · Part 7 Locomotive Operating (80h guarantee)</option></select></div>
-        <div class="field"><button class="btn primary" id="loadBtn">Load fortnight</button></div>
+        <div class="field"><label for="periodDate">Pay fortnight</label><div class="period-row"><button class="btn" id="prevPeriod" type="button" title="Previous fortnight" aria-label="Previous pay fortnight">‹</button><input type="date" id="periodDate" aria-describedby="periodLabel"><button class="btn" id="nextPeriod" type="button" title="Next fortnight" aria-label="Next pay fortnight">›</button></div><button class="btn tiny soft period-current" id="thisPeriod" type="button">This pay cycle</button><div class="subnote" id="periodLabel"></div></div>
+        <div class="field"><label for="grade">Grade</label><select id="grade" aria-describedby="employmentProfileHint"></select><div id="employmentProfileHint" class="subnote employment-profile-hint"></div><div class="subcontrol"><label for="pdtMode">PDT status</label><select id="pdtMode" aria-describedby="pdtHint"><option value="none">No PDT (use selected grade)</option><option value="legacy">Legacy PDT (VL014 Practical Driver Trainer)</option><option value="current">Current PDT (choose days below)</option></select><div class="subnote" id="pdtHint">Uses the selected grade rate.</div></div></div>
+        <div class="field"><label for="entryMode">Input method</label><select id="entryMode" aria-describedby="entryModeHint"><option value="forecast">Use roster from RosterBot</option><option value="roster">Choose roster lines</option><option value="manual">Enter shifts manually</option></select><div class="subnote entry-mode-hint" id="entryModeHint">Changing this does not alter the loaded fortnight until you press Load fortnight.</div></div>
+        <div class="field roster-field"><label for="r1">Week 1 roster</label><select id="r1"></select></div>
+        <div class="field roster-field"><label for="l1">Week 1 line</label><select id="l1"></select></div>
+        <div class="field roster-field"><label for="r2">Week 2 roster</label><select id="r2"></select></div>
+        <div class="field roster-field"><label for="l2">Week 2 line</label><select id="l2"></select></div>
+        <div class="field"><label for="paybotEmploymentType">Employment</label><select id="paybotEmploymentType" disabled><option>Full Time · Part 7 Locomotive Operating (80h guarantee)</option></select></div>
+        <div class="field paybot-setup-action"><button class="btn primary" id="loadBtn">Load fortnight</button></div>
         <div class="mode-note"><span id="datasetNote">Not loaded yet.</span> <strong>Unpaid leave</strong> is available for any day and may affect the 80-hour guarantee.</div>
       </div>
       <div class="rate-card"><div class="rate-main"><strong id="rateDisplay">$0.00/hr</strong><span id="rateEffective"></span></div><div class="rate-note" id="rateNote"></div><span class="dataset-pill" id="sourcePill">Roster not loaded</span></div>
@@ -646,14 +778,74 @@
       <section class="panel metric"><div class="k">Payroll rounding</div><div class="v">0.1 h</div><div class="small">Any positive time is paid as at least 0.1h; after that, each shift/day pay class rounds to the nearest 0.1h before fortnight totals are added</div></section>
     </div>
 
-    <div class="tabs"><button class="btn tab active" data-tab="editor">Edit fortnight</button><button class="btn tab" data-tab="payslip">Payslip view</button><button class="btn tab" data-tab="daily">Day-by-day view</button></div>
+    <div class="tabs" role="tablist" aria-label="Pay views"><button id="payTabEditor" class="btn tab active" data-tab="editor" type="button" role="tab" aria-selected="true" aria-controls="editorView">Edit fortnight</button><button id="payTabPayslip" class="btn tab" data-tab="payslip" type="button" role="tab" aria-selected="false" aria-controls="payslipView" tabindex="-1">Payslip view</button><button id="payTabDaily" class="btn tab" data-tab="daily" type="button" role="tab" aria-selected="false" aria-controls="dailyView" tabindex="-1">Day-by-day view</button></div>
     <div id="editorLayoutBar" class="editor-layout-bar"><div class="editor-layout-left"><span>Editor layout</span><div class="roster-view-toggle editor-layout-toggle" role="group" aria-label="PayBot editor layout"><button id="pbFullEditorBtn" type="button" aria-pressed="false">Full</button><button id="pbCompactEditorBtn" type="button" aria-pressed="false">Compact</button></div></div><label class="pb-auto-next"><input id="pbAutoAdvance" type="checkbox"> <span>Auto next day</span></label></div>
-    <section id="editorView"></section>
-    <section id="payslipView" class="panel results hidden"><table class="pay-table"><thead><tr><th>Pay element</th><th>Hours / units</th><th>Rate</th><th>Value</th></tr></thead><tbody id="payBody"></tbody><tfoot><tr><td colspan="3">Expected gross</td><td id="grossTotal">$0.00</td></tr></tfoot></table><div class="warning">PayBot provides an indicative gross-pay estimate. Rest-job special rules, SDL 8:29 and tax/net calculations are not included yet.</div></section>
-    <section id="dailyView" class="panel results hidden"><div class="day-breakdown" id="dailyBody"></div><div class="warning">Day totals include ordinary base or paid leave plus any penalties, overtime and allowances for that day. Time-based pay classes use a 0.1h minimum for any positive time, then round to the nearest 0.1h per shift/day before the fortnight totals are added.</div></section>
-    <footer class="footer">RosterBot 🤖 + PayBot 🤖💰 v0.31.0 · Local-first release · Australia/Melbourne</footer>
+    <section id="editorView" role="tabpanel" aria-labelledby="payTabEditor"></section>
+    <section id="payslipView" class="panel results hidden" role="tabpanel" aria-labelledby="payTabPayslip"><table class="pay-table"><thead><tr><th>Pay element</th><th>Hours / units</th><th>Rate</th><th>Value</th></tr></thead><tbody id="payBody"></tbody><tfoot><tr><td colspan="3">Expected gross</td><td id="grossTotal">$0.00</td></tr></tfoot></table><div class="warning">PayBot provides an indicative gross-pay estimate. Rest-job special rules, SDL 8:29 and tax/net calculations are not included yet.</div></section>
+    <section id="dailyView" class="panel results hidden" role="tabpanel" aria-labelledby="payTabDaily"><div class="day-breakdown" id="dailyBody"></div><div class="warning">Day totals include ordinary base or paid leave plus any penalties, overtime and allowances for that day. Time-based pay classes use a 0.1h minimum for any positive time, then round to the nearest 0.1h per shift/day before the fortnight totals are added.</div></section>
+    <footer class="footer">RosterBot 🤖 + PayBot 🤖💰 v0.32.0 · Local-first release · Australia/Melbourne</footer>
   </main>
 
+
+  <div id="v32RosterDayModal" class="feedback-modal" hidden>
+    <section class="feedback-dialog v32-roster-day-dialog" role="dialog" aria-modal="true" aria-labelledby="v32RosterDayTitle" aria-describedby="v32RosterDaySource">
+      <div class="feedback-dialog-header"><div><div class="eyebrow">SHIFT DETAIL</div><h2 id="v32RosterDayTitle">Roster day</h2></div><button id="v32RosterDayClose" class="feedback-close-btn" type="button" aria-label="Close shift details">×</button></div>
+      <div class="v32-roster-day-body">
+        <p id="v32RosterDaySource" class="v32-roster-day-source">Roster projection</p>
+        <dl id="v32RosterDayFacts" class="v32-demo-duty-facts">
+          <div><dt>Date</dt><dd id="v32RosterDayDate">—</dd></div>
+          <div><dt>Duty</dt><dd id="v32RosterDayCode">—</dd></div>
+          <div><dt>Sign on / off</dt><dd id="v32RosterDayTimes">—</dd></div>
+          <div><dt>Duration</dt><dd id="v32RosterDayDuration">—</dd></div>
+        </dl>
+        <p id="v32RosterDayOff" class="v32-demo-off-roster" hidden>Off Roster</p>
+        <p id="v32RosterDayRostered" class="v32-roster-day-rostered" hidden></p>
+        <div id="v32RosterDayContent" class="v32-demo-duty-content"></div>
+        <div class="v32-roster-day-actions"><button id="v32RosterDayEdit" class="primary" type="button">Edit / record actual day</button></div>
+      </div>
+    </section>
+  </div>
+
+
+  <div id="v32DemoDayModal" class="feedback-modal" hidden>
+    <section class="feedback-dialog v32-demo-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="v32DemoDayTitle" aria-describedby="v32DemoDayNotice">
+      <div class="feedback-dialog-header"><div><div class="eyebrow">FICTIONAL EXAMPLE DUTY</div><h2 id="v32DemoDayTitle">Example shift</h2></div><button id="v32DemoDayClose" class="feedback-close-btn" type="button" aria-label="Close example shift details">×</button></div>
+      <div class="v32-demo-detail-body">
+        <p id="v32DemoDayNotice" class="v32-demo-detail-notice">Sample information only. This is not your roster and nothing here is saved.</p>
+        <dl id="v32DemoDutyFacts" class="v32-demo-duty-facts">
+          <div><dt>Date</dt><dd id="v32DemoDutyDate">—</dd></div>
+          <div><dt>Duty</dt><dd id="v32DemoDutyCode">—</dd></div>
+          <div><dt>Sign on / off</dt><dd id="v32DemoDutyTimes">—</dd></div>
+          <div><dt>Duration</dt><dd id="v32DemoDutyDuration">—</dd></div>
+        </dl>
+        <div id="v32DemoDutyContent" class="v32-demo-duty-content"></div>
+        <p id="v32DemoDutyOffRoster" class="v32-demo-off-roster" hidden>Off Roster</p>
+      </div>
+    </section>
+  </div>
+
+
+  <div id="v32PaySetupModal" class="feedback-modal" hidden>
+    <section class="feedback-dialog v32-pay-setup-dialog" role="dialog" aria-modal="true" aria-labelledby="v32PaySetupTitle" aria-describedby="v32PaySetupDescription">
+      <div class="feedback-dialog-header"><div><div class="eyebrow">PAY ESTIMATE</div><h2 id="v32PaySetupTitle">Make expected pay more accurate</h2></div><button id="v32PaySetupClose" class="feedback-close-btn" type="button" aria-label="Close pay setup">×</button></div>
+      <div class="v32-pay-setup-body">
+        <p id="v32PaySetupDescription">Your roster is already saved. Choose your current role so PayBot can use the applicable rate. You can add role changes and history later.</p>
+        <label class="field"><span>My current role</span><select id="v32PaySetupRole" required>
+          <option value="">Choose your current role</option>
+          <option value="PB205:none">Qualified Driver</option>
+          <option value="PF441:none">Trainee Driver — new start</option>
+          <option value="PB311:none">Trainee Driver — Stage 2</option>
+          <option value="PB312:none">Trainee Driver — 12 months</option>
+          <option value="VL014:legacy">Practical Driver Trainer — legacy scheme</option>
+          <option value="PB205:current">Qualified Driver + current-scheme PDT</option>
+          <option value="VL007:none">Driver Training Compliance Officer</option>
+          <option value="VL006:none">Regional Driver Supervisor</option>
+        </select><small id="v32PaySetupEffective">This will apply from your saved roster’s starting week. You can correct the date later in Employment &amp; Pay Profile.</small></label>
+        <p id="v32PaySetupError" class="v32-field-error" role="alert" hidden></p>
+        <div class="actions"><button id="v32PaySetupSave" class="primary" type="button">Use this role for pay</button><button id="v32PaySetupLater" class="secondary" type="button">Maybe later</button></div>
+      </div>
+    </section>
+  </div>
 
   <div id="employmentModal" class="feedback-modal" hidden>
     <section class="feedback-dialog employment-dialog" role="dialog" aria-modal="true" aria-labelledby="employmentTitle">
@@ -661,22 +853,22 @@
       <div class="employment-body">
         <section id="employmentCurrent" class="employment-current"></section>
         <section class="employment-section"><div class="employment-section-head"><div><div class="eyebrow">ROLE HISTORY</div><h3>Your classifications over time</h3><p>PayBot resolves this timeline separately for each date, so a role change in the middle of a pay fortnight uses the correct rate on each side.</p></div></div><div id="employmentTimeline" class="employment-timeline"></div></section>
-        <section id="employmentEditor" class="employment-section employment-editor"><div class="employment-section-head"><div><div class="eyebrow">ADD / EDIT</div><h3 id="employmentFormTitle">Add role change</h3></div></div><div class="form-grid">
-          <label class="field"><span>Effective date</span><input id="employmentDate" type="date"></label>
-          <label class="field"><span>Classification</span><select id="employmentClassification"></select></label>
+        <section id="employmentEditor" class="employment-section employment-editor"><div class="employment-section-head"><div><div class="eyebrow">ADD / EDIT</div><h3 id="employmentFormTitle">Add role change</h3></div></div><div class="form-grid rb-field-row">
+          <label class="field"><span>Effective date</span><input id="employmentDate" type="date" aria-describedby="employmentFormError"></label>
+          <label class="field"><span>Classification</span><select id="employmentClassification" aria-describedby="employmentFormError"></select></label>
           <label class="field"><span>PDT arrangement</span><select id="employmentPdtScheme"><option value="none">Not PDT / no PDT treatment</option><option value="legacy">Legacy PDT — VL014 classification</option><option value="current">Current scheme — underlying grade + A704/A705 when training</option></select><small id="employmentPdtHint"></small></label>
           <label class="field"><span>Note <small>(optional)</small></span><input id="employmentNote" type="text" maxlength="240" placeholder="e.g. Qualified as Driver"></label>
-        </div><div class="actions"><button id="employmentSave" class="primary" type="button">Save role change</button><button id="employmentCancel" class="secondary" type="button">Clear form</button></div></section>
+        </div><p id="employmentFormError" class="v32-field-error" role="alert" hidden></p><div class="actions"><button id="employmentSave" class="primary" type="button">Save role change</button><button id="employmentCancel" class="secondary" type="button">Clear form</button></div></section>
         <section class="employment-section"><div class="employment-section-head"><div><div class="eyebrow">WORK PATTERN</div><h3>Not on a master roster?</h3><p>Use a personal work pattern for trainees, DTCOs, RDSs or anyone whose shifts are not represented by the supplied master rotations. This is explicitly labelled as user-entered schedule data.</p></div></div>
           <label class="field employment-pattern-date"><span>Use from</span><input id="employmentPatternDate" type="date"><small>The date is snapped to its week commencing Sunday.</small></label>
           <div class="employment-pattern-grid">
-            <label><span>SUN</span><input id="employmentPatternSunOn" type="checkbox"><input id="employmentPatternSunStart" type="time"><span>→</span><input id="employmentPatternSunEnd" type="time"></label>
-            <label><span>MON</span><input id="employmentPatternMonOn" type="checkbox"><input id="employmentPatternMonStart" type="time"><span>→</span><input id="employmentPatternMonEnd" type="time"></label>
-            <label><span>TUE</span><input id="employmentPatternTueOn" type="checkbox"><input id="employmentPatternTueStart" type="time"><span>→</span><input id="employmentPatternTueEnd" type="time"></label>
-            <label><span>WED</span><input id="employmentPatternWedOn" type="checkbox"><input id="employmentPatternWedStart" type="time"><span>→</span><input id="employmentPatternWedEnd" type="time"></label>
-            <label><span>THU</span><input id="employmentPatternThuOn" type="checkbox"><input id="employmentPatternThuStart" type="time"><span>→</span><input id="employmentPatternThuEnd" type="time"></label>
-            <label><span>FRI</span><input id="employmentPatternFriOn" type="checkbox"><input id="employmentPatternFriStart" type="time"><span>→</span><input id="employmentPatternFriEnd" type="time"></label>
-            <label><span>SAT</span><input id="employmentPatternSatOn" type="checkbox"><input id="employmentPatternSatStart" type="time"><span>→</span><input id="employmentPatternSatEnd" type="time"></label>
+            <label><span>SUN</span><input id="employmentPatternSunOn" type="checkbox" aria-label="Sunday is a working day"><input id="employmentPatternSunStart" type="time" aria-label="Sunday sign on"><span aria-hidden="true">→</span><input id="employmentPatternSunEnd" type="time" aria-label="Sunday sign off"></label>
+            <label><span>MON</span><input id="employmentPatternMonOn" type="checkbox" aria-label="Monday is a working day"><input id="employmentPatternMonStart" type="time" aria-label="Monday sign on"><span aria-hidden="true">→</span><input id="employmentPatternMonEnd" type="time" aria-label="Monday sign off"></label>
+            <label><span>TUE</span><input id="employmentPatternTueOn" type="checkbox" aria-label="Tuesday is a working day"><input id="employmentPatternTueStart" type="time" aria-label="Tuesday sign on"><span aria-hidden="true">→</span><input id="employmentPatternTueEnd" type="time" aria-label="Tuesday sign off"></label>
+            <label><span>WED</span><input id="employmentPatternWedOn" type="checkbox" aria-label="Wednesday is a working day"><input id="employmentPatternWedStart" type="time" aria-label="Wednesday sign on"><span aria-hidden="true">→</span><input id="employmentPatternWedEnd" type="time" aria-label="Wednesday sign off"></label>
+            <label><span>THU</span><input id="employmentPatternThuOn" type="checkbox" aria-label="Thursday is a working day"><input id="employmentPatternThuStart" type="time" aria-label="Thursday sign on"><span aria-hidden="true">→</span><input id="employmentPatternThuEnd" type="time" aria-label="Thursday sign off"></label>
+            <label><span>FRI</span><input id="employmentPatternFriOn" type="checkbox" aria-label="Friday is a working day"><input id="employmentPatternFriStart" type="time" aria-label="Friday sign on"><span aria-hidden="true">→</span><input id="employmentPatternFriEnd" type="time" aria-label="Friday sign off"></label>
+            <label><span>SAT</span><input id="employmentPatternSatOn" type="checkbox" aria-label="Saturday is a working day"><input id="employmentPatternSatStart" type="time" aria-label="Saturday sign on"><span aria-hidden="true">→</span><input id="employmentPatternSatEnd" type="time" aria-label="Saturday sign off"></label>
           </div>
           <p id="employmentPatternState" class="muted"></p><div class="actions"><button id="employmentUsePattern" class="primary" type="button">Use this manual work pattern</button><button id="employmentUseAdhoc" class="secondary" type="button">No default pattern · enter fortnights manually</button></div>
           <p class="sources-caution"><strong>Important:</strong> Changing to a manual pattern creates a dated schedule entry in your roster history. To return to an official roster later, add a normal roster change under Roster → Roster History &amp; Changes.</p>
@@ -745,7 +937,7 @@
     <section class="feedback-dialog v27-viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="rosterViewerTitle">
       <div class="feedback-dialog-header"><div><div class="eyebrow">OFFICIAL ROSTER DATA</div><h2 id="rosterViewerTitle">Roster &amp; shift viewer</h2></div><button id="rosterViewerClose" class="feedback-close-btn" type="button" aria-label="Close roster viewer">×</button></div>
       <div class="v27-viewer-body">
-        <div class="v27-viewer-grid">
+        <div class="v27-viewer-grid rb-field-row">
           <label class="field"><span>Roster period</span><select id="viewerDataset"></select><small id="viewerDatasetDates"></small></label>
           <label class="field"><span>Depot</span><select id="viewerDepot"></select></label>
           <label class="field"><span>Roster</span><select id="viewerRoster"></select><small id="viewerRotationSummary">—</small></label>
@@ -790,7 +982,7 @@
             <select id="timelineChangeType" hidden aria-hidden="true"><option value="single">Continuous roster</option><option value="swap">Permanent swap / alternating pair</option><option value="replace">Replace the active alternating track; keep the other</option></select>
           </div>
 
-          <div class="form-grid timeline-change-fields">
+          <div class="form-grid timeline-change-fields rb-field-row">
             <label class="field"><span id="timelineChangeDateLabel">When did this change start?</span><input id="timelineChangeDate" type="date"><small id="timelineWcHint">Choose any date in the week. RosterBot will anchor it to the correct WC Sunday.</small></label>
             <label class="field"><span id="timelineDepotLabel">New depot</span><select id="timelineDepot"></select></label>
             <label class="field"><span id="timelineRosterLabel">New roster</span><select id="timelineRoster"></select></label>
@@ -830,7 +1022,7 @@
       <section id="dayDutyDetails" class="day-duty-details" hidden><div class="eyebrow">SHIFT DETAILS</div><div id="dayDutyDetailsBody"></div></section>
       <div class="form-grid">
         <label class="field"><span>Actual status</span><select id="dayActualStatus"><option value="worked">Worked</option><option value="or">OR / not worked</option><option value="worked_or">OR / additional work</option><option value="alr">ALR (paid)</option><option value="annual">Annual leave</option><option value="personal">Personal leave</option><option value="ph_credit">PH Days Leave</option><option value="unpaid">Unpaid leave</option></select></label>
-        <label class="field"><span>Actual duty</span><div class="day-duty-row"><input id="dayActualCode" type="text" maxlength="20" placeholder="613, SP613 or 0613" autocomplete="off"><button id="dayLookupBtn" class="secondary" type="button">Load shift</button></div><div id="dayShiftSuggestions" class="day-shift-suggestions"></div><small id="dayLookupMsg">Type duty digits (e.g. 613), a full code (SP613), or a 4-digit sign-on time (0613). Results update as you type.</small></label>
+        <label class="field"><span>Actual duty</span><div class="day-duty-row"><input id="dayActualCode" type="text" maxlength="20" placeholder="613, SP613 or 0613" autocomplete="off" aria-describedby="dayLookupMsg" aria-controls="dayShiftSuggestions"><button id="dayLookupBtn" class="secondary" type="button">Load shift</button></div><div id="dayShiftSuggestions" class="day-shift-suggestions" aria-label="Matching duties"></div><small id="dayLookupMsg" role="status" aria-live="polite">Type duty digits (e.g. 613), a full code (SP613), or a 4-digit sign-on time (0613). Results update as you type.</small></label>
       </div>
       <div class="day-time-actions"><label class="field"><span>Actual sign on</span><input id="dayActualStart" type="text" inputmode="numeric" maxlength="5" placeholder="HHMM"></label><label class="field"><span>Actual sign off</span><input id="dayActualEnd" type="text" inputmode="numeric" maxlength="5" placeholder="HHMM"></label><button id="dayPlus8Btn" class="secondary" type="button">+8h</button></div>
       <label class="field day-notes-field"><span>Notes</span><textarea id="dayNotes" rows="4" maxlength="1000" placeholder="Daily roster change/any notes regarding shift"></textarea><small class="muted">1000 character maximum.</small></label>
@@ -842,7 +1034,7 @@
         </div>
         <strong>Shift allowance</strong>
         <div id="dayAllowanceList" class="day-allowances">
-          <div class="day-allowance" data-day-allowance="A640"><div class="day-allowance-head"><input type="checkbox" data-day-allow="A640"><div><strong>A640: Drivers Wasted Meal</strong><small>Per occasion · linked to this day</small></div></div><div class="day-allowance-qty"><small>Quantity</small><input type="number" min="0" step="1" value="1" data-day-qty="A640"></div></div>
+          <div class="day-allowance" data-day-allowance="A640"><div class="day-allowance-head"><input type="checkbox" data-day-allow="A640" aria-label="Apply A640 Drivers Wasted Meal allowance"><div><strong>A640: Drivers Wasted Meal</strong><small>Per occasion · linked to this day</small></div></div><div class="day-allowance-qty"><small>Quantity</small><input type="number" min="0" step="1" value="1" data-day-qty="A640" aria-label="A640 Drivers Wasted Meal quantity"></div></div>
         </div>
         <small class="muted">Rest-job, T&amp;I and travel/other claims are entered once for the whole pay fortnight in the roster view.</small>
         <div class="day-paybot-fortnight"><small class="muted">Pay updates automatically in the roster as soon as this day is saved.</small></div>
@@ -858,7 +1050,7 @@
     <section class="feedback-dialog week-override-dialog" role="dialog" aria-modal="true" aria-labelledby="weekOverrideTitle">
       <div class="feedback-dialog-header"><div><div class="eyebrow">ONE-WEEK OVERRIDE</div><h2 id="weekOverrideTitle">Change roster line for this week</h2></div><button id="weekOverrideClose" class="feedback-close-btn" type="button" aria-label="Close week override">×</button></div>
       <p id="weekOverrideDate" class="muted"></p>
-      <div class="form-grid"><label class="field"><span>Depot</span><select id="weekOverrideDepot"></select></label><label class="field"><span>Roster</span><select id="weekOverrideRoster"></select></label><label class="field"><span>Line</span><select id="weekOverrideLine"></select></label></div>
+      <div class="form-grid rb-field-row"><label class="field"><span>Depot</span><select id="weekOverrideDepot"></select></label><label class="field"><span>Roster</span><select id="weekOverrideRoster"></select></label><label class="field"><span>Line</span><select id="weekOverrideLine"></select></label></div>
       <p class="muted">This changes only this WC week. The underlying timeline continues normally before and after it.</p>
       <div class="actions"><button id="weekOverrideSave" class="primary" type="button">Save week override</button><button id="weekOverrideRemove" class="secondary danger-data-btn" type="button">Remove override</button></div>
     </section>
@@ -870,7 +1062,8 @@
       <div class="data-body">
         <p id="payCheckPeriod" class="muted"></p>
         <div class="pay-check-summary"><span>Expected gross</span><strong id="payCheckExpected">—</strong><span>Difference</span><strong id="payCheckDifference">—</strong></div>
-        <label class="field"><span>Actual payslip gross</span><input id="payCheckActual" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"><small>Enter the gross amount shown on the payslip for this fortnight. RosterBot stores it locally with the pay-cycle record.</small></label>
+        <label class="field"><span>Actual payslip gross</span><input id="payCheckActual" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" aria-describedby="payCheckHelp payCheckError"><small id="payCheckHelp">Enter the gross amount shown on the payslip for this fortnight. RosterBot stores it locally with the pay-cycle record.</small></label>
+        <p id="payCheckError" class="v32-field-error" role="alert" hidden></p>
         <p class="muted">Marking a pay cycle checked records a snapshot of the expected calculation at that time. If calculation rules change later, RosterBot can show that the current expected amount has moved without changing the historical payslip amount.</p>
         <div class="actions"><button id="payCheckSave" class="primary" type="button">Mark pay checked</button><button id="payCheckReopen" class="secondary danger-data-btn" type="button">Reopen / clear check</button></div>
       </div>
@@ -881,20 +1074,34 @@
     <section class="feedback-dialog data-dialog" role="dialog" aria-modal="true" aria-labelledby="dataTitle">
       <div class="feedback-dialog-header"><div><div class="eyebrow">YOUR DATA</div><h2 id="dataTitle">Data &amp; Sync</h2></div><button id="dataCloseBtn" class="feedback-close-btn" type="button" aria-label="Close data settings">×</button></div>
       <div class="data-body">
-        <section class="data-local-section">
-          <div class="cloud-section-head"><div><div class="eyebrow">THIS DEVICE</div><h3>Local storage &amp; backup</h3></div><span class="cloud-state-pill local">Local-first</span></div>
-          <p><strong>RosterBot still works entirely without an account.</strong> Your browser remains the working copy. You can keep using local storage and manual <code>.rosterbot</code> backups forever, even if Cloud Sync is never enabled.</p>
-          <p id="storageHealth" class="storage-health muted">Checking browser storage…</p>
-          <p class="muted"><strong>Backups matter:</strong> private browsing, clearing site data, browser cleanup settings, uninstalling the browser, or opening the site in a different browser/profile can make local data unavailable. RosterBot will gently remind you when your last backup is getting old.</p>
-          <p class="muted"><strong>Hosting privacy:</strong> RosterBot itself includes no analytics or tracking code. When hosted on GitHub Pages, GitHub may process normal website/service usage information. Your roster/pay diary is only sent to the optional Supabase sync service when you explicitly sign in and choose a sync action.</p>
-          <p id="backupAge" class="storage-health muted">Last backup: never.</p>
-          <div class="data-actions"><button id="persistDataBtn" class="secondary" type="button">Keep data on this device</button><button id="exportDataBtn" class="primary" type="button">Export backup</button><button id="importDataBtn" class="secondary" type="button">Import backup</button><button id="clearDataBtn" class="secondary danger-data-btn" type="button">Clear saved data</button></div>
-          <input id="importDataFile" type="file" accept="application/json,.json,.rosterbot" hidden><p id="dataStatus" class="feedback-status" aria-live="polite"></p>
+        <p class="data-trust-intro">Your working RosterBot is saved on this device. An account is optional, and entering roster, diary or pay information does not upload it.</p>
+
+        <section class="data-job-section data-device-section" aria-labelledby="dataDeviceTitle">
+          <div class="cloud-section-head"><div><div class="eyebrow">THIS DEVICE</div><h3 id="dataDeviceTitle">Your working copy is on this device</h3></div><span class="cloud-state-pill local">Saved locally</span></div>
+          <p>RosterBot works without an account and keeps working offline. Your changes are saved here first.</p>
+          <p class="data-safety-note">If this device is lost, or its browser/site data is cleared, you will need a backup file or Cloud Sync to recover your RosterBot.</p>
+        </section>
+
+        <section class="data-job-section data-backup-section" aria-labelledby="dataBackupTitle">
+          <div class="cloud-section-head"><div><div class="eyebrow">KEEP A BACKUP</div><h3 id="dataBackupTitle">Keep a backup of my RosterBot</h3></div><span id="backupAge" class="cloud-state-pill local">Last backup: never</span></div>
+          <p>A <code>.rosterbot</code> file is a point-in-time copy of your roster, diary, pay setup and supported settings. Keep it somewhere you control, then use it to restore RosterBot later.</p>
+          <p class="muted">Restoring always stages and checks the file before replacing this device’s working copy.</p>
+          <div class="data-actions"><button id="exportDataBtn" class="primary" type="button">Download .rosterbot backup</button><button id="importDataBtn" class="secondary" type="button">Restore from backup</button></div>
+          <input id="importDataFile" type="file" accept="application/json,.json,.rosterbot" hidden aria-label="Choose a RosterBot backup file"><p id="dataStatus" class="feedback-status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="data-job-section data-another-device-section" aria-labelledby="dataAnotherDeviceTitle">
+          <div class="cloud-section-head"><div><div class="eyebrow">ANOTHER DEVICE</div><h3 id="dataAnotherDeviceTitle">Use RosterBot on another device</h3></div></div>
+          <div class="data-route-grid">
+            <article><strong>Keep multiple devices in sync</strong><p>Use optional encrypted Cloud Sync for ongoing changes across your signed-in devices.</p><button id="dataAnotherCloudBtn" class="secondary" type="button">Set up Cloud Sync</button></article>
+            <article><strong>Move or restore once</strong><p>Download a backup here, then choose Restore from backup on the new device.</p><button id="dataAnotherImportBtn" class="secondary" type="button">Restore a backup</button></article>
+          </div>
         </section>
 
         <section id="cloudSyncSection" class="cloud-sync-section" aria-labelledby="cloudSyncTitle" data-sync-state="signed-out">
-          <div class="cloud-section-head"><div><div class="eyebrow">OPTIONAL CLOUD</div><h3 id="cloudSyncTitle">Cloud Sync <span class="sync-poc-badge">SAFE SYNC</span></h3></div><span id="cloudStatePill" class="cloud-state-pill">Local only</span></div>
-          <p class="muted">Cloud Sync is optional. RosterBot still saves to this browser <strong>first</strong> and continues working without an account. Once a device has a safe sync baseline, RosterBot can automatically upload local diary changes and safely apply cloud-only changes. v0.25 adds optional client-side encryption so the cloud payload can be stored as ciphertext. First backup/link, encryption migration and every conflict still require an explicit choice.</p>
+          <div class="cloud-section-head"><div><div class="eyebrow">OPTIONAL CLOUD</div><h3 id="cloudSyncTitle">Cloud Sync</h3></div><span id="cloudStatePill" class="cloud-state-pill">Local only</span></div>
+          <p class="cloud-purpose"><strong>Cloud Sync keeps supported RosterBot information coordinated across your devices.</strong> It is optional, uses a separate account, and does not replace the working copy saved on each device.</p>
+          <div class="data-plain-comparison"><div><strong>Backup</strong><span>A point-in-time file that you keep.</span></div><div><strong>Cloud Sync</strong><span>Ongoing coordination between devices when enabled.</span></div></div>
 
           <div id="cloudConfigNeeded" class="cloud-config-needed" hidden>
             <strong>Cloud service setup is unavailable on this copy.</strong>
@@ -902,32 +1109,32 @@
           </div>
 
           <div id="cloudSignedOut" class="cloud-auth-block">
-            <div class="cloud-auth-intro"><strong>Use Cloud Sync on this device</strong><p class="muted cloud-small">Create an account or sign in. Creating/signing in never uploads your roster by itself; you still choose <strong>Sync now</strong>.</p></div>
+            <div class="cloud-auth-intro"><strong>Cloud Sync is off on this device</strong><p class="muted cloud-small">Nothing is being uploaded. Sign in or create an account, then make a separate choice to start the first sync.</p></div>
             <div class="cloud-auth-switch" role="tablist" aria-label="Cloud account action">
               <button id="cloudShowSignIn" class="active" type="button" role="tab" aria-selected="true">Sign in</button>
               <button id="cloudShowSignUp" type="button" role="tab" aria-selected="false">Create account</button>
             </div>
 
             <div id="cloudSignInPanel" class="cloud-auth-panel" role="tabpanel">
-              <div class="form-grid cloud-auth-grid">
+              <div class="form-grid cloud-auth-grid rb-field-row">
                 <label class="field"><span>Email</span><input id="cloudEmail" type="email" autocomplete="username" placeholder="you@example.com"></label>
                 <label class="field"><span>Password</span><input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Password"></label>
               </div>
               <div class="data-actions"><button id="cloudSignIn" class="primary" type="button">Sign in</button><button id="cloudForgotPassword" class="secondary" type="button">Forgot password</button></div>
               <div id="cloudRecoveryRequest" class="cloud-account-note" hidden><strong>Reset password</strong><span class="muted cloud-small">Enter your email above, then request a reset link. The link returns to this RosterBot page.</span><div class="data-actions"><button id="cloudSendReset" class="secondary" type="button">Send reset email</button><button id="cloudCancelReset" class="secondary" type="button">Cancel</button></div></div>
-              <div id="cloudRecoveryPassword" class="cloud-account-note" hidden><strong>Choose a new password</strong><span class="muted cloud-small">Your recovery link was accepted. Set a new password for this account.</span><div class="form-grid cloud-auth-grid"><label class="field"><span>New password</span><input id="cloudNewPassword" type="password" autocomplete="new-password" placeholder="At least 10 characters"></label><label class="field"><span>Confirm password</span><input id="cloudNewPasswordConfirm" type="password" autocomplete="new-password" placeholder="Repeat password"></label></div><div class="data-actions"><button id="cloudSaveNewPassword" class="primary" type="button">Save new password</button></div></div>
+              <div id="cloudRecoveryPassword" class="cloud-account-note" hidden><strong>Choose a new password</strong><span class="muted cloud-small">Your recovery link was accepted. Set a new password for this account.</span><div class="form-grid cloud-auth-grid rb-field-row"><label class="field"><span>New password</span><input id="cloudNewPassword" type="password" autocomplete="new-password" placeholder="At least 10 characters"></label><label class="field"><span>Confirm password</span><input id="cloudNewPasswordConfirm" type="password" autocomplete="new-password" placeholder="Repeat password"></label></div><div class="data-actions"><button id="cloudSaveNewPassword" class="primary" type="button">Save new password</button></div></div>
             </div>
 
             <div id="cloudSignUpPanel" class="cloud-auth-panel" role="tabpanel" hidden>
-              <div class="form-grid cloud-auth-grid">
+              <div class="form-grid cloud-auth-grid rb-field-row">
                 <label class="field"><span>Email</span><input id="cloudSignupEmail" type="email" autocomplete="email" placeholder="you@example.com"><small>Use an address you can access for verification.</small></label>
                 <label class="field"><span>Password</span><input id="cloudSignupPassword" type="password" autocomplete="new-password" placeholder="At least 10 characters"><small>RosterBot enforces a 10-character minimum.</small></label>
                 <label class="field"><span>Confirm password</span><input id="cloudSignupConfirm" type="password" autocomplete="new-password" placeholder="Repeat password"></label>
               </div>
               <div class="data-actions"><button id="cloudCreateAccount" class="primary" type="button">Create account</button></div>
-              <div class="cloud-account-note"><strong>Email confirmation may be required</strong><span class="muted cloud-small">If confirmation is enabled in Supabase, RosterBot will ask you to check your inbox. The confirmation link returns to this exact RosterBot page when its URL is allowed in Supabase. RosterBot removes the temporary auth tokens from the address bar and then asks you to sign in.</span></div>
+              <div class="cloud-account-note"><strong>Email confirmation may be required</strong><span class="muted cloud-small">Check your inbox if RosterBot asks you to confirm the address. The confirmation link should return here, then you can sign in normally.</span></div>
             </div>
-            <p class="muted cloud-small">Your password is only sent to Supabase Auth and is never written into RosterBot storage or cloud roster payloads. To keep you signed in, RosterBot stores the Supabase session tokens in this browser only; Sign out removes them. Access tokens are refreshed automatically when needed.</p>
+            <p class="muted cloud-small"><strong>An account is not the same as Cloud Sync.</strong> Signing in identifies your Cloud account, but it does not upload your roster. The first sync remains a separate action.</p>
           </div>
 
           <div id="cloudSignedIn" hidden>
@@ -953,7 +1160,7 @@
                 <div id="cloudEncryptionEnableStage" hidden>
                   <strong>Enable encrypted cloud</strong>
                   <p class="muted cloud-small">Choose a separate encryption passphrase. This is not your RosterBot account password. RosterBot will also generate a one-time recovery key.</p>
-                  <div class="cloud-encryption-grid">
+                  <div class="cloud-encryption-grid rb-field-row">
                     <label class="field"><span>Encryption passphrase</span><input id="cloudEncryptionPassphrase" type="password" autocomplete="new-password" placeholder="At least 12 characters"></label>
                     <label class="field"><span>Confirm passphrase</span><input id="cloudEncryptionPassphraseConfirm" type="password" autocomplete="new-password" placeholder="Repeat passphrase"></label>
                   </div>
@@ -979,7 +1186,7 @@
                 <div id="cloudEncryptionPassphraseStage" hidden>
                   <strong>Change encryption passphrase</strong>
                   <p class="muted cloud-small">This re-wraps the existing cloud master key; your roster encryption key and encrypted roster body stay the same. To make the old passphrase unusable, RosterBot creates a new cloud revision and atomically removes older revision history containing the old wrapper.</p>
-                  <div class="cloud-encryption-grid">
+                  <div class="cloud-encryption-grid rb-field-row">
                     <label class="field"><span>New encryption passphrase</span><input id="cloudNewEncryptionPassphrase" type="password" autocomplete="new-password" placeholder="At least 12 characters"></label>
                     <label class="field"><span>Confirm new passphrase</span><input id="cloudNewEncryptionPassphraseConfirm" type="password" autocomplete="new-password" placeholder="Repeat passphrase"></label>
                   </div>
@@ -996,9 +1203,8 @@
                   <div class="data-actions"><button id="cloudCommitRecoveryRotate" class="primary" type="button" disabled>Replace recovery key</button><button id="cloudRecoveryRotateCancel" class="secondary" type="button">Cancel</button></div>
                 </div>
               </div>
-              <p id="cloudKeyManagementStatus" class="feedback-status" aria-live="polite" hidden></p>
-              <p class="muted cloud-small" style="margin:9px 0 0"><strong>Scope:</strong> encryption protects the cloud payload and cloud revision history. Browser local storage and manually exported <code>.rosterbot</code> files remain plaintext in v0.25.2a.</p>
-              <p class="muted cloud-small" style="margin:6px 0 0"><strong>Trusted-device note:</strong> remembering stores the cloud master key in this browser profile. Treat a trusted browser profile like an unlocked device; use <em>Lock &amp; forget this device</em> before handing it to someone else.</p>
+              <p id="cloudKeyManagementStatus" class="feedback-status" role="status" aria-live="polite" hidden></p>
+              <details class="cloud-encryption-technical"><summary>How encryption works on this device</summary><p class="muted cloud-small"><strong>Scope:</strong> encryption protects the synced Cloud copy and its history. The working copy on this device and manually downloaded <code>.rosterbot</code> files are not encrypted by Cloud Sync.</p><p class="muted cloud-small"><strong>Remembered device:</strong> remembering the key lets this browser unlock the synced copy again without storing your passphrase. Lock and forget the device before handing it to someone else.</p></details>
             </div>
 
             <label class="cloud-auto-row" for="cloudAutoSync">
@@ -1023,7 +1229,7 @@
             </div>
 
             <details id="cloudAdvancedDetails" class="cloud-advanced-details">
-              <summary>Advanced / Recovery</summary>
+              <summary>Technical sync details &amp; recovery</summary>
               <div class="cloud-metrics">
                 <div><span>Cloud revision</span><strong id="cloudRevision">—</strong></div>
                 <div><span>This device base</span><strong id="cloudBaseRevision">Never synced</strong></div>
@@ -1049,18 +1255,26 @@
             </details>
           </div>
 
-          <details id="cloudConnectionDetails" class="cloud-setup-details">
-            <summary>Connection settings</summary>
-            <p class="muted cloud-dev-note">Developer fallback only. Hosted RosterBot already contains its public cloud connection configuration; never enter a secret/service-role key.</p>
-            <div class="form-grid cloud-config-grid">
-              <label class="field"><span>Project URL</span><input id="cloudProjectUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://xxxxx.supabase.co"><small>Public project URL.</small></label>
-              <label class="field"><span>Publishable key</span><input id="cloudPublishableKey" type="password" autocomplete="off" placeholder="sb_publishable_…"><small>Use the publishable key only — never a secret/service-role key.</small></label>
+          <details id="dataTechnicalDetails" class="data-technical-details">
+            <summary>Technical details</summary>
+            <div class="data-technical-body">
+              <p id="storageHealth" class="storage-health muted">Checking browser storage…</p>
+              <p class="muted"><strong>Privacy evidence:</strong> RosterBot includes no analytics or tracking code. Hosted pages may produce ordinary hosting logs. Personal roster state is sent to the configured sync service only after Cloud Sync is explicitly used.</p>
+              <div class="data-actions"><button id="persistDataBtn" class="secondary" type="button">Ask browser to protect local storage</button><button id="clearDataBtn" class="secondary danger-data-btn" type="button">Clear this device’s saved data</button></div>
+              <details id="cloudConnectionDetails" class="cloud-setup-details">
+                <summary>Cloud connection evidence</summary>
+                <p class="muted cloud-dev-note">Hosted RosterBot already contains its public connection configuration. These values are diagnostic evidence; never enter a secret or service-role key.</p>
+                <div class="form-grid cloud-config-grid rb-field-row">
+                  <label class="field"><span>Project URL</span><input id="cloudProjectUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://xxxxx.supabase.co"><small>Public project URL.</small></label>
+                  <label class="field"><span>Publishable key</span><input id="cloudPublishableKey" type="password" autocomplete="off" placeholder="sb_publishable_…"><small>Public browser credential only.</small></label>
+                </div>
+                <div class="data-actions"><button id="cloudSaveConfig" class="secondary" type="button">Save connection</button><button id="cloudForgetConfig" class="secondary" type="button">Forget connection</button></div>
+              </details>
             </div>
-            <div class="data-actions"><button id="cloudSaveConfig" class="secondary" type="button">Save connection</button><button id="cloudForgetConfig" class="secondary" type="button">Forget connection</button></div>
           </details>
 
           <div id="cloudHistoryPanel" class="cloud-history-panel" hidden></div>
-          <p id="cloudStatus" class="feedback-status" aria-live="polite"></p>
+          <p id="cloudStatus" class="feedback-status" role="status" aria-live="polite"></p>
         </section>
       </div>
     </section>
@@ -1125,7 +1339,8 @@
         <button id="changelogCloseBtn" class="feedback-close-btn" type="button" aria-label="Close changelog">×</button>
       </div>
       <div class="changelog-body">
-        <article class="changelog-entry current"><div class="changelog-entry-head"><strong>v0.31.0 PWA, Mobile &amp; Offline</strong><span>Installable, offline-ready RosterBot</span><em>Current release</em></div><ul><li>RosterBot can be installed as a standalone PWA with the approved RosterBot app icon on supported iPhone, iPad, Android and desktop browsers.</li><li>A verified, build-coherent application shell supports cold launch, reload and ordinary roster, diary and PayBot use while offline after one complete online load.</li><li>Local edits remain safely stored while offline; reconnect performs fresh authentication/capability checks and revision-aware reconciliation rather than replaying old requests.</li><li>Complete new builds wait for an explicit <strong>Update now</strong> action and preserve committed local state through the controlled transition.</li><li>Safe areas, keyboard-facing editors, modal scrolling, touch targets and standalone presentation were refined and verified on real iPhone and iPad hardware.</li></ul></article>
+        <article class="changelog-entry current"><div class="changelog-entry-head"><strong>v0.32.0 UX, Adoption &amp; Accessibility</strong><span>Faster to understand and easier to use every day</span><em>Release</em></div><ul><li>A new value-first front door explains RosterBot quickly, offers a fictional non-persistent example, and keeps roster/shift browsing separate from personal setup.</li><li>Progressive manual setup asks for the roster facts needed to produce a personal preview first; pay and advanced employment details follow only when their benefit is clear.</li><li>Home now prioritises Search, a complete Today summary, four calendar weeks of forward roster visibility, and a clear expected-pay state.</li><li>Data &amp; Sync now explains the working copy on this device, backups, using RosterBot across devices and optional encrypted Cloud Sync in ordinary language.</li><li>Keyboard/focus behaviour, form guidance, large-text reflow, reduced motion and Pay information hierarchy are clearer while the proven local-first, offline, encryption and controlled-update contracts remain unchanged.</li></ul></article>
+        <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.31.0 PWA, Mobile &amp; Offline</strong><span>Installable, offline-ready RosterBot</span></div><ul><li>RosterBot can be installed as a standalone PWA with the approved RosterBot app icon on supported iPhone, iPad, Android and desktop browsers.</li><li>A verified, build-coherent application shell supports cold launch, reload and ordinary roster, diary and PayBot use while offline after one complete online load.</li><li>Local edits remain safely stored while offline; reconnect performs fresh authentication/capability checks and revision-aware reconciliation rather than replaying old requests.</li><li>Complete new builds wait for an explicit <strong>Update now</strong> action and preserve committed local state through the controlled transition.</li><li>Safe areas, keyboard-facing editors, modal scrolling, touch targets and standalone presentation were refined and verified on real iPhone and iPad hardware.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.30.0 Data Safety</strong><span>Verified local and Cloud schema upgrade</span></div><ul><li>Upgrades local personal data from schema 4 to schema 5 using a verified, restart-safe migration with an exact schema-4 compatibility projection and retained recovery evidence.</li><li>Cloud schema-5 upload and restore remain fail-closed until the signed-in session receives a fresh authenticated capability attestation from the exact configured RosterBot service.</li><li>Backup import and Cloud replacement are transactional, restore failures roll back to the previous verified state, and no-op startup/reload does not create another generation.</li><li>Manual <code>.rosterbot</code> backups remain schema-4 compatible and plaintext; optional Cloud encryption remains client-side AES-256-GCM.</li><li>Frozen official roster and pay-reference datasets remain unchanged.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.29.2 Roster Overview</strong><span>Dashboard roster cards and startup rendering</span></div><ul><li>Refined the Home roster overview and fixed startup ordering so saved roster cards render only after the required feature modules are ready.</li><li>Preserved roster history, manual schedules, PayBot, Cloud Sync, calendar and frozen official data.</li></ul></article>
         <article class="changelog-entry"><div class="changelog-entry-head"><strong>v0.29.1 Recursion Hotfix</strong><span>Roster rendering restored</span></div><ul><li>Fixed an accidental self-call in the week-heading formatter that caused “too much recursion” / “Maximum call stack size exceeded” when rendering roster weeks.</li><li>Restored first-run roster previews, saved roster views and Home → This pay fortnight.</li></ul></article>

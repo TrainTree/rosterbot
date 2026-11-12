@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/61-page-bridge.js','rb-build:f975cefad1b130c09a48db7d44c56aa072049034ff6b25b2e3c31a935cbc3ae8')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/61-page-bridge.js','rb-build:1dd75d9547321eaf27713ec6ca0e71166079208f1dc64263bb54492386adafca')}catch(error){throw error}
 (function(){
   'use strict';
   const rosterPage=document.getElementById('rosterbotPage');

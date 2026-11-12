@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/01-persistence-registry.js','rb-build:f975cefad1b130c09a48db7d44c56aa072049034ff6b25b2e3c31a935cbc3ae8')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/01-persistence-registry.js','rb-build:1dd75d9547321eaf27713ec6ca0e71166079208f1dc64263bb54492386adafca')}catch(error){throw error}
 try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('01-persistence-registry','RosterBotPersistenceRegistry',document.currentScript?.src||'js/01-persistence-registry.js')}catch(_){}
 (function(root,factory){
   'use strict';
@@ -79,7 +79,15 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
   function sessionValue(value){
     if(!isObject(value))return unsupported(value,'expected an object');
     if(!isIsoDate(value.startDate)||typeof value.startRoster!=='string'||!value.startRoster||!Number.isInteger(Number(value.startLine))||Number(value.startLine)<1)return unsupported(value,'session settings require startDate, startRoster and startLine');
-    return required(value,['startDepot','roleStartDate','scheduleMode'])?valid(value):legacy(value,'session settings omit fields added by later v0.29 releases');
+    return required(value,['startDepot','scheduleMode'])?valid(value):legacy(value,'session settings omit fields added by later releases');
+  }
+  function setupDraftValue(value){
+    if(!isObject(value))return unsupported(value,'expected an onboarding draft object');
+    if(Object.prototype.hasOwnProperty.call(value,'startDate')&&value.startDate!==''&&!isIsoDate(value.startDate))return unsupported(value,'draft startDate must be empty or an ISO date');
+    if(Object.prototype.hasOwnProperty.call(value,'scheduleMode')&&!['official','pattern','adhoc'].includes(value.scheduleMode))return unsupported(value,'draft schedule mode is unsupported');
+    if(Object.prototype.hasOwnProperty.call(value,'setupModeChosen')&&typeof value.setupModeChosen!=='boolean')return unsupported(value,'draft setupModeChosen must be boolean');
+    if(value.setupModeChosen===true&&!['official','pattern','adhoc'].includes(value.scheduleMode))return unsupported(value,'a chosen draft branch requires its schedule mode');
+    return valid(value);
   }
   function overrideMapValue(value,kind){
     if(!isObject(value))return unsupported(value,'expected an object');
@@ -139,6 +147,7 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
     employment:jsonValidator(employmentValue),
     manualSchedule:jsonValidator(manualScheduleValue),
     sessionSettings:jsonValidator(sessionValue),
+    setupDraft:jsonValidator(setupDraftValue),
     weekOverrides:jsonValidator(value=>overrideMapValue(value,'week')),
     dayOverrides:jsonValidator(value=>overrideMapValue(value,'day')),
     paybot:jsonValidator(paybotValue),
@@ -175,7 +184,9 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
     ['rosterbot-storage-guard-v1','internal','storageGuard','metadata',null],
     ['rosterbot-personal-state-v1','internal','jsonObject','sensitive',null],
     ['rosterbot-schema5-migration-journal-v1','internal','jsonObject','metadata',null],
+    ['rosterbot-schema5-personal-commit-v1','internal','jsonObject','sensitive',null],
     ['rosterbot-schema4-pre-migration-snapshot-v1','internal','jsonObject','sensitive',null],
+    ['rosterbot-setup-draft-v1','device','setupDraft','none',null],
     ['rosterbot-cleared-v1','device','iso','none',null],
     ['rosterbot-theme-v1.9','device','theme','none',['rosterbot-theme-v1.8','rosterbot-theme-v1.7','rosterbot-theme']],
     ['rosterbot-theme-v1.8','device','string','none',null,'rosterbot-theme-v1.9'],

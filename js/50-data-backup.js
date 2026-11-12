@@ -1,14 +1,14 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/50-data-backup.js','rb-build:f975cefad1b130c09a48db7d44c56aa072049034ff6b25b2e3c31a935cbc3ae8')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/50-data-backup.js','rb-build:1dd75d9547321eaf27713ec6ca0e71166079208f1dc64263bb54492386adafca')}catch(error){throw error}
 (function(){
   'use strict';
-  const modal=document.getElementById('dataModal'),openBtn=document.getElementById('dataOpenBtn'),noticeBtn=document.getElementById('openDataFromNotice'),closeBtn=document.getElementById('dataCloseBtn'),persistBtn=document.getElementById('persistDataBtn'),storageHealth=document.getElementById('storageHealth'),exportBtn=document.getElementById('exportDataBtn'),importBtn=document.getElementById('importDataBtn'),fileInput=document.getElementById('importDataFile'),clearBtn=document.getElementById('clearDataBtn'),status=document.getElementById('dataStatus'),backupAge=document.getElementById('backupAge'),privacyPill=document.querySelector('.privacy-pill');
+  const modal=document.getElementById('dataModal'),openBtn=document.getElementById('dataOpenBtn'),noticeBtn=document.getElementById('openDataFromNotice'),closeBtn=document.getElementById('dataCloseBtn'),persistBtn=document.getElementById('persistDataBtn'),storageHealth=document.getElementById('storageHealth'),exportBtn=document.getElementById('exportDataBtn'),importBtn=document.getElementById('importDataBtn'),fileInput=document.getElementById('importDataFile'),clearBtn=document.getElementById('clearDataBtn'),status=document.getElementById('dataStatus'),backupAge=document.getElementById('backupAge'),privacyPill=document.querySelector('.privacy-pill'),anotherCloudBtn=document.getElementById('dataAnotherCloudBtn'),anotherImportBtn=document.getElementById('dataAnotherImportBtn');
   const registry=window.RosterBotPersistenceRegistry,keys=registry.surfaceKeys('backup');
   const meaningfulKeys=['rosterbot-timeline-v1','rosterbot-diary-annual-leave-v1','rosterbot-week-leave-v1','rosterbot-week-overrides-v1','rosterbot-day-overrides-v1','rosterbot-week-locks-v1','rosterbot-pay-checks-v1','rosterbot-employment-profile-v1','rosterbot-manual-schedule-v1'];
   function daysAgo(iso){if(!iso)return null;const n=Date.parse(iso);if(!Number.isFinite(n))return null;return Math.max(0,Math.floor((Date.now()-n)/86400000));}
   function backupLabel(){const raw=localStorage.getItem('rosterbot-last-backup-v1'),age=daysAgo(raw);if(age==null)return 'never';if(age===0)return 'today';if(age===1)return '1 day ago';return `${age} days ago`;}
   function updateBackupUI(){
-    const label=backupLabel();if(backupAge)backupAge.textContent=`Last backup: ${label}.`;
-    if(privacyPill){const cloud=window.RosterBotCloudSync?.summary?.();privacyPill.textContent=cloud?.signedIn?`Cloud ${cloud.revision!=null?`rev ${cloud.revision}`:'connected'} · local-first`:`Local-first diary · backup ${label}`;}
+    const label=backupLabel();if(backupAge)backupAge.textContent=`Last backup · ${label}`;
+    if(privacyPill){const cloud=window.RosterBotCloudSync?.summary?.();privacyPill.textContent=cloud?.signedIn?'Cloud account connected · working copy on this device':`Saved on this device · backup ${label}`;}
     const first=localStorage.getItem('rosterbot-first-use-v1');if(!first){try{localStorage.setItem('rosterbot-first-use-v1',new Date().toISOString())}catch(_){}}
     const lastAge=daysAgo(localStorage.getItem('rosterbot-last-backup-v1')),firstAge=daysAgo(first||new Date().toISOString());
     const hasData=meaningfulKeys.some(k=>{const v=localStorage.getItem(k);return v&&v!=='{}'&&v!=='[]'});
@@ -16,7 +16,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     let reminder=document.getElementById('backupReminder');
     if(should&&!reminder){
       reminder=document.createElement('div');reminder.id='backupReminder';reminder.className='backup-reminder';
-      reminder.innerHTML=`<strong>Local backup recommended.</strong> Your roster history exists only in this browser. Last backup: ${label}. <button type=\"button\" class=\"text-action\" id=\"backupReminderBtn\">BACK UP NOW</button>`;
+      reminder.innerHTML=`<strong>Keep a backup somewhere safe.</strong> Your working copy is saved on this device. A backup can restore it if this device or its site data is lost. Last backup: ${label}. <button type=\"button\" class=\"text-action\" id=\"backupReminderBtn\">BACK UP NOW</button>`;
       document.getElementById('localDataNotice')?.insertAdjacentElement('afterend',reminder);
       reminder.querySelector('#backupReminderBtn')?.addEventListener('click',()=>exportBtn?.click());
     }else if(!should&&reminder)reminder.remove();
@@ -32,19 +32,20 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
       }else{storageHealth.innerHTML='<strong>Browser storage:</strong> available. This browser does not report whether it is protected from automatic eviction.';if(persistBtn)persistBtn.hidden=true;}
     }catch(_){storageHealth.innerHTML='<strong>Browser storage:</strong> unavailable or blocked. Exported backups are especially important on this browser.';if(persistBtn)persistBtn.hidden=true;}
   }
-  const show=()=>{modal.hidden=false;document.body.classList.add('feedback-modal-open');status.textContent='';updateStorageHealth();updateBackupUI();};
-  const showCloud=()=>{show();setTimeout(()=>{document.getElementById('cloudSyncSection')?.scrollIntoView({behavior:'smooth',block:'start'});const signedIn=!document.getElementById('cloudSignedIn')?.hidden;if(!signedIn)document.getElementById('cloudEmail')?.focus({preventScroll:true})},80)};
+  const show=()=>{status.textContent='';updateStorageHealth();updateBackupUI();window.RosterBotDialogs.open(modal,{invoker:document.activeElement,initialFocus:closeBtn,onRequestClose:hide});};
+  const scrollBehavior=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth';
+  const showCloud=()=>{show();setTimeout(()=>{document.getElementById('cloudSyncSection')?.scrollIntoView({behavior:scrollBehavior(),block:'start'});const signedIn=!document.getElementById('cloudSignedIn')?.hidden;if(!signedIn)document.getElementById('cloudEmail')?.focus({preventScroll:true})},80)};
   const beginImport=()=>fileInput?.click();
-  const hide=()=>{modal.hidden=true;document.body.classList.remove('feedback-modal-open');};
+  const hide=()=>{window.RosterBotDialogs.close(modal);};
   function download(name,text){const blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
   function importPreview(candidate){
     const s=candidate.summary,yes=value=>value?'Present':'Not found',unknown=s.unknownKeys.length?s.unknownKeys.join(', '):'None';
     return [
-      'Import preview',`App/version: ${s.app||'—'} · ${candidate.payload.version||'version not recorded'} · schema ${s.schemaVersion??'—'}`,
+      'Import preview',`Backup created: ${candidate.payload.exportedAt?new Date(candidate.payload.exportedAt).toLocaleString():'Date not recorded'}`,
       `Roster history: ${s.rosterHistoryFound?`${s.rosterHistoryCount} entr${s.rosterHistoryCount===1?'y':'ies'}`:'Not found'}`,
       `Employment history: ${s.employmentHistoryFound?`${s.employmentHistoryCount} entr${s.employmentHistoryCount===1?'y':'ies'}`:'Not found'}`,
       `Diary changes: ${s.diaryChangesFound?'Found':'Not found'}`,`Manual schedule: ${yes(s.manualSchedulePresent)}`,`PayBot state: ${yes(s.paybotStatePresent)}`,
-      `Calendar subscription settings: ${yes(s.calendarSettingsPresent)}`,`Recognised keys: ${s.recognisedCount} of ${s.totalRecognisedKeys}`,'Malformed or unsupported items: None',`Unknown storage keys (preserved for this review, not applied): ${unknown}`,`Unknown wrapper fields: ${s.unknownWrapperFields.length?s.unknownWrapperFields.join(', '):'None'}`,
+      `Calendar subscription settings: ${yes(s.calendarSettingsPresent)}`,'Safety checks: passed',`Additional unrecognised items (not applied): ${unknown}`,
       '',s.empty?'This backup contains no personal data. Continuing would clear the current backup-scoped data.':s.partial?'This is a partial backup. The established .rosterbot format is a FULL REPLACEMENT: recognised backup keys missing from this file will be removed.':'This .rosterbot backup is a full replacement of backup-scoped data.',
       'Credentials and device-local secrets are never displayed or imported.','',s.empty?'Review the exceptional empty replacement?':'Replace this device data with this staged backup?'
     ].join('\n');
@@ -57,7 +58,7 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   function retainFailureEvidence(candidate,replacement,source){
     const failure=replacementFailureState(candidate,replacement,source),ui=window.RosterBotRecoveryUI;
     if(!ui?.buildRecoveryExport)return failure;
-    const artifact=ui.buildRecoveryExport({state:failure,registry,appVersion:'v0.31.0'});
+    const artifact=ui.buildRecoveryExport({state:failure,registry,appVersion:'v0.32.0'});
     artifact.replacement={source,stage:replacement.stage,rolledBack:!!replacement.rolledBack,rollbackVerified:!!replacement.rollbackVerified,unknownIncomingKeys:Object.keys(candidate?.unknownStorage||{}),unknownIncomingWrapperFields:Object.keys(candidate?.wrapperUnknown||{})};
     window.__rosterbotLastRecoveryEvidence=artifact;
     try{download(`rosterbot-${source}-failure-${artifact.exportedAt.replace(/[:.]/g,'-')}.json`,JSON.stringify(artifact,null,2))}catch(_){}
@@ -81,11 +82,13 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
     let holds={};try{const parsed=JSON.parse(localStorage.getItem('rosterbot-cloud-auto-hold-v1')||'{}');if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))holds=parsed}catch(_){}
     holds.__device={reason:'explicit-local-clear',at:stamp};localStorage.setItem('rosterbot-cloud-auto-hold-v1',JSON.stringify(holds));return {clearedAt:stamp,hold:holds.__device};
   }
-  openBtn?.addEventListener('click',show);noticeBtn?.addEventListener('click',show);closeBtn?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();hide()});modal?.addEventListener('click',e=>{const close=e.target.closest?.('#dataCloseBtn');if(close){e.preventDefault();e.stopPropagation();hide();return}if(e.target===modal)hide()},true);document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)hide()});
+  openBtn?.addEventListener('click',show);noticeBtn?.addEventListener('click',show);closeBtn?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();hide()});
+  anotherCloudBtn?.addEventListener('click',()=>{document.getElementById('cloudSyncSection')?.scrollIntoView({behavior:scrollBehavior(),block:'start'});const signedIn=!document.getElementById('cloudSignedIn')?.hidden;(signedIn?document.getElementById('cloudSyncNow'):document.getElementById('cloudEmail'))?.focus({preventScroll:true})});
+  anotherImportBtn?.addEventListener('click',beginImport);
   persistBtn?.addEventListener('click',async()=>{try{if(!navigator.storage?.persist)throw new Error('This browser does not offer persistent-storage requests.');const granted=await navigator.storage.persist();status.textContent=granted?'Persistent browser storage granted. You should still export backups of important history.':'The browser kept standard storage. Autosave still works, but an exported backup is the durable copy you control.';status.className=granted?'feedback-status success':'feedback-status';await updateStorageHealth()}catch(err){status.textContent=err?.message||'Could not request persistent storage.';status.className='feedback-status error'}});
   exportBtn?.addEventListener('click',()=>{
-    const stamp=new Date().toISOString(),storage={};for(const key of keys){const value=localStorage.getItem(key);if(value!=null)storage[key]=value}storage['rosterbot-db-schema-v1']='4';const payload={app:'RosterBotPayBot',version:'0.31.0',schemaVersion:4,exportedAt:stamp,privacy:'Personal diary data exported from local browser storage. Manual .rosterbot exports are plaintext even when encrypted Cloud Sync is enabled.',storage},d=new Date(),ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    try{download(`RosterBot-PayBot-backup-${ds}.rosterbot`,JSON.stringify(payload,null,2));localStorage.setItem('rosterbot-last-backup-v1',stamp);localStorage.setItem('rosterbot-db-schema-v1',String(window.RosterBotSchema5?.SCHEMA5_STORAGE_SCHEMA||4));status.textContent='Backup download requested. Check your browser Downloads / save prompt.';status.className='feedback-status success';updateBackupUI();setTimeout(()=>window.RosterBotDiary?.mirrorNow?.(),0)}catch(err){status.textContent='Backup could not be created: '+(err?.message||err);status.className='feedback-status error'}
+    const stamp=new Date().toISOString(),storage={};for(const key of keys){const value=localStorage.getItem(key);if(value!=null)storage[key]=value}storage['rosterbot-db-schema-v1']='4';const payload={app:'RosterBotPayBot',version:'0.32.0',schemaVersion:4,exportedAt:stamp,privacy:'Personal diary data exported from local browser storage. Manual .rosterbot exports are plaintext even when encrypted Cloud Sync is enabled.',storage},d=new Date(),ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    try{download(`RosterBot-PayBot-backup-${ds}.rosterbot`,JSON.stringify(payload,null,2));localStorage.setItem('rosterbot-last-backup-v1',stamp);localStorage.setItem('rosterbot-db-schema-v1',String(window.RosterBotSchema5?.SCHEMA5_STORAGE_SCHEMA||4));status.textContent='Backup download requested. Keep the .rosterbot file somewhere safe.';status.className='feedback-status success';updateBackupUI();setTimeout(()=>window.RosterBotDiary?.mirrorNow?.(),0)}catch(err){status.textContent='Backup could not be created: '+(err?.message||err);status.className='feedback-status error'}
   });
   importBtn?.addEventListener('click',()=>fileInput?.click());fileInput?.addEventListener('change',async()=>{const file=fileInput.files?.[0];if(!file)return;let cloudToken=null;try{
     let payload;try{payload=JSON.parse(await file.text())}catch(_){throw new Error('That file is not valid JSON. Nothing was changed.')}

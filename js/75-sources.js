@@ -1,10 +1,9 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/75-sources.js','rb-build:f975cefad1b130c09a48db7d44c56aa072049034ff6b25b2e3c31a935cbc3ae8')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/75-sources.js','rb-build:1dd75d9547321eaf27713ec6ca0e71166079208f1dc64263bb54492386adafca')}catch(error){throw error}
 (function(){
   'use strict';
   const $=id=>document.getElementById(id);
   const modal=$('sourcesModal');
   if(!modal)return;
-  let lastFocused=null;
   const ref=()=>window.ROSTERBOT_PAY_REFERENCE||{};
   const rateData=()=>window.ROSTERBOT_PAY_RATE_DATA||{};
   const aud=n=>new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD',minimumFractionDigits:2,maximumFractionDigits:4}).format(Number(n)||0);
@@ -27,9 +26,9 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   function renderEntitlement(){const body=$('sourcesEntitlementBody');if(!body)return;body.innerHTML=(rateData().entitlementRates?.PB205||[]).map(e=>`<tr><td>${dateFmt(e.effectivePayPeriodStart)}</td><td><strong>${aud(e.rate)}/hr</strong></td><td>${e.publishedReference||'Historical entitlement anchor'}</td><td>${e.source||'—'}${e.note?`<small>${e.note}</small>`:''}</td></tr>`).join('')}
   function renderAllowances(){const R=ref(),cur=effectiveIndex(),head=$('sourcesAllowanceHead'),body=$('sourcesAllowanceBody');if(!head||!body)return;makeHead(head,true);body.innerHTML=Object.entries(R.ALLOWANCES||{}).map(([code,item])=>`<tr><td class="sources-code">${code}</td><td>${item.name}</td><td>${item.basis==='hourly'?'Hourly':'Per occasion'}</td>${(item.rates||[]).map((v,i)=>`<td class="${i===cur?'sources-current-col':''}">${shortAud(v)}${item.basis==='hourly'?'/hr':''}</td>`).join('')}</tr>`).join('')}
   function render(){renderGrades();renderEntitlement();renderAllowances();const b=$('sourcesRateSourceBadge');if(b)b.textContent=rateData().publishedSchedule?.source?.replace('V/Line Rail Operations and Administrative Employees Agreement 2023, ','')||'Schedule A · Table 6'}
-  function open(){lastFocused=document.activeElement;render();modal.hidden=false;document.body.classList.add('feedback-modal-open');setTimeout(()=>$('sourcesCloseBtn')?.focus(),0)}
-  function close(){modal.hidden=true;document.body.classList.remove('feedback-modal-open');lastFocused?.focus?.()}
-  $('sourcesCloseBtn')?.addEventListener('click',close);modal.addEventListener('click',e=>{if(e.target===modal)close()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)close()});
+  function open(){render();window.RosterBotDialogs.open(modal,{invoker:document.activeElement,initialFocus:$('sourcesCloseBtn'),onRequestClose:close})}
+  function close(){window.RosterBotDialogs.close(modal)}
+  $('sourcesCloseBtn')?.addEventListener('click',close);
   window.addEventListener('rosterbot:employment-change',()=>{if(!modal.hidden)render()});
   window.RosterBotSources={open,close,render};
 })();

@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/03-persistence-bootstrap.js','rb-build:f975cefad1b130c09a48db7d44c56aa072049034ff6b25b2e3c31a935cbc3ae8')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/03-persistence-bootstrap.js','rb-build:1dd75d9547321eaf27713ec6ca0e71166079208f1dc64263bb54492386adafca')}catch(error){throw error}
 try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03-persistence-bootstrap','RosterBotRecovery',document.currentScript?.src||'js/03-persistence-bootstrap.js')}catch(_){}
 (function(){
   'use strict';
@@ -9,9 +9,10 @@ try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03
   const compatibility=requireDependency('storage compatibility',window.RosterBotStorageCompatibility),registry=requireDependency('persistence registry',window.RosterBotPersistenceRegistry),safety=requireDependency('persistence safety',window.RosterBotPersistenceSafety),recoveryUi=requireDependency('recovery UI',window.RosterBotRecoveryUI),migration=requireDependency('schema-5 migration',window.RosterBotSchema5Migration);
   const personalKeys=registry.surfaceKeys('indexedDb');
   const moduleSources=requireDependency('build feature asset inventory',window.RosterBotBuild?.featureAssets);
-  let state=null,applicationLoaded=false,applicationStarting=false,applicationReady=false,recoveryBusy=false,schema5Ready=false,featureLoading=false,featureWritePending=false,projectionSync=Promise.resolve(),personalWriteRevision=0;
+  let state=null,applicationLoaded=false,applicationStarting=false,applicationReady=false,recoveryBusy=false,schema5Ready=false,featureLoading=false,featureWritePending=false,projectionSync=Promise.resolve(),personalWriteRevision=0,committedProjection={};
   const pendingPersonalValues=new Map();
-  function reapplyPendingPersonalValues(){const storage=localStorage;for(const [key,raw] of pendingPersonalValues){if(raw==null)storage.removeItem(key);else storage.setItem(key,raw)}}
+  function rememberCommitted(result){if(result?.compatibilityProjection?.storage)committedProjection={...result.compatibilityProjection.storage};else if(result?.envelope){const checked=window.RosterBotSchema5?.validateSchema5Envelope?.(result.envelope,{registry,canonical:window.RosterBotCanonicalPersistence});Promise.resolve(checked).then(value=>{if(value?.ok)committedProjection={...value.projection.storage}})}}
+  function restoreCommittedKey(key){const raw=Object.prototype.hasOwnProperty.call(committedProjection,key)?committedProjection[key]:null;if(raw==null)localStorage.removeItem(key);else localStorage.setItem(key,raw)}
   const recoveryApi={
     getState:()=>state,
     isBlocked:()=>state?.startupAllowed===false||state?.userChoiceRequired===true,
@@ -26,20 +27,28 @@ try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03
   async function syncProjectionNow(reason='feature-write',{preserveExplicitClear=false}={}){
     if(!schema5Ready||!migration?.syncProjection)return {ok:true,stage:'not-ready',changed:false};
     const revision=personalWriteRevision;
-    reapplyPendingPersonalValues();
-    const result=await migration.syncProjection({storage:localStorage,indexedDbTarget,now:new Date().toISOString(),preserveExplicitClear});
-    // A feature can write again while the dual-copy commit is awaiting
-    // IndexedDB. Keep that newest user value authoritative; a queued sync will
-    // then commit it as the next schema-5 generation.
-    if(personalWriteRevision!==revision)reapplyPendingPersonalValues();else pendingPersonalValues.clear();
+    const changes=Object.fromEntries(pendingPersonalValues);pendingPersonalValues.clear();
+    const cloudReplacement=window.RosterBotCloudSync?.beginReplacement?.(`schema5-personal-commit:${reason}`);
+    let result;
+    try{result=Object.keys(changes).length?await migration.commitPersonalChanges({storage:localStorage,indexedDbTarget,changes,source:reason,now:new Date().toISOString()}):await migration.syncProjection({storage:localStorage,indexedDbTarget,now:new Date().toISOString(),preserveExplicitClear})}
+    finally{window.RosterBotCloudSync?.endReplacement?.(cloudReplacement)}
+    rememberCommitted(result);
+    if(personalWriteRevision!==revision||pendingPersonalValues.size){featureWritePending=featureWritePending||featureLoading;if(!featureLoading)projectionSync=projectionSync.catch(()=>{}).then(()=>syncProjectionNow('queued-personal-write'))}
     if(!result.ok){state=migrationFailureState({...result,reason:result.reason||`Schema-5 projection update failed after ${reason}.`});showRecovery();window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));throw result.error||new Error(state.reason)}
-    if(result.changed)window.dispatchEvent(new CustomEvent('rosterbot:schema5-generation',{detail:{reason,result}}));return result;
+    if(result.changed){window.dispatchEvent(new CustomEvent('rosterbot:schema5-generation',{detail:{reason,result}}));window.RosterBotCloudSync?.notifyLocalChange?.(Object.keys(changes).find(key=>registry.get(key)?.cloud)||'rosterbot-personal-state-v1')}return result;
   }
   function notifyPersonalChange(key){
-    if(!registry.get(key))return projectionSync;
-    personalWriteRevision++;pendingPersonalValues.set(key,localStorage.getItem(key));
+    const item=registry.get(key);if(!item||item.category!=='personal')return projectionSync;
+    const desired=localStorage.getItem(key);restoreCommittedKey(key);
+    personalWriteRevision++;pendingPersonalValues.set(key,desired);
     if(featureLoading){featureWritePending=true;return projectionSync}
-    projectionSync=projectionSync.catch(()=>{}).then(()=>new Promise(resolve=>setTimeout(resolve,40))).then(()=>syncProjectionNow(`write:${key}`));return projectionSync;
+    projectionSync=projectionSync.catch(()=>{}).then(()=>syncProjectionNow(`write:${key}`));return projectionSync;
+  }
+  function commitPersonalChanges(changes,reason='personal-ui-commit'){
+    for(const [key,raw] of Object.entries(changes||{})){const item=registry.get(key);if(!item||item.category!=='personal')return Promise.reject(new TypeError(`${key} is not canonical personal state`));personalWriteRevision++;pendingPersonalValues.set(key,raw==null?null:String(raw))}
+    featureWritePending=featureWritePending||featureLoading;
+    if(!featureLoading)projectionSync=projectionSync.catch(()=>{}).then(()=>syncProjectionNow(reason));
+    return projectionSync;
   }
   async function quiesceForApplicationUpdate({timeoutMs=10000}={}){
     const deadline=Date.now()+Math.max(250,Number(timeoutMs)||10000);
@@ -55,7 +64,7 @@ try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03
     if(!applicationReady||state?.startupAllowed===false)return {ok:false,reason:'recovery-or-migration-incomplete',issueType:state?.issueType||null};
     return {ok:true,reason:'persistence-committed',changed:result?.changed===true,generation:result?.envelope?.generation?.number??null};
   }
-  window.RosterBotSchema5Persistence=Object.freeze({notifyPersonalChange,syncNow:reason=>{projectionSync=projectionSync.catch(()=>{}).then(()=>syncProjectionNow(reason));return projectionSync},quiesceForApplicationUpdate,isReady:()=>schema5Ready,isBusy:()=>recoveryBusy||safety.isReplacementInProgress?.()===true});
+  window.RosterBotSchema5Persistence=Object.freeze({notifyPersonalChange,commitPersonalChanges,syncNow:reason=>{projectionSync=projectionSync.catch(()=>{}).then(()=>syncProjectionNow(reason));return projectionSync},quiesceForApplicationUpdate,isReady:()=>schema5Ready,isBusy:()=>recoveryBusy||safety.isReplacementInProgress?.()===true});
 
   function currentLocalValues(){
     const result={};
@@ -192,7 +201,7 @@ try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03
       if(hasMigrationEvidence){
         const migrated=await migration.run({storage:localStorage,indexedDbTarget,now:new Date().toISOString()});
         if(!migrated.ok){state=migrationFailureState(migrated,localValues);showRecovery();window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));return}
-        state={issueType:'schema5',startupAllowed:true,userChoiceRequired:false,mirrorAllowed:true,migration:migrated};schema5Ready=true;
+        state={issueType:'schema5',startupAllowed:true,userChoiceRequired:false,mirrorAllowed:true,migration:migrated};schema5Ready=true;rememberCommitted(migrated);
         window.dispatchEvent(new CustomEvent('rosterbot:schema5-ready',{detail:migrated}));await loadApplication();return;
       }
       state=await safety.reconcileCanonicalState({registry,localValues,rows,personalKeys});
@@ -220,7 +229,7 @@ try{if(window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03
       const sourceGeneration=localGeneration?.ok&&localGeneration.value.verification==='verified'&&localGeneration.value.fingerprint===sourceHash.value?localGeneration.value:null;
       const migrated=await migration.run({storage:localStorage,indexedDbTarget,candidate,sourceGeneration,kind:state.issueType==='cleared'?'clear':'state',source:state.issueType==='cleared'?'verified-clear-tombstone':reconciledMigrationSource,detectionWarnings:warnings,now:new Date().toISOString()});
       if(!migrated.ok){state=migrationFailureState(migrated,localValues);showRecovery();window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}));return}
-      state={...state,issueType:'schema5',migration:migrated,startupAllowed:true,userChoiceRequired:false,mirrorAllowed:true};schema5Ready=true;window.dispatchEvent(new CustomEvent('rosterbot:schema5-ready',{detail:migrated}));await loadApplication();
+      state={...state,issueType:'schema5',migration:migrated,startupAllowed:true,userChoiceRequired:false,mirrorAllowed:true};schema5Ready=true;rememberCommitted(migrated);window.dispatchEvent(new CustomEvent('rosterbot:schema5-ready',{detail:migrated}));await loadApplication();
     }catch(error){state=readFailureState(error);showRecovery('RosterBot could not safely inspect saved data. No stored copy has been changed.');window.dispatchEvent(new CustomEvent('rosterbot:recovery-required',{detail:state}))}
   })();
 })();

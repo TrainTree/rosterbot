@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/30-feedback.js','rb-build:f975cefad1b130c09a48db7d44c56aa072049034ff6b25b2e3c31a935cbc3ae8')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/30-feedback.js','rb-build:1dd75d9547321eaf27713ec6ca0e71166079208f1dc64263bb54492386adafca')}catch(error){throw error}
 (function () {
   'use strict';
   const ENDPOINT = 'https://formspree.io/f/xwlkvlyl';
@@ -12,23 +12,17 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
   const includeSetup = document.getElementById('feedbackIncludeSetup');
   const submitBtn = document.getElementById('feedbackSubmitBtn');
   const status = document.getElementById('feedbackStatus');
-  let lastFocused = null;
 
   if (!modal || !openBtn || !closeBtn || !form) return;
 
   function openModal() {
-    lastFocused = document.activeElement;
-    modal.hidden = false;
-    document.body.classList.add('feedback-modal-open');
     status.textContent = '';
     status.className = 'feedback-status';
-    window.setTimeout(() => type.focus(), 0);
+    window.RosterBotDialogs.open(modal,{invoker:document.activeElement,initialFocus:type,onRequestClose:closeModal});
   }
 
   function closeModal() {
-    modal.hidden = true;
-    document.body.classList.remove('feedback-modal-open');
-    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+    window.RosterBotDialogs.close(modal);
   }
 
   function value(id, fallback = '') {
@@ -75,12 +69,6 @@ try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__roste
 
   openBtn.addEventListener('click', openModal);
   closeBtn.addEventListener('click', closeModal);
-  modal.addEventListener('click', (event) => {
-    if (event.target === modal) closeModal();
-  });
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !modal.hidden) closeModal();
-  });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
