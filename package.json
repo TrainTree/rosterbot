@@ -1,5 +1,5 @@
 {
-  "name": "rosterbot-v0.32.0-rc.1",
+  "name": "rosterbot-v0.32.0",
   "private": true,
   "scripts": {
     "build:identity": "node scripts/generate-runtime-build.mjs",

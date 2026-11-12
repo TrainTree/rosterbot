@@ -6,14 +6,14 @@ import {readSource} from './helpers.mjs';
 const index=readSource('index.html');
 const readme=readSource('README.md');
 
-test('v0.32.0-rc.1 release metadata is coordinated without changing schema or Cloud contracts',()=>{
-  assert.equal(APPLICATION_VERSION,'0.32.0-rc.1');
-  assert.match(index,/<title>RosterBot 🤖 v0\.32\.0-rc\.1<\/title>/);
+test('v0.32.0 release metadata is coordinated without changing schema or Cloud contracts',()=>{
+  assert.equal(APPLICATION_VERSION,'0.32.0');
+  assert.match(index,/<title>RosterBot 🤖 v0\.32\.0<\/title>/);
   assert.match(index,/v0\.32\.0 UX, Adoption &amp; Accessibility/);
-  assert.match(index,/Release candidate/);
-  assert.match(readme,/RosterBot v0\.32\.0-rc\.1/);
-  assert.match(readSource('js/02-canonical-state.js'),/WRITER_VERSION='v0\.32\.0-rc\.1'/);
-  assert.match(readSource('js/03-schema5-migration.js'),/version:'0\.32\.0-rc\.1',build:'v0\.32\.0-rc\.1'/);
+  assert.match(index,/<em>Release<\/em>/);
+  assert.match(readme,/RosterBot v0\.32\.0/);
+  assert.match(readSource('js/02-canonical-state.js'),/WRITER_VERSION='v0\.32\.0'/);
+  assert.match(readSource('js/03-schema5-migration.js'),/version:'0\.32\.0',build:'v0\.32\.0'/);
   assert.match(readSource('js/02-schema5.js'),/SCHEMA5_STORAGE_SCHEMA=5/);
   assert.match(readSource('js/07-cloud-schema5.js'),/CONTRACT='rosterbot-schema5-cloud-v1'/);
   assert.match(readSource('js/05-cloud-deployment-profile.js'),/requestedCloudSchema:5/);
@@ -33,7 +33,7 @@ test('Phase 7 research remains outside normal navigation, runtime inventory and 
   assert.doesNotMatch(readSource('scripts/prepare-production-pages.mjs'),/phase7-published-roster/);
 });
 
-test('backup and legacy Cloud compatibility payloads remain schema 4 with RC metadata',()=>{
-  assert.match(readSource('js/50-data-backup.js'),/version:'0\.32\.0-rc\.1',schemaVersion:4/);
-  assert.match(readSource('js/51-cloud-sync.js'),/version:'0\.32\.0-rc\.1',schemaVersion:4/);
+test('backup and legacy Cloud compatibility payloads remain schema 4 with final metadata',()=>{
+  assert.match(readSource('js/50-data-backup.js'),/version:'0\.32\.0',schemaVersion:4/);
+  assert.match(readSource('js/51-cloud-sync.js'),/version:'0\.32\.0',schemaVersion:4/);
 });

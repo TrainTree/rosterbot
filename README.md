@@ -1,4 +1,4 @@
-# RosterBot v0.32.0-rc.1 — UX, Adoption & Accessibility
+# RosterBot v0.32.0 — UX, Adoption & Accessibility
 
 This is the modular RosterBot source build. It keeps the frozen official roster/pay reference packs separate from the application UI, personal history and sync code.
 
@@ -9,7 +9,7 @@ This is the modular RosterBot source build. It keeps the frozen official roster/
 
 The frozen-data files are unchanged from the validated v0.29 production build.
 
-## v0.32.0 release candidate
+## v0.32.0 release
 
 - Introduces a value-first front door with a non-persistent Try RosterBot example and genuine low-commitment roster/shift browsing.
 - Simplifies manual onboarding so a normal master-roster user sees a personal roster preview before employment/pay administration.

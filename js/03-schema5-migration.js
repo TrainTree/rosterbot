@@ -1,4 +1,4 @@
-try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/03-schema5-migration.js','rb-build:8d8e916e93ef645d84ebcbe44470e83eaef73980dca6c286292a9c717ef79da9')}catch(error){throw error}
+try{if(typeof window!=='undefined'&&typeof document!=='undefined')window.__rosterbotRequireBuildComponent('js/03-schema5-migration.js','rb-build:5593aef4a091f5b39740b453879759b12c13ab1f12563e076135efe2ae368b31')}catch(error){throw error}
 try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.RosterBotBootDiagnostics.start('03-schema5-migration','RosterBotSchema5Migration',document.currentScript?.src||'js/03-schema5-migration.js')}catch(_){}
 (function(root,factory){
   'use strict';
@@ -22,7 +22,7 @@ try{if(typeof window!=='undefined'&&window.RosterBotBootDiagnostics)window.Roste
   const JOURNAL_VERSION=1;
   const COMMIT_FORMAT='rosterbot-schema5-personal-commit';
   const COMMIT_VERSION=1;
-  const WRITER=Object.freeze({app:'RosterBotPayBot',version:'0.32.0-rc.1',build:'v0.32.0-rc.1'});
+  const WRITER=Object.freeze({app:'RosterBotPayBot',version:'0.32.0',build:'v0.32.0'});
   const CHECKPOINT=Object.freeze(Object.fromEntries(schema5.JOURNAL_STATES.map((state,index)=>[state,index])));
   const appOwned=key=>/^(?:rosterbot|paybot)-/.test(String(key||''));
   const isObject=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
